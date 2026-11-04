@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "apex-council"
+version = "1.0.0"
+description = "The Multi-LLM Code Supreme Court: Pitting Google Gemini, Anthropic Claude, and OpenAI against each other in real-time."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Apex Council Contributors" }
+]
+keywords = [
+    "multi-agent",
+    "claude",
+    "gemini",
+    "openai",
+    "consensus",
+    "llm-council",
+    "code-generation",
+    "security-audit",
+    "benchmarking"
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = []
+
+[project.scripts]
+apex-council = "apex_council.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["apex_council*"]

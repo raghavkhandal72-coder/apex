@@ -1,0 +1,162 @@
+from __future__ import annotations
+
+import time
+from typing import Dict
+
+from ..models import CodeSubmission, Critique, ModelProvider
+from .base import BaseLLMProvider
+
+
+class SimulatedProvider(BaseLLMProvider):
+    """Simulated provider demonstrating characteristic outputs and peer-review styles
+
+    of Google Gemini, Anthropic Claude, and OpenAI when API keys are not supplied.
+    """
+
+    def __init__(self, provider: ModelProvider, model_name: str):
+        super().__init__(provider, model_name)
+
+    def generate(self, prompt: str) -> CodeSubmission:
+        start_time = time.perf_counter()
+
+        # Generate characteristic implementations based on model identity
+        if self.provider == ModelProvider.GEMINI:
+            code = self._gemini_implementation(prompt)
+            explanation = "Leveraged high-throughput data structures, modern typing, and memory-efficient algorithms."
+        elif self.provider == ModelProvider.CLAUDE:
+            code = self._claude_implementation(prompt)
+            explanation = "Structured with defensive programming, thorough docstrings, and strict boundary validation."
+        else:
+            code = self._openai_implementation(prompt)
+            explanation = "Built with minimal boilerplate, standard library primitives, and built-in self-testing."
+
+        latency_ms = (time.perf_counter() - start_time) * 1000 + 42.0
+
+        return CodeSubmission(
+            provider=self.provider,
+            model_name=self.model_name,
+            code=code,
+            explanation=explanation,
+            latency_ms=latency_ms,
+        )
+
+    def critique(self, target_provider: ModelProvider, target_code: str, prompt: str) -> Critique:
+        # Cross-critique logic
+        flaws = []
+        score = 8.5
+        feedback = ""
+
+        if "os.system" in target_code or "shell=True" in target_code:
+            flaws.append("Critical: Unsafe shell command execution detected.")
+            score -= 3.5
+
+        if "eval(" in target_code or "exec(" in target_code:
+            flaws.append("Critical: Dynamic code evaluation hazard.")
+            score -= 4.0
+
+        if "except:" in target_code:
+            flaws.append("Medium: Bare except clause used without specific exception type.")
+            score -= 1.0
+
+        if not flaws:
+            score = 9.2
+            feedback = f"Code cleanly adheres to SOLID principles and handles standard constraints well for {target_provider.value}."
+        else:
+            feedback = f"Identified {len(flaws)} potential security/correctness concerns during peer-review."
+
+        return Critique(
+            reviewer=self.provider,
+            target=target_provider,
+            score=max(1.0, score),
+            identified_flaws=flaws,
+            feedback=feedback,
+        )
+
+    def _gemini_implementation(self, prompt: str) -> str:
+        return '''from __future__ import annotations
+from collections import OrderedDict
+from typing import Generic, TypeVar, Optional
+import time
+
+K = TypeVar("K")
+V = TypeVar("V")
+
+class LRUCache(Generic[K, V]):
+    """High-performance, type-safe LRU Cache with TTL expiry support."""
+    def __init__(self, capacity: int, default_ttl_sec: Optional[float] = None) -> None:
+        if capacity <= 0:
+            raise ValueError("Capacity must be strictly positive")
+        self.capacity: int = capacity
+        self.default_ttl: Optional[float] = default_ttl_sec
+        self._cache: OrderedDict[K, tuple[V, Optional[float]]] = OrderedDict()
+
+    def get(self, key: K) -> Optional[V]:
+        if key not in self._cache:
+            return None
+        val, expiry = self._cache[key]
+        if expiry and time.time() > expiry:
+            del self._cache[key]
+            return None
+        self._cache.move_to_end(key)
+        return val
+
+    def put(self, key: K, value: V, ttl: Optional[float] = None) -> None:
+        expiry = time.time() + (ttl or self.default_ttl) if (ttl or self.default_ttl) else None
+        if key in self._cache:
+            self._cache.move_to_end(key)
+        self._cache[key] = (value, expiry)
+        if len(self._cache) > self.capacity:
+            self._cache.popitem(last=False)
+'''
+
+    def _claude_implementation(self, prompt: str) -> str:
+        return '''from __future__ import annotations
+import time
+from collections import OrderedDict
+from typing import Any, Optional
+
+class LRUCache:
+    """Production-grade LRU Cache implementing defensive boundary checks and full observability."""
+    def __init__(self, capacity: int) -> None:
+        assert isinstance(capacity, int) and capacity > 0, "Capacity must be a positive integer"
+        self._capacity = capacity
+        self._store: OrderedDict[str, Any] = OrderedDict()
+
+    def get(self, key: str) -> Optional[Any]:
+        if key not in self._store:
+            return None
+        self._store.move_to_end(key)
+        return self._store[key]
+
+    def set(self, key: str, value: Any) -> None:
+        if key in self._store:
+            self._store.move_to_end(key)
+        elif len(self._store) >= self._capacity:
+            self._store.popitem(last=False)
+        self._store[key] = value
+
+    def __len__(self) -> int:
+        return len(self._store)
+'''
+
+    def _openai_implementation(self, prompt: str) -> str:
+        return '''from collections import OrderedDict
+
+class LRUCache:
+    def __init__(self, capacity: int):
+        self.cap = capacity
+        self.map = OrderedDict()
+
+    def get(self, key: int) -> int:
+        if key not in self.map:
+            return -1
+        self.map.move_to_end(key)
+        return self.map[key]
+
+    def put(self, key: int, value: int) -> None:
+        if key in self.map:
+            self.map.move_to_end(key)
+        self.map[key] = value
+        if len(self.map) > self.cap:
+            self.map.popitem(last=False)
+'''
