@@ -35,7 +35,7 @@ KNOWN_COMMANDS = {
     "dlp-test", "policy-check", "init-ci", "repomap", "swarm", "memory",
     "demo", "verify-ledger", "localize", "build-pyz", "swe-bench",
     "autopsy", "synthesize", "verify-proof", "edge",
-    "perf", "chaos", "appsec", "db-tune", "modernize", "release",
+    "perf", "chaos", "appsec", "db-tune", "modernize", "release", "sbfl", "hoare",
     "-h", "--help"
 }
 
@@ -230,6 +230,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     rel_parser.add_argument("base_file", type=Path, help="Base / current version file")
     rel_parser.add_argument("candidate_file", type=Path, help="Candidate / new version file")
     rel_parser.add_argument("--version", default="1.0.0", help="Current version (default: 1.0.0)")
+
+    # Command 35: Unified Spectrum-Based Fault Localization Triad
+    sbfl_parser = subparsers.add_parser("sbfl", help="Unified SBFL Triad: localize faults via Ochiai, Tarantula, & DStar (D*) formulas")
+    sbfl_parser.add_argument("file", type=Path, help="Target Python source file")
+    sbfl_parser.add_argument("--tests", required=True, help="Test harness code or file path")
+    sbfl_parser.add_argument("--star", type=float, default=2.0, help="DStar tuning exponent (default: 2.0)")
+
+    # Command 36: Formal Hoare Logic & Invariant Verifier
+    hoare_parser = subparsers.add_parser("hoare", help="Formal Verifier: verify zero-division, loop termination, & None dereferences via Dijkstra WP")
+    hoare_parser.add_argument("file", type=Path, help="Target Python source file to verify")
 
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
@@ -908,6 +918,57 @@ def main(argv: list[str] | None = None) -> int:
         print(rep.changelog_markdown)
         print("==========================================================\n")
         return 0
+
+    # Command 35: Unified SBFL Triad
+    if args.command == "sbfl":
+        from .autopsy.sbfl_triad import SBFLTriadEngine
+        if not args.file.exists():
+            sys.stderr.write(f"Error: File not found: {args.file}\n")
+            return 2
+        src = args.file.read_text(encoding="utf-8")
+        test_text = args.tests
+        test_path = Path(args.tests)
+        if test_path.exists():
+            test_text = test_path.read_text(encoding="utf-8")
+        engine = SBFLTriadEngine(star_exponent=getattr(args, "star", 2.0))
+        rep = engine.localize(src, test_text, target_filename=str(args.file))
+        print("==========================================================")
+        print("   🔍 UNIFIED SBFL FAULT LOCALIZATION TRIAD   ")
+        print("==========================================================")
+        print(f"  Target File:     {args.file}")
+        print(f"  Total Tests:     {rep.total_tests} (Pass: {rep.passed_tests}, Fail: {rep.failed_tests})")
+        print(f"  Top Suspicious:  Line {rep.top_suspicious_line or 'N/A'}")
+        print(f"  Confidence:      {rep.consensus_confidence * 100:.1f}%")
+        print("  Top Suspicious Statements:")
+        for r in rep.ranked_lines[:5]:
+            print(f"    - Line {r.lineno:3d} | Ensemble: {r.ensemble:.3f} | Ochiai: {r.ochiai:.3f} | D*: {r.dstar:.3f} | Tarantula: {r.tarantula:.3f}")
+            print(f"      Code: {r.source_line.strip()[:60]}")
+        print("==========================================================\n")
+        return 0
+
+    # Command 36: Formal Hoare Logic Verifier
+    if args.command == "hoare":
+        from .formal.hoare_invariants import HoareInvariantVerifier
+        if not args.file.exists():
+            sys.stderr.write(f"Error: File not found: {args.file}\n")
+            return 2
+        src = args.file.read_text(encoding="utf-8")
+        rep = HoareInvariantVerifier.verify_code(src)
+        print("==========================================================")
+        print("   📐 FORMAL HOARE LOGIC & INVARIANT VERIFICATION   ")
+        print("==========================================================")
+        print(f"  Target File:     {args.file}")
+        print(f"  Provably Safe:   {'✓ YES' if rep.is_provably_safe else '✗ VIOLATIONS DETECTED'}")
+        print(f"  Safety Score:    {rep.safety_confidence * 100:.1f}%")
+        print(f"  Triples Checked: {rep.hoare_triples_verified} / {rep.total_invariants_checked}")
+        if rep.violations:
+            print("  Invariant Violations:")
+            for v in rep.violations:
+                print(f"    - [{v.severity}] {v.category} (Line {v.lineno}): {v.expression}")
+                print(f"      Weakest Precondition: {v.weakest_precondition}")
+                print(f"      Remediation:          {v.remediation_hint}")
+        print("==========================================================\n")
+        return 0 if rep.is_provably_safe else 1
 
     # 26. Handle battle / default prompt
     prompt = getattr(args, "prompt", None) or args.direct_prompt or "Build an LRU cache with TTL support"

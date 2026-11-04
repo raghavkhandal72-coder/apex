@@ -358,6 +358,69 @@ class ApexCouncilMCPServer:
                                 "required": ["base_code", "candidate_code"],
                             },
                         },
+                        {
+                            "name": "apex_sbfl_triad",
+                            "description": "Unified Spectrum-Based Fault Localization Triad: Computes Ochiai, Tarantula, and DStar (D*) spectra with weighted ensemble scoring.",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "source_code": {
+                                        "type": "string",
+                                        "description": "Target Python source code.",
+                                    },
+                                    "test_code": {
+                                        "type": "string",
+                                        "description": "Unit test assertions or test harness.",
+                                    },
+                                    "star_exponent": {
+                                        "type": "number",
+                                        "description": "DStar tuning exponent (default: 2.0).",
+                                    },
+                                },
+                                "required": ["source_code", "test_code"],
+                            },
+                        },
+                        {
+                            "name": "apex_shapley_consensus",
+                            "description": "Cooperative Game-Theoretic Shapley Value attribution engine for fair multi-agent council voting and veto resolution.",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "evaluations": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "agent_id": {"type": "string"},
+                                                "role": {"type": "string"},
+                                                "confidence": {"type": "number"},
+                                                "vote": {"type": "string"},
+                                                "metric_score": {"type": "number"},
+                                                "findings_count": {"type": "integer"},
+                                                "weight": {"type": "number"},
+                                            },
+                                            "required": ["agent_id", "role", "vote"],
+                                        },
+                                        "description": "Array of agent evaluation records.",
+                                    },
+                                },
+                                "required": ["evaluations"],
+                            },
+                        },
+                        {
+                            "name": "apex_hoare_verify",
+                            "description": "Formal verification engine: Proves zero-division, loop termination, subscript bounds, and NoneType dereference invariants via Dijkstra Weakest Precondition calculus.",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "source_code": {
+                                        "type": "string",
+                                        "description": "Python source code to formally verify.",
+                                    },
+                                },
+                                "required": ["source_code"],
+                            },
+                        },
                     ]
                 },
             }
@@ -789,6 +852,136 @@ class ApexCouncilMCPServer:
                                         "release_merkle_root": rep.release_merkle_root,
                                         "release_signature": rep.release_signature,
                                         "changelog_markdown": rep.changelog_markdown,
+                                    },
+                                    indent=2,
+                                ),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_sbfl_triad":
+                from .autopsy.sbfl_triad import SBFLTriadEngine
+                src = arguments.get("source_code", "")
+                tests = arguments.get("test_code", "")
+                star = float(arguments.get("star_exponent", 2.0))
+                engine = SBFLTriadEngine(star_exponent=star)
+                rep = engine.localize(src, tests)
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(
+                                    {
+                                        "total_tests": rep.total_tests,
+                                        "passed_tests": rep.passed_tests,
+                                        "failed_tests": rep.failed_tests,
+                                        "top_suspicious_line": rep.top_suspicious_line,
+                                        "consensus_confidence": rep.consensus_confidence,
+                                        "ranked_lines": [
+                                            {
+                                                "lineno": r.lineno,
+                                                "ochiai": r.ochiai,
+                                                "tarantula": r.tarantula,
+                                                "dstar": r.dstar,
+                                                "ensemble": r.ensemble,
+                                                "ef": r.ef,
+                                                "nf": r.nf,
+                                                "ep": r.ep,
+                                                "np": r.np,
+                                                "scope": r.enclosing_scope,
+                                                "source": r.source_line,
+                                            }
+                                            for r in rep.ranked_lines[:10]
+                                        ],
+                                    },
+                                    indent=2,
+                                ),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_shapley_consensus":
+                from .consensus.shapley_consensus import AgentEvaluation, ShapleyConsensusEngine
+                eval_raw = arguments.get("evaluations", [])
+                evals = [
+                    AgentEvaluation(
+                        agent_id=str(e.get("agent_id", f"agent_{i}")),
+                        role=str(e.get("role", "Engineer")),
+                        confidence=float(e.get("confidence", 0.9)),
+                        vote=str(e.get("vote", "APPROVE")),
+                        metric_score=float(e.get("metric_score", 1.0)),
+                        findings_count=int(e.get("findings_count", 0)),
+                        weight=float(e.get("weight", 1.0)),
+                    )
+                    for i, e in enumerate(eval_raw)
+                ]
+                engine = ShapleyConsensusEngine()
+                rep = engine.compute_exact_shapley_values(evals)
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(
+                                    {
+                                        "coalition_value": rep.coalition_value,
+                                        "consensus_verdict": rep.consensus_verdict,
+                                        "quorum_passed": rep.quorum_passed,
+                                        "vetoing_agents": rep.vetoing_agents,
+                                        "efficiency_gap": rep.efficiency_gap,
+                                        "attributions": [
+                                            {
+                                                "agent_id": a.agent_id,
+                                                "role": a.role,
+                                                "shapley_value": a.shapley_value,
+                                                "normalized_influence": a.normalized_influence,
+                                                "vote": a.vote,
+                                            }
+                                            for a in rep.attributions
+                                        ],
+                                    },
+                                    indent=2,
+                                ),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_hoare_verify":
+                from .formal.hoare_invariants import HoareInvariantVerifier
+                src = arguments.get("source_code", "")
+                rep = HoareInvariantVerifier.verify_code(src)
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(
+                                    {
+                                        "is_provably_safe": rep.is_provably_safe,
+                                        "safety_confidence": rep.safety_confidence,
+                                        "total_invariants_checked": rep.total_invariants_checked,
+                                        "hoare_triples_verified": rep.hoare_triples_verified,
+                                        "violations": [
+                                            {
+                                                "category": v.category,
+                                                "lineno": v.lineno,
+                                                "expression": v.expression,
+                                                "weakest_precondition": v.weakest_precondition,
+                                                "severity": v.severity,
+                                                "remediation_hint": v.remediation_hint,
+                                            }
+                                            for v in rep.violations
+                                        ],
                                     },
                                     indent=2,
                                 ),

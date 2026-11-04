@@ -42,9 +42,68 @@ class TestMCPSpecialistsAndPUCT(unittest.TestCase):
             "apex_db_tune",
             "apex_modernize",
             "apex_release",
+            "apex_sbfl_triad",
+            "apex_shapley_consensus",
+            "apex_hoare_verify",
         }
         for expected in expected_tools:
             self.assertIn(expected, tool_names, f"Missing MCP tool: {expected}")
+
+    def test_mcp_call_apex_sbfl_triad(self) -> None:
+        src = "def add(a, b):\n    return a - b\n"
+        tests = "assert add(1, 1) == 2\n"
+        req = {
+            "jsonrpc": "2.0",
+            "id": 101,
+            "method": "tools/call",
+            "params": {
+                "name": "apex_sbfl_triad",
+                "arguments": {"source_code": src, "test_code": tests},
+            },
+        }
+        resp = self.server.handle_request(req)
+        self.assertIsNotNone(resp)
+        payload = json.loads(resp["result"]["content"][0]["text"])
+        self.assertEqual(payload["failed_tests"], 1)
+        self.assertIsNotNone(payload["top_suspicious_line"])
+        self.assertGreater(len(payload["ranked_lines"]), 0)
+
+    def test_mcp_call_apex_shapley_consensus(self) -> None:
+        evals = [
+            {"agent_id": "a1", "role": "SDET", "confidence": 0.9, "vote": "APPROVE", "metric_score": 1.0},
+            {"agent_id": "a2", "role": "AppSec", "confidence": 0.9, "vote": "APPROVE", "metric_score": 1.0},
+        ]
+        req = {
+            "jsonrpc": "2.0",
+            "id": 102,
+            "method": "tools/call",
+            "params": {
+                "name": "apex_shapley_consensus",
+                "arguments": {"evaluations": evals},
+            },
+        }
+        resp = self.server.handle_request(req)
+        self.assertIsNotNone(resp)
+        payload = json.loads(resp["result"]["content"][0]["text"])
+        self.assertTrue(payload["quorum_passed"])
+        self.assertEqual(payload["consensus_verdict"], "APPROVED")
+
+    def test_mcp_call_apex_hoare_verify(self) -> None:
+        src = "def divide(a, b):\n    return a / b\n"
+        req = {
+            "jsonrpc": "2.0",
+            "id": 103,
+            "method": "tools/call",
+            "params": {
+                "name": "apex_hoare_verify",
+                "arguments": {"source_code": src},
+            },
+        }
+        resp = self.server.handle_request(req)
+        self.assertIsNotNone(resp)
+        payload = json.loads(resp["result"]["content"][0]["text"])
+        self.assertFalse(payload["is_provably_safe"])
+        self.assertGreaterEqual(len(payload["violations"]), 1)
 
     def test_mcp_call_apex_perf(self) -> None:
         code = (
