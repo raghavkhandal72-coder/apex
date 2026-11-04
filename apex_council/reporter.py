@@ -28,9 +28,14 @@ class CouncilReporter:
     @staticmethod
     def format_terminal(result: CouncilResult) -> str:
         lines = []
-        lines.append(f"\n{BOLD}{CYAN}========================================================================{RESET}")
-        lines.append(f"{BOLD}{WHITE}   APEX-COUNCIL: THE MULTI-LLM CODE SUPREME COURT   {RESET}")
-        lines.append(f"{DIM}   Google Gemini  ×  Anthropic Claude  ×  OpenAI / Microsoft{RESET}")
+        banner = f"""{BOLD}{CYAN}
+    ___    ____  _______  __     ______ ____  __  ___   ____________  __ 
+   /   |  / __ \/ ____/ |/ /    / ____// __ \/ / / / | / / ____/  _/ / / 
+  / /| | / /_/ / __/  |   /    / /    / / / / / / /  |/ / /    / /  / /  
+ / ___ |/ ____/ /___ /   |    / /___ / /_/ / /_/ / /|  / /____/ /  / /___
+/_/  |_/_/   /_____//_/|_|    \____/ \____/\____/_/ |_/\____/___/ /_____/
+{RESET}{DIM}   Google Gemini  ×  Anthropic Claude  ×  OpenAI / Microsoft  [v1.0.0]{RESET}"""
+        lines.append(banner)
         lines.append(f"{BOLD}{CYAN}========================================================================{RESET}\n")
 
         lines.append(f"{BOLD}🎯 Task Prompt:{RESET} {YELLOW}\"{result.task_prompt}\"{RESET}\n")

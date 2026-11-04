@@ -20,7 +20,20 @@ from .reporter import CouncilReporter
 from .web.server import run_server
 
 
+KNOWN_COMMANDS = {
+    "battle", "engineer", "solve", "heal", "pr", "audit", "relay",
+    "serve", "mcp", "diff", "redteam", "benchmark", "audit-verify",
+    "dlp-test", "policy-check", "init-ci", "-h", "--help"
+}
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    raw_args = list(sys.argv[1:] if argv is None else argv)
+
+    # Seamless UX Polish: If first argument is not a known command or flag, treat as direct battle prompt
+    if raw_args and not raw_args[0].startswith("-") and raw_args[0] not in KNOWN_COMMANDS:
+        raw_args = ["battle"] + raw_args
+
     parser = argparse.ArgumentParser(
         prog="apex-council",
         description="🏛️ The Multi-LLM Code Supreme Court: Enterprise AI Engineering & Consensus Platform.",
@@ -118,7 +131,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("-o", "--output", type=Path)
     parser.add_argument("--offline", action="store_true")
 
-    return parser.parse_args(argv)
+    return parser.parse_args(raw_args)
 
 
 def handle_init_ci() -> int:
