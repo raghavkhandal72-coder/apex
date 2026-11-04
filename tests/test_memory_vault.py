@@ -136,6 +136,44 @@ def compute_elements(records):
         self.assertEqual(len(matches), 1)
         self.assertIn("list comprehension", matches[0].rule_text)
 
+    def test_ebbinghaus_decay_and_reinforcement(self) -> None:
+        rule_id = self.vault.add_heuristic(
+            category="CONCURRENCY",
+            pattern="race condition",
+            rule_text="Use monotonic clock for timeouts",
+            confidence_score=0.9,
+            strength_days=10.0,
+        )
+        rules = self.vault.get_all_heuristics()
+        self.assertEqual(len(rules), 1)
+        init_eff = rules[0].effective_confidence
+        self.assertGreaterEqual(init_eff, 0.85)
+
+        # Reinforce
+        reinforced = self.vault.reinforce_heuristic(rule_id)
+        self.assertTrue(reinforced)
+        updated = self.vault.get_all_heuristics()[0]
+        self.assertEqual(updated.strength_days, 15.0)
+
+    def test_stacktrace_signature_clustering(self) -> None:
+        from apex_council.memory.matcher import StacktraceClusterer
+
+        trace1 = """
+Traceback (most recent call last):
+  File "/home/user/repo/worker.py", line 42, in process
+    res = conn.execute("SELECT 1")
+sqlite3.OperationalError: database is locked
+"""
+        trace2 = """
+Traceback (most recent call last):
+  File "C:\\projects\\app\\worker.py", line 89, in process
+    res = conn.execute("SELECT 1")
+sqlite3.OperationalError: database is locked
+"""
+        sig1 = StacktraceClusterer.compute_signature_hash(trace1)
+        sig2 = StacktraceClusterer.compute_signature_hash(trace2)
+        self.assertEqual(sig1, sig2)
+
 
 if __name__ == "__main__":
     unittest.main()

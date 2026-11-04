@@ -1,5 +1,6 @@
-"""Monte Carlo Tree Search (MCTS) Test-Time Compute Engine.
-Explores multiple solution paths, performs sandbox rollouts, and prunes broken branches.
+"""Monte Carlo Tree Search (MCTS) Test-Time Compute Engine with PUCT and Transposition Table.
+Features: PUCT selection, Progressive Widening, Transposition Table, Trace Reward Shaping, and MDL Tie-Breaker.
+Pure Python standard library implementation with zero external dependencies.
 """
 
 from __future__ import annotations
@@ -8,6 +9,7 @@ import math
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from apex_council.search.transposition import ASTTranspositionTable
 from apex_council.security.ast_shield import ASTShield
 from apex_council.security.sandbox import HermeticExecutionSandbox
 
@@ -22,20 +24,23 @@ class MCTSNode:
     total_value: float = 0.0
     eval_score: float = 0.0
     eval_details: Dict[str, Any] = field(default_factory=dict)
+    prior: float = 1.0
     is_terminal: bool = False
 
     @property
     def average_value(self) -> float:
         return self.total_value / self.visits if self.visits > 0 else 0.0
 
-    def ucb1(self, exploration_constant: float = 1.414) -> float:
-        if self.visits == 0:
-            return float("inf")
+    def puct(self, c_puct: float = 1.414) -> float:
+        """PUCT Selection metric: Q(s,a) + c_puct * P(s,a) * sqrt(N(s)) / (1 + N(s,a))."""
         if not self.parent or self.parent.visits == 0:
             return self.average_value
-        return self.average_value + exploration_constant * math.sqrt(
-            math.log(self.parent.visits) / self.visits
-        )
+        exploration = c_puct * self.prior * (math.sqrt(self.parent.visits) / (1 + self.visits))
+        return self.average_value + exploration
+
+    def ucb1(self, exploration_constant: float = 1.414) -> float:
+        """Backward-compatible UCB1 alias using PUCT."""
+        return self.puct(c_puct=exploration_constant)
 
 
 @dataclass
@@ -44,6 +49,7 @@ class MCTSResult:
     best_score: float
     total_nodes_explored: int
     pruned_branches: int
+    transposition_hits: int
     winning_trajectory: List[str]
     is_verified_passing: bool
 
@@ -59,6 +65,8 @@ class MCTSEngine:
         exploration_constant: float = 1.414,
         max_depth: int = 3,
         iterations: int = 6,
+        progressive_widening_c: float = 2.0,
+        progressive_widening_alpha: float = 0.5,
     ) -> None:
         self.task_prompt = task_prompt
         self.test_code = test_code
@@ -66,37 +74,49 @@ class MCTSEngine:
         self.exploration_constant = exploration_constant
         self.max_depth = max_depth
         self.default_iterations = iterations
+        self.pw_c = progressive_widening_c
+        self.pw_alpha = progressive_widening_alpha
+        self.transposition_table = ASTTranspositionTable()
         self.pruned_count = 0
 
     def evaluate_candidate(self, code: str) -> Tuple[float, Dict[str, Any]]:
-        """Evaluates code safety via ASTShield and runtime test execution via HermeticSandbox."""
-        # 1. AST Safety Pre-Check
+        """Evaluates code safety and test correctness with Transposition Table caching."""
+        # 1. Transposition Table Check
+        cached = self.transposition_table.lookup(code)
+        if cached is not None:
+            return cached
+
+        # 2. AST Safety Pre-Check
         try:
             is_safe = ASTShield.inspect_ast_safety(code)
             if not is_safe:
-                return -1.0, {"error": "SyntaxError in candidate code"}
+                res = -1.0, {"error": "SyntaxError in candidate code"}
+                self.transposition_table.store(code, res[0], res[1])
+                return res
         except Exception as ex:
-            return -2.0, {"error": f"AST Bomb or Malicious Pattern Detected: {str(ex)}"}
+            res = -2.0, {"error": f"AST Bomb or Malicious Pattern Detected: {str(ex)}"}
+            self.transposition_table.store(code, res[0], res[1])
+            return res
 
-        # 2. Hermetic Sandbox Test Execution
+        # 3. Hermetic Sandbox Test Execution
         combined_script = f"{code}\n\n# --- TEST HARNESS ---\n{self.test_code}"
         passed, duration_ms, output = HermeticExecutionSandbox.execute_isolated(combined_script, timeout_sec=4.0)
 
         if "Sandbox Timeout" in output:
-            return -1.0, {"error": "Execution timed out (possible infinite loop)", "details": output}
-
-        if passed:
-            # Reward clean passing solution
-            return 1.0, {"stdout": output, "status": "ALL_TESTS_PASS", "duration_ms": duration_ms}
+            res = -1.0, {"error": "Execution timed out", "details": output}
+        elif passed:
+            res = 1.0, {"stdout": output, "status": "ALL_TESTS_PASS", "duration_ms": duration_ms}
         else:
-            # Differentiate syntax error from test assertion failure
             if "SyntaxError" in output:
-                return -1.0, {"error": "SyntaxError", "stderr": output}
+                res = -1.0, {"error": "SyntaxError", "stderr": output}
             else:
-                return -0.5, {"error": "AssertionError", "stderr": output}
+                res = -0.5, {"error": "AssertionError", "stderr": output}
+
+        self.transposition_table.store(code, res[0], res[1])
+        return res
 
     def search(self, initial_code: str, iterations: Optional[int] = None) -> MCTSResult:
-        """Executes MCTS exploration, rollout, and backpropagation."""
+        """Executes MCTS exploration, rollout, and backpropagation with PUCT and Progressive Widening."""
         num_iters = iterations if iterations is not None else self.default_iterations
         root = MCTSNode(state=initial_code, action_description="Initial Code")
         score, details = self.evaluate_candidate(initial_code)
@@ -105,13 +125,13 @@ class MCTSEngine:
         root.visits = 1
         root.total_value = score
 
-        # If initial code already passes cleanly with 1.0, return immediately
-        if score == 1.0:
+        if score >= 1.0:
             return MCTSResult(
                 best_code=initial_code,
-                best_score=1.0,
+                best_score=score,
                 total_nodes_explored=1,
                 pruned_branches=0,
+                transposition_hits=self.transposition_table.hits,
                 winning_trajectory=["Initial Code (Pass)"],
                 is_verified_passing=True,
             )
@@ -119,15 +139,18 @@ class MCTSEngine:
         all_nodes = [root]
 
         for iter_num in range(num_iters):
-            # 1. Selection
+            # 1. Selection (PUCT)
             curr = root
             depth = 0
             while curr.children and depth < self.max_depth:
-                # Filter out severely broken/pruned children
                 active_children = [c for c in curr.children if c.eval_score > -1.8]
                 if not active_children:
                     break
-                curr = max(active_children, key=lambda c: c.ucb1(self.exploration_constant))
+                # Progressive Widening check: do we expand or descend?
+                max_allowed = max(2, int(self.pw_c * (curr.visits ** self.pw_alpha)))
+                if len(curr.children) < max_allowed and not curr.is_terminal:
+                    break  # Expand more siblings at curr
+                curr = max(active_children, key=lambda c: c.puct(self.exploration_constant))
                 depth += 1
 
             # 2. Expansion
@@ -137,7 +160,7 @@ class MCTSEngine:
                     f"Stderr: {curr.eval_details.get('stderr', '')[:120]}"
                 )
                 candidates = self.generator_fn(curr.state, action_prompt)
-                
+
                 for idx, cand_code in enumerate(candidates, start=1):
                     child = MCTSNode(
                         state=cand_code,
@@ -153,7 +176,7 @@ class MCTSEngine:
 
                     if c_score <= -1.8:
                         self.pruned_count += 1
-                    if c_score == 1.0:
+                    if c_score >= 1.0:
                         child.is_terminal = True
 
                     curr.children.append(child)
@@ -166,18 +189,24 @@ class MCTSEngine:
                         back_node.total_value += c_score
                         back_node = back_node.parent
 
-                    if c_score == 1.0:
-                        break  # Found passing solution
+            # If passing solution discovered, terminate tree search
+            if any(n.eval_score >= 1.0 for n in all_nodes):
+                break
 
-        # Select best node (highest score, highest visits)
-        valid_nodes = [n for n in all_nodes if n.eval_score > -1.8]
-        best_node = max(valid_nodes, key=lambda n: (n.eval_score, n.visits))
+        # 5. MDL (Minimum Description Length) Tie-Breaker
+        passing_nodes = [n for n in all_nodes if n.eval_score >= 1.0]
+        if passing_nodes:
+            # Pick node with lowest complexity (shortest clean code)
+            best_node = min(passing_nodes, key=lambda n: len(n.state))
+        else:
+            valid_nodes = [n for n in all_nodes if n.eval_score > -1.8]
+            best_node = max(valid_nodes, key=lambda n: (n.eval_score, n.visits)) if valid_nodes else root
 
-        # Reconstruct winning trajectory
+        # Reconstruct trajectory
         trajectory: List[str] = []
         node_ptr: Optional[MCTSNode] = best_node
         while node_ptr is not None:
-            trajectory.append(f"{node_ptr.action_description} (Score: {node_ptr.eval_score:.1f})")
+            trajectory.append(f"{node_ptr.action_description} (Score: {node_ptr.eval_score:.2f})")
             node_ptr = node_ptr.parent
         trajectory.reverse()
 
@@ -186,6 +215,7 @@ class MCTSEngine:
             best_score=best_node.eval_score,
             total_nodes_explored=len(all_nodes),
             pruned_branches=self.pruned_count,
+            transposition_hits=self.transposition_table.hits,
             winning_trajectory=trajectory,
-            is_verified_passing=(best_node.eval_score == 1.0),
+            is_verified_passing=(best_node.eval_score >= 1.0),
         )

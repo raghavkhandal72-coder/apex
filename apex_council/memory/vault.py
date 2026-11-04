@@ -1,10 +1,11 @@
-"""Persistent Episodic Memory Vault with SQLite3 FTS5 (BM25) and AST Fingerprinting.
+"""Persistent Episodic Memory Vault with SQLite3 FTS5 (BM25), AST Fingerprinting, and Ebbinghaus Decay.
 Pure Python standard library implementation with zero external dependencies.
 """
 
 from __future__ import annotations
 
 import json
+import math
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -35,10 +36,27 @@ class HeuristicRule:
     ast_fingerprint: str
     confidence_score: float
     created_at: str
+    strength_days: float = 30.0
+    last_reinforced_at: str = ""
+
+    @property
+    def effective_confidence(self) -> float:
+        """Applies Ebbinghaus Forgetting Curve: R = e^(-t / S)."""
+        ref_date = self.last_reinforced_at or self.created_at
+        if not ref_date:
+            return self.confidence_score
+        try:
+            last_dt = datetime.fromisoformat(ref_date)
+            now = datetime.now(timezone.utc)
+            days_elapsed = max(0.0, (now - last_dt).total_seconds() / 86400.0)
+            retention = math.exp(-days_elapsed / max(self.strength_days, 1.0))
+            return round(max(0.05, self.confidence_score * retention), 3)
+        except Exception:
+            return self.confidence_score
 
 
 class MemoryVault:
-    """Manages the persistent SQLite database with FTS5 full-text indexing and AST fingerprints."""
+    """Manages the persistent SQLite database with FTS5, AST fingerprints, and Ebbinghaus confidence decay."""
 
     def __init__(self, db_path: Path | str = ":memory:") -> None:
         self.db_path = str(db_path)
@@ -85,11 +103,12 @@ class MemoryVault:
                 rule_text TEXT NOT NULL,
                 ast_fingerprint TEXT NOT NULL DEFAULT '',
                 confidence_score REAL NOT NULL,
+                strength_days REAL NOT NULL DEFAULT 30.0,
+                last_reinforced_at TEXT NOT NULL DEFAULT '',
                 created_at TEXT NOT NULL
             );
             """
         )
-        # Create FTS5 Virtual Table for BM25 Ranking
         try:
             conn.execute(
                 """
@@ -100,7 +119,6 @@ class MemoryVault:
                 );
                 """
             )
-            # Create FTS triggers for automatic sync
             conn.execute(
                 """
                 CREATE TRIGGER IF NOT EXISTS episodes_ai AFTER INSERT ON episodes BEGIN
@@ -118,7 +136,6 @@ class MemoryVault:
                 """
             )
         except Exception:
-            # Fallback if FTS5 is compiled out in legacy environments
             pass
 
         conn.commit()
@@ -172,6 +189,7 @@ class MemoryVault:
         rule_text: str,
         ast_fingerprint: str = "",
         confidence_score: float = 1.0,
+        strength_days: float = 30.0,
     ) -> int:
         now = datetime.now(timezone.utc).isoformat()
         conn = self._get_connection()
@@ -180,13 +198,35 @@ class MemoryVault:
             cursor.execute(
                 """
                 INSERT INTO heuristics (
-                    category, pattern, rule_text, ast_fingerprint, confidence_score, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                    category, pattern, rule_text, ast_fingerprint, confidence_score, strength_days, last_reinforced_at, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (category, pattern, rule_text, ast_fingerprint, confidence_score, now),
+                (category, pattern, rule_text, ast_fingerprint, confidence_score, strength_days, now, now),
             )
             conn.commit()
             return cursor.lastrowid or 0
+        finally:
+            if self._persistent_conn is None:
+                conn.close()
+
+    def reinforce_heuristic(self, heuristic_id: int) -> bool:
+        """Strengthens heuristic memory under repetition (increasing strength S)."""
+        now = datetime.now(timezone.utc).isoformat()
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                UPDATE heuristics
+                SET strength_days = strength_days * 1.5,
+                    last_reinforced_at = ?,
+                    confidence_score = MIN(1.0, confidence_score + 0.05)
+                WHERE id = ?
+                """,
+                (now, heuristic_id),
+            )
+            conn.commit()
+            return cursor.rowcount > 0
         finally:
             if self._persistent_conn is None:
                 conn.close()
@@ -195,7 +235,6 @@ class MemoryVault:
         """Runs SQLite3 FTS5 full-text search with BM25 ranking."""
         conn = self._get_connection()
         try:
-            # Sanitize FTS5 query string
             sanitized = " OR ".join([f'"{w}"' for w in query.replace('"', "").split() if len(w) > 2])
             if not sanitized:
                 return []
@@ -233,16 +272,16 @@ class MemoryVault:
                 conn.close()
 
     def get_by_ast_fingerprint(self, fingerprint: str) -> List[HeuristicRule]:
-        """Finds heuristics with identical normalized AST structural fingerprint."""
+        """Finds heuristics with identical normalized AST structural fingerprint, sorted by effective confidence."""
         if not fingerprint:
             return []
         conn = self._get_connection()
         try:
             rows = conn.execute(
-                "SELECT * FROM heuristics WHERE ast_fingerprint = ? ORDER BY confidence_score DESC",
+                "SELECT * FROM heuristics WHERE ast_fingerprint = ?",
                 (fingerprint,),
             ).fetchall()
-            return [
+            rules = [
                 HeuristicRule(
                     id=r["id"],
                     category=r["category"],
@@ -250,10 +289,14 @@ class MemoryVault:
                     rule_text=r["rule_text"],
                     ast_fingerprint=r["ast_fingerprint"],
                     confidence_score=r["confidence_score"],
+                    strength_days=r["strength_days"] if "strength_days" in r.keys() else 30.0,
+                    last_reinforced_at=r["last_reinforced_at"] if "last_reinforced_at" in r.keys() else "",
                     created_at=r["created_at"],
                 )
                 for r in rows
             ]
+            rules.sort(key=lambda x: x.effective_confidence, reverse=True)
+            return rules
         finally:
             if self._persistent_conn is None:
                 conn.close()
@@ -284,8 +327,8 @@ class MemoryVault:
     def get_all_heuristics(self) -> List[HeuristicRule]:
         conn = self._get_connection()
         try:
-            rows = conn.execute("SELECT * FROM heuristics ORDER BY confidence_score DESC").fetchall()
-            return [
+            rows = conn.execute("SELECT * FROM heuristics").fetchall()
+            rules = [
                 HeuristicRule(
                     id=r["id"],
                     category=r["category"],
@@ -293,10 +336,14 @@ class MemoryVault:
                     rule_text=r["rule_text"],
                     ast_fingerprint=r["ast_fingerprint"],
                     confidence_score=r["confidence_score"],
+                    strength_days=r["strength_days"] if "strength_days" in r.keys() else 30.0,
+                    last_reinforced_at=r["last_reinforced_at"] if "last_reinforced_at" in r.keys() else "",
                     created_at=r["created_at"],
                 )
                 for r in rows
             ]
+            rules.sort(key=lambda x: x.effective_confidence, reverse=True)
+            return rules
         finally:
             if self._persistent_conn is None:
                 conn.close()

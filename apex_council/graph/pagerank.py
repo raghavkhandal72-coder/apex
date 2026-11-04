@@ -1,10 +1,12 @@
-"""Directed graph construction and power-iteration Personalized PageRank engine.
-Pure Python standard library implementation.
+"""Directed graph construction, power-iteration Personalized PageRank, and Git Churn weighting.
+Pure Python standard library implementation with zero external dependencies.
 """
 
 from __future__ import annotations
 
 import math
+import subprocess
+from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
 
@@ -31,6 +33,58 @@ class PageRankGraph:
         self.add_node(target)
         self.out_edges[source][target] = self.out_edges[source].get(target, 0.0) + weight
         self.in_edges[target][source] = self.in_edges[target].get(source, 0.0) + weight
+
+    def apply_git_churn_and_cochange(
+        self,
+        repo_dir: Path | str,
+        max_commits: int = 100,
+    ) -> Dict[str, float]:
+        """Extracts Git commit churn and co-change frequencies to weight nodes and edges.
+        Returns: Dict[filepath, churn_multiplier]
+        """
+        churn_weights: Dict[str, float] = {}
+        try:
+            res = subprocess.run(
+                ["git", "-C", str(repo_dir), "log", f"-n{max_commits}", "--name-only", "--pretty=format:COMMIT_SEP"],
+                capture_output=True,
+                text=True,
+                check=False,
+                encoding="utf-8",
+                errors="replace",
+            )
+            if res.returncode != 0:
+                return {}
+
+            commits_raw = res.stdout.split("COMMIT_SEP")
+            co_changes: Dict[Tuple[str, str], int] = {}
+            file_counts: Dict[str, int] = {}
+
+            for commit in commits_raw:
+                files = [f.strip().replace("\\", "/") for f in commit.splitlines() if f.strip() and not f.startswith("COMMIT_SEP")]
+                unique_files = list(set(files))
+                for f in unique_files:
+                    file_counts[f] = file_counts.get(f, 0) + 1
+
+                for i in range(len(unique_files)):
+                    for j in range(i + 1, len(unique_files)):
+                        fa, fb = unique_files[i], unique_files[j]
+                        co_changes[(fa, fb)] = co_changes.get((fa, fb), 0) + 1
+                        co_changes[(fb, fa)] = co_changes.get((fb, fa), 0) + 1
+
+            # Apply co-change edge boosts
+            for (fa, fb), count in co_changes.items():
+                if fa in self.nodes and fb in self.nodes:
+                    boost = math.log1p(count)
+                    self.add_edge(fa, fb, weight=boost)
+
+            # Calculate churn multipliers for nodes
+            for f, count in file_counts.items():
+                churn_weights[f] = 1.0 + math.log1p(count)
+
+        except Exception:
+            pass
+
+        return churn_weights
 
     def compute_pagerank(
         self,

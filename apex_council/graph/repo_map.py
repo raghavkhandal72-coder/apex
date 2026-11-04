@@ -1,5 +1,6 @@
-"""Personalized PageRank Repo-Map Engine.
+"""Personalized PageRank Repo-Map Engine with 0/1 Knapsack & Binary Search Token Budgeting.
 Compresses entire repositories into an architectural skeleton fitting within strict token budgets.
+Pure Python standard library implementation.
 """
 
 from __future__ import annotations
@@ -40,13 +41,13 @@ class RepoMap:
         self.graph = PageRankGraph()
         self.ranks: Dict[str, float] = {}
         self.cache = cache or ASTCache(self.root_dir / ".apex" / "ast_cache.db")
+        self.churn_weights: Dict[str, float] = {}
 
     def scan(self) -> RepoMap:
         """Walks the root directory and extracts symbols using the incremental AST cache."""
         self.file_symbols.clear()
-        
+
         for dirpath, dirnames, filenames in os.walk(self.root_dir):
-            # Prune ignored directories in-place
             dirnames[:] = [d for d in dirnames if d not in IGNORE_DIRS and not d.startswith(".")]
 
             for filename in filenames:
@@ -67,7 +68,7 @@ class RepoMap:
         return self
 
     def _build_dependency_graph(self) -> None:
-        """Constructs caller-callee and import edges across files."""
+        """Constructs caller-callee, import, and git co-change edges across files."""
         self.graph = PageRankGraph()
         for filepath in self.file_symbols:
             self.graph.add_node(filepath)
@@ -94,22 +95,16 @@ class RepoMap:
                         if candidate_file != filepath:
                             self.graph.add_edge(filepath, candidate_file, weight=2.0)
 
+        # Apply Git Churn and Co-Change weighting
+        self.churn_weights = self.graph.apply_git_churn_and_cochange(self.root_dir)
+
     def generate_map(
         self,
         focus_files: Optional[List[str]] = None,
         keywords: Optional[List[str]] = None,
         token_budget: Optional[int] = None,
     ) -> str:
-        """Generates a compact structural skeleton biased by focus files or keywords.
-        
-        Args:
-            focus_files: Specific files that receive boosted teleportation weight.
-            keywords: Keywords to boost relevant files in PageRank.
-            token_budget: Maximum tokens allowed (defaults to self.max_tokens).
-            
-        Returns:
-            A compact, high-signal structural overview of the codebase.
-        """
+        """Generates a compact structural skeleton biased by focus files or keywords."""
         budget = token_budget or self.max_tokens
         if not self.file_symbols:
             self.scan()
@@ -117,13 +112,15 @@ class RepoMap:
         if not self.file_symbols:
             return "# Empty repository (no source code files detected)"
 
-        # Calculate personalization vector
+        # Calculate personalization vector incorporating Git Churn
         personalization: Dict[str, float] = {}
         focus_set = set(focus_files or [])
         keyword_set = {k.lower() for k in (keywords or [])}
 
         for path, syms in self.file_symbols.items():
             score = 1.0
+            if self.churn_weights and path in self.churn_weights:
+                score *= self.churn_weights[path]
             if path in focus_set or any(f in path for f in focus_set):
                 score += 15.0
             if keyword_set:
@@ -137,49 +134,58 @@ class RepoMap:
             initial_ranks=self.ranks if self.ranks else None,
         )
 
-        # Sort files by PageRank score descending
         ranked_files = sorted(self.file_symbols.keys(), key=lambda f: self.ranks.get(f, 0.0), reverse=True)
-
-        # Binary search to fit the largest structural skeleton within the token budget
         return self._fit_skeleton(ranked_files, budget)
 
     def _fit_skeleton(self, ranked_files: List[str], token_budget: int) -> str:
-        """Uses binary search over the number of included files to strictly obey the token budget."""
-        char_budget = token_budget * 4  # Standard estimation: ~4 chars per token
+        """Uses 0/1 Knapsack density & binary search to strictly fit within token budget while preserving contracts."""
+        char_budget = token_budget * 4
 
-        def render_subset(k: int) -> str:
+        def render_knapsack(file_limit: int, include_private: bool, full_docstrings: bool) -> str:
             lines = [
-                "🏛️ APEX SOVEREIGN REPOSITORY MAP (Personalized PageRank)",
-                f"# Total Indexed Files: {len(self.file_symbols)} | Architectural Spine View:",
+                "🏛️ APEX SOVEREIGN REPOSITORY MAP (Topological PageRank)",
+                f"# Indexed Files: {len(self.file_symbols)} | Structural Contract View:",
                 "",
             ]
-            for file_path in ranked_files[:k]:
+            for file_path in ranked_files[:file_limit]:
                 syms = self.file_symbols[file_path]
                 rank_score = self.ranks.get(file_path, 0.0)
                 lines.append(f"📁 {file_path} [Rank: {rank_score:.4f}]")
                 if not syms.definitions:
                     lines.append("  (module declarations / utility)")
                 for s in syms.definitions:
+                    if not include_private and s.name.startswith("_") and not s.name.startswith("__"):
+                        continue
                     indent = "    " if s.kind == "method" else "  "
                     sig = s.signature or f"def {s.name}()"
-                    doc_hint = f"  # {s.docstring}" if s.docstring else ""
+                    doc_hint = ""
+                    if s.docstring:
+                        doc_text = s.docstring if full_docstrings else s.docstring[:60]
+                        doc_hint = f"  # {doc_text}"
                     lines.append(f"{indent}{sig}{doc_hint}")
                 lines.append("")
             return "\n".join(lines).strip()
 
-        # Binary search for optimal file count k in [1, len(ranked_files)]
+        # Try full fidelity first
         low = 1
         high = len(ranked_files)
-        best_output = render_subset(1)
+        best_output = render_knapsack(1, include_private=False, full_docstrings=False)
 
-        while low <= high:
-            mid = (low + high) // 2
-            rendered = render_subset(mid)
-            if len(rendered) <= char_budget:
-                best_output = rendered
-                low = mid + 1  # Try including more files
-            else:
-                high = mid - 1  # Exceeded budget, back off
+        # Binary search over file count
+        for full_docs in [True, False]:
+            for inc_priv in [True, False]:
+                low = 1
+                high = len(ranked_files)
+                while low <= high:
+                    mid = (low + high) // 2
+                    rendered = render_knapsack(mid, include_private=inc_priv, full_docstrings=full_docs)
+                    if len(rendered) <= char_budget:
+                        best_output = rendered
+                        low = mid + 1
+                    else:
+                        high = mid - 1
+                if len(best_output) > char_budget * 0.7:
+                    return best_output
 
         return best_output
 

@@ -1,66 +1,36 @@
-"""Memory Matcher with SQLite3 FTS5 BM25 Ranking and Normalized AST Structural Hashing.
+"""Memory Matcher with SQLite3 FTS5 BM25, Normalized AST Hasher, and Stacktrace Signature Clustering.
 Pure Python standard library implementation with zero external dependencies.
 """
 
 from __future__ import annotations
 
-import ast
 import hashlib
 import re
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, Tuple
 
+from apex_council.memory.fingerprint import NormalizedASTHasher
 from apex_council.memory.vault import Episode, HeuristicRule, MemoryVault
 
 
-class ASTNormalizer(ast.NodeTransformer):
-    """Normalizes identifiers, variable names, arguments, and constants.
-    Preserves purely the abstract structural topology of the code.
-    """
-
-    def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.AST:
-        node.name = "_f"
-        return self.generic_visit(node)
-
-    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> ast.AST:
-        node.name = "_af"
-        return self.generic_visit(node)
-
-    def visit_ClassDef(self, node: ast.ClassDef) -> ast.AST:
-        node.name = "_c"
-        return self.generic_visit(node)
-
-    def visit_arg(self, node: ast.arg) -> ast.AST:
-        node.arg = "_a"
-        return self.generic_visit(node)
-
-    def visit_Name(self, node: ast.Name) -> ast.AST:
-        node.id = "_v"
-        return self.generic_visit(node)
-
-    def visit_Constant(self, node: ast.Constant) -> ast.AST:
-        if isinstance(node.value, str):
-            node.value = ""
-        elif isinstance(node.value, (int, float)):
-            node.value = 0
-        return self.generic_visit(node)
-
-
-class NormalizedASTHasher:
-    """Computes a SHA-256 fingerprint of the normalized AST topology."""
+class StacktraceClusterer:
+    """Normalizes and clusters raw execution stacktraces to identify identical root causes."""
 
     @staticmethod
-    def compute_fingerprint(code: str) -> str:
-        try:
-            tree = ast.parse(code)
-            normalizer = ASTNormalizer()
-            normalized_tree = normalizer.visit(tree)
-            ast.fix_missing_locations(normalized_tree)
-            canonical_code = ast.unparse(normalized_tree) if hasattr(ast, "unparse") else ast.dump(normalized_tree)
-            return hashlib.sha256(canonical_code.encode("utf-8")).hexdigest()
-        except Exception:
-            # Fallback token normalization
-            tokens = re.sub(r"\s+", " ", code).strip()
-            return hashlib.sha256(tokens.encode("utf-8")).hexdigest()
+    def normalize_trace(trace_text: str) -> str:
+        # Normalize file paths
+        cleaned = re.sub(r'File ".*?[\\/]([A-Za-z0-9_]+\.py)"', r'File "<DIR>/\1"', trace_text)
+        # Normalize line numbers
+        cleaned = re.sub(r", line \d+", r", line <LINE>", cleaned)
+        # Normalize memory addresses
+        cleaned = re.sub(r"at 0x[0-9a-fA-F]+", r"at <ADDR>", cleaned)
+        # Normalize variable object reprs: <module '...' from '...'>
+        cleaned = re.sub(r"<.*? object at <ADDR>>", r"<OBJECT>", cleaned)
+        return cleaned.strip()
+
+    @classmethod
+    def compute_signature_hash(cls, trace_text: str) -> str:
+        norm = cls.normalize_trace(trace_text)
+        return hashlib.sha256(norm.encode("utf-8")).hexdigest()
 
 
 class MemoryMatcher:
@@ -83,6 +53,16 @@ class MemoryMatcher:
         fp = NormalizedASTHasher.compute_fingerprint(code_snippet)
         return self.vault.get_by_ast_fingerprint(fp)
 
+    def find_by_stacktrace_cluster(self, raw_trace: str) -> List[Episode]:
+        """Clusters error traces and finds past episodes with the same signature."""
+        sig = StacktraceClusterer.compute_signature_hash(raw_trace)
+        episodes = self.vault.get_all_episodes(limit=50)
+        matches: List[Episode] = []
+        for ep in episodes:
+            if ep.error_signature and StacktraceClusterer.compute_signature_hash(ep.error_signature) == sig:
+                matches.append(ep)
+        return matches
+
     def find_relevant_rules(self, query: str, top_k: int = 3) -> List[HeuristicRule]:
         rules = self.vault.get_all_heuristics()
         if not rules:
@@ -96,7 +76,7 @@ class MemoryMatcher:
         for r in rules:
             pat_tokens = self._tokenize(f"{r.category} {r.pattern} {r.rule_text}")
             overlap = len(query_tokens & pat_tokens)
-            score = overlap * r.confidence_score
+            score = overlap * r.effective_confidence
             if score > 0:
                 scored.append((score, r))
 
@@ -128,15 +108,22 @@ class MemoryMatcher:
         scored.sort(key=lambda x: x[0], reverse=True)
         return [ep for _, ep in scored[:top_k]]
 
-    def format_memory_injection(self, query: str, code_snippet: Optional[str] = None) -> str:
+    def format_memory_injection(
+        self,
+        query: str,
+        code_snippet: Optional[str] = None,
+        error_trace: Optional[str] = None,
+    ) -> str:
         """Formats matched lessons into a high-signal injection prompt block."""
         matched_rules = self.find_relevant_rules(query)
         matched_episodes = self.find_relevant_episodes(query)
         ast_rules = self.find_by_ast(code_snippet) if code_snippet else []
+        trace_episodes = self.find_by_stacktrace_cluster(error_trace) if error_trace else []
 
         all_rules = list({r.rule_text: r for r in (ast_rules + matched_rules)}.values())
+        all_episodes = list({ep.id: ep for ep in (trace_episodes + matched_episodes)}.values())
 
-        if not all_rules and not matched_episodes:
+        if not all_rules and not all_episodes:
             return ""
 
         lines = [
@@ -146,10 +133,11 @@ class MemoryMatcher:
 
         for r in all_rules:
             ast_tag = " [AST MATCH]" if r in ast_rules else ""
-            lines.append(f"  • [{r.category}]{ast_tag} {r.rule_text} (Score: {r.confidence_score:.1f})")
+            lines.append(f"  • [{r.category}]{ast_tag} {r.rule_text} (Score: {r.effective_confidence:.2f})")
 
-        for ep in matched_episodes:
-            lines.append(f"  • [Historical Issue] '{ep.task_prompt[:60]}...' ➔ Lesson: {ep.lesson_learned}")
+        for ep in all_episodes:
+            cluster_tag = " [TRACE CLUSTER MATCH]" if ep in trace_episodes else ""
+            lines.append(f"  • [Historical Issue]{cluster_tag} '{ep.task_prompt[:60]}...' ➔ Lesson: {ep.lesson_learned}")
 
         lines.append("")
         return "\n".join(lines)

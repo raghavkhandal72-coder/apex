@@ -1,15 +1,14 @@
-"""AST and heuristic symbol parser for Python and multi-language repositories.
-Extracts definitions, references, and import relationships without external dependencies.
+"""AST Symbol, Call-Graph, Def-Use Chain & Exception Propagation extractor.
+Pure Python standard library implementation with zero external dependencies.
 """
 
 from __future__ import annotations
 
 import ast
-import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, Tuple
 
 
 @dataclass
@@ -22,11 +21,27 @@ class Symbol:
 
 
 @dataclass
+class DefUseRecord:
+    variable: str
+    def_line: int
+    use_lines: List[int] = field(default_factory=list)
+
+
+@dataclass
+class ExceptionFlow:
+    raised_exceptions: List[Tuple[str, int]] = field(default_factory=list)  # (exc_name, line)
+    handled_exceptions: List[Tuple[str, int]] = field(default_factory=list)  # (exc_name, line)
+
+
+@dataclass
 class FileSymbols:
     filepath: str
     definitions: List[Symbol] = field(default_factory=list)
     references: Set[str] = field(default_factory=set)
     imports: Set[str] = field(default_factory=set)
+    call_graph: Dict[str, List[str]] = field(default_factory=dict)  # caller_symbol -> [callee_symbols]
+    def_use_chains: List[DefUseRecord] = field(default_factory=list)
+    exception_flow: ExceptionFlow = field(default_factory=ExceptionFlow)
 
     @property
     def defined_names(self) -> Set[str]:
@@ -34,20 +49,23 @@ class FileSymbols:
 
 
 class SymbolParser:
-    """Parses code files to discover definitions and cross-file references."""
+    """Extracts symbols, caller-callee relationships, def-use chains, and exception propagation."""
 
     @staticmethod
     def parse_python_source(source_code: str, filepath: str = "") -> FileSymbols:
-        """Extracts classes, functions, signatures, docstrings, imports, and references using AST."""
         file_syms = FileSymbols(filepath=filepath)
         try:
             tree = ast.parse(source_code)
         except Exception:
             return file_syms
 
-        class DefinitionVisitor(ast.NodeVisitor):
+        current_caller: Optional[str] = None
+        current_class: Optional[str] = None
+        var_defs: Dict[str, DefUseRecord] = {}
+
+        class AdvancedVisitor(ast.NodeVisitor):
             def __init__(self) -> None:
-                self.current_class: Optional[str] = None
+                super().__init__()
 
             def visit_Import(self, node: ast.Import) -> None:
                 for alias in node.names:
@@ -64,11 +82,12 @@ class SymbolParser:
                 self.generic_visit(node)
 
             def visit_ClassDef(self, node: ast.ClassDef) -> None:
+                nonlocal current_class
                 doc = ast.get_docstring(node) or ""
                 doc_summary = doc.strip().splitlines()[0] if doc else ""
                 bases = [ast.unparse(b) for b in node.bases] if hasattr(ast, "unparse") else []
                 sig = f"class {node.name}({', '.join(bases)}):" if bases else f"class {node.name}:"
-                
+
                 file_syms.definitions.append(
                     Symbol(
                         name=node.name,
@@ -78,24 +97,24 @@ class SymbolParser:
                         docstring=doc_summary,
                     )
                 )
-                prev_class = self.current_class
-                self.current_class = node.name
+                prev_class = current_class
+                current_class = node.name
                 self.generic_visit(node)
-                self.current_class = prev_class
+                current_class = prev_class
 
             def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-                self._handle_func(node, is_async=False)
+                self._handle_function(node, is_async=False)
 
             def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
-                self._handle_func(node, is_async=True)
+                self._handle_function(node, is_async=True)
 
-            def _handle_func(self, node: ast.AST, is_async: bool) -> None:
-                fn_node = node  # type: ignore[assignment]
+            def _handle_function(self, node: ast.AST, is_async: bool) -> None:
+                nonlocal current_caller
+                fn_node: ast.FunctionDef = node  # type: ignore[assignment]
                 doc = ast.get_docstring(fn_node) or ""
                 doc_summary = doc.strip().splitlines()[0] if doc else ""
                 prefix = "async def " if is_async else "def "
-                
-                # Format arguments
+
                 args_list = []
                 for a in fn_node.args.args:
                     arg_str = a.arg
@@ -107,7 +126,9 @@ class SymbolParser:
                     ret_str = f" -> {ast.unparse(fn_node.returns)}"
                 sig = f"{prefix}{fn_node.name}({', '.join(args_list)}){ret_str}"
 
-                kind = "method" if self.current_class else "function"
+                kind = "method" if current_class else "function"
+                full_name = f"{current_class}.{fn_node.name}" if current_class else fn_node.name
+
                 file_syms.definitions.append(
                     Symbol(
                         name=fn_node.name,
@@ -117,19 +138,65 @@ class SymbolParser:
                         docstring=doc_summary,
                     )
                 )
+
+                prev_caller = current_caller
+                current_caller = full_name
+                if full_name not in file_syms.call_graph:
+                    file_syms.call_graph[full_name] = []
+
+                self.generic_visit(node)
+                current_caller = prev_caller
+
+            def visit_Call(self, node: ast.Call) -> None:
+                callee_name = ""
+                if isinstance(node.func, ast.Name):
+                    callee_name = node.func.id
+                elif isinstance(node.func, ast.Attribute):
+                    callee_name = node.func.attr
+
+                if callee_name:
+                    file_syms.references.add(callee_name)
+                    if current_caller:
+                        file_syms.call_graph[current_caller].append(callee_name)
+
+                self.generic_visit(node)
+
+            def visit_Assign(self, node: ast.Assign) -> None:
+                for target in node.targets:
+                    if isinstance(target, ast.Name):
+                        var_defs[target.id] = DefUseRecord(variable=target.id, def_line=node.lineno)
                 self.generic_visit(node)
 
             def visit_Name(self, node: ast.Name) -> None:
                 if isinstance(node.ctx, ast.Load):
                     file_syms.references.add(node.id)
+                    if node.id in var_defs:
+                        var_defs[node.id].use_lines.append(getattr(node, "lineno", 0))
                 self.generic_visit(node)
 
-            def visit_Attribute(self, node: ast.Attribute) -> None:
-                file_syms.references.add(node.attr)
+            def visit_Raise(self, node: ast.Raise) -> None:
+                exc_name = "Exception"
+                if node.exc:
+                    if isinstance(node.exc, ast.Name):
+                        exc_name = node.exc.id
+                    elif isinstance(node.exc, ast.Call) and isinstance(node.exc.func, ast.Name):
+                        exc_name = node.exc.func.id
+                file_syms.exception_flow.raised_exceptions.append((exc_name, node.lineno))
                 self.generic_visit(node)
 
-        visitor = DefinitionVisitor()
+            def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
+                handled_name = "Exception"
+                if node.type:
+                    if isinstance(node.type, ast.Name):
+                        handled_name = node.type.id
+                    elif hasattr(ast, "unparse"):
+                        handled_name = ast.unparse(node.type)
+                file_syms.exception_flow.handled_exceptions.append((handled_name, node.lineno))
+                self.generic_visit(node)
+
+        visitor = AdvancedVisitor()
         visitor.visit(tree)
+        file_syms.def_use_chains = list(var_defs.values())
         return file_syms
 
     @staticmethod
@@ -138,7 +205,6 @@ class SymbolParser:
         file_syms = FileSymbols(filepath=filepath)
         lines = source_code.splitlines()
 
-        # Regex patterns
         class_pattern = re.compile(r"^\s*(?:export\s+)?(?:default\s+)?(?:class|struct|interface|type)\s+([A-Za-z0-9_]+)")
         func_pattern = re.compile(r"^\s*(?:export\s+)?(?:async\s+)?(?:function|def|fn|func)\s+([A-Za-z0-9_]+)\s*\(")
         import_pattern = re.compile(r"""(?:import|require|from)\s+['"]([^'"]+)['"]""")
@@ -159,7 +225,6 @@ class SymbolParser:
             for imp in import_pattern.findall(line):
                 file_syms.imports.add(imp)
 
-            # Collect identifier references
             words = re.findall(r"\b[A-Za-z_][A-Za-z0-9_]{2,}\b", line)
             for w in words:
                 file_syms.references.add(w)
