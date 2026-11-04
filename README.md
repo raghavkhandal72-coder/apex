@@ -4,9 +4,10 @@
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Self-Healing](https://img.shields.io/badge/Self--Healing-Closed--Loop%20Repair-blue.svg)]()
 [![MCP Server](https://img.shields.io/badge/MCP-Standard%20Protocol-purple.svg)]()
-[![Web Dashboard](https://img.shields.io/badge/Web%20Studio-Included-brightgreen.svg)]()
-[![Tests](https://img.shields.io/badge/tests-7%20passing-brightgreen.svg)]()
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)]()
+[![Tests](https://img.shields.io/badge/tests-9%20passing-brightgreen.svg)]()
 
 ---
 
@@ -14,7 +15,7 @@
 
 Frontier AI providers constantly debate who writes the best code:
 * **Google Gemini** dominates in massive context reasoning, multimodal ingestion, and raw latency.
-* **Anthropic Claude** is praised for defensive architectural design and boundary safety.
+* **Anthropic Claude** is revered for defensive architectural design and boundary safety.
 * **OpenAI (GPT-4o / o1)** excels at concise algorithmic logic and strict formatting.
 
 Yet in production, **isolated models make critical mistakes**—leaving open command injections (CWE-78), path traversals (CWE-22), or race conditions.
@@ -24,9 +25,12 @@ Yet in production, **isolated models make critical mistakes**—leaving open com
 2. 🔍 **Cross-Critique Matrix:** Each model acts as an adversarial peer reviewer auditing rivals' code.
 3. 🛡️ **Automated Verification Gate:** AST security analysis, sandboxed subprocess runtime execution, and hostile red-team fuzzing.
 4. ✨ **Consensus Synthesizer:** Merges the winning architecture with peer-reviewed patches to produce flaw-free production code.
-5. 🔌 **Model Context Protocol (MCP) Server:** Plug Apex-Council directly into **Claude Code, Cursor, Windsurf, or Claude Desktop**.
-6. 🌿 **Pre-Commit Git Diff Review:** Automatically audits your uncommitted working tree before you push.
-7. 🏆 **SWE Benchmark Tournament:** Built-in 5-challenge leaderboard testing concurrency, cryptography, memory safety, and distributed locks.
+5. 🩺 **Autonomous Closed-Loop Self-Healing:** Catches runtime tracebacks and compiler errors, auto-repairs code on disk, and iterates until 100% green.
+6. 🐙 **Live GitHub PR Reviews:** Pull and review any public/private Pull Request with one command (`apex-council pr owner/repo#123`).
+7. 🔌 **Model Context Protocol (MCP) Server:** Plug Apex-Council directly into **Claude Code, Cursor, Windsurf, or Claude Desktop**.
+8. 🌿 **Pre-Commit Git Diff Review:** Automatically audits your uncommitted working tree before you push.
+9. 🏆 **SWE Benchmark Tournament:** Built-in 5-challenge leaderboard testing concurrency, cryptography, memory safety, and distributed locks.
+10. 🌐 **Polyglot & Container-Ready:** Works across Python, TypeScript, Go, Rust, and ships with zero-config `Dockerfile` and `docker-compose.yml`.
 
 ---
 
@@ -56,12 +60,14 @@ python -m apex_council "Write an authenticated FastAPI rate-limiter"
 
 ---
 
-## 💻 CLI Command Suite
+## 💻 Flagship CLI Command Suite
 
 | Command | Description |
 | :--- | :--- |
 | `apex-council "prompt"` | Run head-to-head battle across Gemini, Claude, and OpenAI |
-| `apex-council diff` | Audit uncommitted local Git diff for security regressions |
+| `apex-council heal <file>` | **Autonomous Self-Healing Loop:** Auto-fix compiler & runtime errors on disk |
+| `apex-council pr <url|repo#pr>` | **Live GitHub PR Review:** Fetch diff & generate comprehensive review |
+| `apex-council diff` | Pre-commit audit of uncommitted local Git diff |
 | `apex-council redteam <file>` | Fuzz and stress-test code with hostile injection payloads |
 | `apex-council benchmark` | Run the 5-Challenge SWE Tournament and show the Leaderboard |
 | `apex-council audit <file>` | Audit, benchmark, and auto-refactor an existing codebase file |
@@ -69,6 +75,37 @@ python -m apex_council "Write an authenticated FastAPI rate-limiter"
 | `apex-council serve` | Launch the local Cyberpunk dark-mode Web Dashboard |
 | `apex-council mcp` | Start standard Model Context Protocol (stdio) server |
 | `apex-council init-ci` | Generate GitHub Actions PR review workflow |
+
+---
+
+## 🩺 Autonomous Closed-Loop Self-Healing
+
+Point Apex-Council at any broken code file:
+
+```bash
+python -m apex_council heal src/broken_service.py --tests "python -m unittest test_service.py"
+```
+
+The Supreme Council will:
+1. Capture the exact traceback / compiler error.
+2. Convene Gemini, Claude, and OpenAI with the error context.
+3. Apply candidate fixes in an isolated sandbox.
+4. Re-run tests iteratively until 100% test pass rate and clean security score are achieved.
+5. Overwrite the healed file atomically with zero data loss!
+
+---
+
+## 🐙 Live GitHub Pull Request Reviewer
+
+Review any open Pull Request directly from your terminal:
+
+```bash
+# Via GitHub URL
+python -m apex_council pr https://github.com/pallets/flask/pull/5000
+
+# Or via shorthand
+python -m apex_council pr django/django#17000
+```
 
 ---
 
@@ -99,48 +136,13 @@ Now inside Claude or Cursor, simply ask:
 
 ---
 
-## 🏆 SWE Benchmark Leaderboard
+## 🐳 Docker Deployment
 
-Run the tournament on your own machine:
-
-```bash
-python -m apex_council benchmark
-```
-
-```text
-==========================================================================
-   🏆 APEX-COUNCIL SWE BENCHMARK LEADERBOARD (5 Production Challenges)   
-==========================================================================
-Rank  | Model Provider         | Wins   | Avg Score    | Security   | Latency
---------------------------------------------------------------------------
-🥇 1st | Google Gemini          | 5      | 97.2         | 100.0%     | 170.1 ms
-🥈 2nd | Anthropic Claude       | 0      | 97.2         | 100.0%     | 182.1 ms
-🥉 3rd | OpenAI / Microsoft     | 0      | 97.2         | 100.0%     | 111.3 ms
---------------------------------------------------------------------------
-```
-
----
-
-## 🌿 Pre-Commit Git Diff Review
-
-Prevent bad code and security holes from ever reaching GitHub:
+Run the complete Council studio with Docker in one command:
 
 ```bash
-# Audit working changes before commit
-python -m apex_council diff
-
-# Audit only staged changes
-python -m apex_council diff --staged
-```
-
----
-
-## ⚔️ Adversarial Red-Team Fuzzing
-
-Subject your code to hostile adversarial attack vectors (Null bytes, command chaining, path traversal, memory bloat):
-
-```bash
-python -m apex_council redteam src/auth_service.py
+docker-compose up --build
+# Open http://localhost:8080
 ```
 
 ---

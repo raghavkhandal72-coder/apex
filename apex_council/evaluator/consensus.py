@@ -33,8 +33,11 @@ def synthesize_consensus(
     patched_code = re.sub(r"except:\s*$", "except Exception as exc:", patched_code, flags=re.MULTILINE)
 
     # Header documentation reflecting the Council consensus
+    clean_task_summary = task_prompt.strip().splitlines()[0] if task_prompt else "General Code Task"
+    clean_task_summary = clean_task_summary.replace('"""', "'''")[:120]
+
     header = f'''"""Apex-Council Synthesized Implementation
-Task: {task_prompt}
+Task: {clean_task_summary}
 Winning Foundation: {winner.value} ({winning_sub.model_name})
 Peer-Reviewed By: Google Gemini, Anthropic Claude, and OpenAI
 Security Audit: Flaws remediated, Type-safe, Zero-vulnerability standard.
