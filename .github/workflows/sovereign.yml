@@ -1,0 +1,42 @@
+name: Apex-Sovereign CI Matrix
+
+on:
+  push:
+    branches: [ main, master, dev ]
+  pull_request:
+    branches: [ main, master, dev ]
+
+jobs:
+  test-matrix:
+    name: Test (${{ matrix.os }} - Py ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        python-version: [ "3.10", "3.11", "3.12", "3.13" ]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run Full Test Suite (Zero Pip Installs Required)
+        run: |
+          python -m unittest discover -s tests -v
+
+      - name: Run Self-Benchmark Ablation Suite
+        run: |
+          python benchmarks/run_ablation.py
+
+      - name: Run Flight Recorder Replay Verification
+        run: |
+          python -m apex_council demo --replay --fast
+
+      - name: Verify Cryptographic Hash-Chained Audit Ledger
+        run: |
+          python -m apex_council verify-ledger

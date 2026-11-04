@@ -14,16 +14,25 @@ from .evaluator.git_review import review_git_diff
 from .evaluator.github_pr import review_github_pr
 from .evaluator.redteam import run_redteam_analysis
 from .evaluator.self_healing import SelfHealingLoop
+from .graph.repo_map import RepoMap
 from .mcp_server import ApexCouncilMCPServer
+from .memory.matcher import MemoryMatcher
+from .memory.vault import MemoryVault
 from .polyglot import detect_language, get_language_prompt_guidelines
 from .reporter import CouncilReporter
+from .security.ledger import CryptographicLedger
+from .swarm.coordinator import SwarmCoordinator
+from .ui.replay import FlightRecorderReplay
+from .ui.terminal import CyberpunkTUI
 from .web.server import run_server
 
 
 KNOWN_COMMANDS = {
     "battle", "engineer", "solve", "heal", "pr", "audit", "relay",
     "serve", "mcp", "diff", "redteam", "benchmark", "audit-verify",
-    "dlp-test", "policy-check", "init-ci", "-h", "--help"
+    "dlp-test", "policy-check", "init-ci", "repomap", "swarm", "memory",
+    "demo", "verify-ledger",
+    "-h", "--help"
 }
 
 
@@ -125,6 +134,33 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     # Command 16: Init CI Workflow
     ci_parser = subparsers.add_parser("init-ci", help="Generate GitHub Actions PR workflow file")
 
+    # Command 17: Personalized PageRank Repo-Map Engine
+    repomap_parser = subparsers.add_parser("repomap", help="Generate Personalized PageRank repository structural map")
+    repomap_parser.add_argument("repo", nargs="?", default=".", type=Path, help="Target repository directory (default: current directory)")
+    repomap_parser.add_argument("--tokens", type=int, default=1024, help="Token budget for structural skeleton (default: 1024)")
+    repomap_parser.add_argument("--focus", help="Comma-separated files to prioritize in PageRank")
+
+    # Command 18: Autonomous 5-Role SWE Swarm
+    swarm_parser = subparsers.add_parser("swarm", help="Autonomous 5-Role SWE Swarm: Architect -> Speculator (TDD) -> MCTS Search -> Gatekeeper")
+    swarm_parser.add_argument("task", help="Software engineering task specification or bug description")
+    swarm_parser.add_argument("--repo", type=Path, default=Path("."), help="Target repository directory (default: current directory)")
+    swarm_parser.add_argument("--iters", type=int, default=4, help="MCTS tree search iterations (default: 4)")
+    swarm_parser.add_argument("-o", "--output", type=Path, help="Save verified code to file")
+
+    # Command 19: Persistent Episodic Memory Vault
+    mem_parser = subparsers.add_parser("memory", help="Query or list institutional episodic engineering memory")
+    mem_parser.add_argument("--query", help="Query memory for relevant heuristics and lessons")
+    mem_parser.add_argument("--list", action="store_true", help="List all stored episodes")
+
+    # Command 20: Zero-API-Key Offline Flight Recorder Replay
+    demo_parser = subparsers.add_parser("demo", help="Zero-API-key offline flight recorder replay")
+    demo_parser.add_argument("--replay", action="store_true", help="Stream realistic autonomous session")
+    demo_parser.add_argument("--fast", action="store_true", help="Skip animation delay for speed")
+
+    # Command 21: Cryptographic Hash-Chained Audit Ledger Verifier
+    ledger_parser = subparsers.add_parser("verify-ledger", help="Verify HMAC-SHA512 cryptographic audit chain")
+    ledger_parser.add_argument("--ledger", type=Path, default=Path(".apex/audit_chain.jsonl"), help="Path to audit ledger")
+
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
     parser.add_argument("--format", choices=["table", "markdown", "json"], default="table")
@@ -216,6 +252,81 @@ def main(argv: list[str] | None = None) -> int:
             for v in violations:
                 print(f"  • [{v.rule_id}] {v.policy_name}: {v.description}")
                 print(f"    Fix: {v.remediation}")
+            return 1
+
+    # Command 17: Personalized PageRank Repo-Map Engine
+    if args.command == "repomap":
+        repo_path = Path(args.repo).resolve()
+        if not repo_path.exists():
+            sys.stderr.write(f"Error: Directory not found: {repo_path}\n")
+            return 2
+        print(f"\n[APEX-COUNCIL] Scanning repository: {repo_path}...")
+        focus = [f.strip() for f in args.focus.split(",")] if args.focus else None
+        repo_map = RepoMap(repo_path, max_tokens=args.tokens)
+        rendered = repo_map.generate_map(focus_files=focus, token_budget=args.tokens)
+        summary = repo_map.get_summary()
+        print(f"\nIndexed {summary['total_files']} files, {summary['total_symbols']} symbols.")
+        print("Top Architectural Hubs:")
+        for hub in summary["top_architectural_hubs"]:
+            print(f"  • {hub['file']} [PageRank: {hub['pagerank']}]")
+        print("\n" + rendered + "\n")
+        return 0
+
+    # Command 18: Autonomous 5-Role SWE Swarm
+    if args.command == "swarm":
+        print(CyberpunkTUI.render_banner())
+        repo_path = Path(args.repo).resolve() if args.repo else Path(".")
+        print(f"\n[SWARM] Initializing 5-Role Autonomous Swarm for: \"{args.task}\"...\n")
+        vault = MemoryVault(Path(".apex/memory.db"))
+        coordinator = SwarmCoordinator(repo_dir=repo_path, memory_vault=vault)
+        solution = coordinator.solve(task_prompt=args.task, mcts_iterations=args.iters)
+        print(CyberpunkTUI.render_swarm_card(solution))
+        if args.output:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(solution.verified_code, encoding="utf-8")
+            print(f"\nVerified & signed code written to: {args.output}")
+        return 0 if solution.is_passing else 1
+
+    # Command 19: Persistent Episodic Memory Vault
+    if args.command == "memory":
+        vault = MemoryVault(Path(".apex/memory.db"))
+        if args.query:
+            matcher = MemoryMatcher(vault)
+            rules = matcher.find_relevant_rules(args.query)
+            episodes = matcher.find_relevant_episodes(args.query)
+            print(f"\n[MEMORY] Query results for: \"{args.query}\"")
+            print(f"Matched {len(rules)} heuristics and {len(episodes)} past episodes:")
+            for r in rules:
+                print(f"  • [{r.category}] {r.rule_text} (Confidence: {r.confidence_score})")
+            for ep in episodes:
+                print(f"  • [Episode] {ep.task_prompt} ➔ {ep.lesson_learned}")
+        elif args.list:
+            episodes = vault.get_all_episodes(limit=20)
+            heuristics = vault.get_all_heuristics()
+            print(f"\n[MEMORY] Institutional Knowledge Vault ({len(episodes)} episodes, {len(heuristics)} rules):")
+            for ep in episodes:
+                print(f"  • [{ep.status}] {ep.task_prompt[:50]} (Files: {', '.join(ep.target_files)})")
+            for h in heuristics:
+                print(f"  • [Rule: {h.category}] {h.rule_text}")
+        else:
+            print("Specify --query <text> or --list to inspect memory.")
+        return 0
+
+    # Command 20: Zero-API-Key Offline Flight Recorder Replay
+    if args.command == "demo":
+        delay = 0.0 if args.fast else 0.35
+        FlightRecorderReplay.run_replay(delay_sec=delay)
+        return 0
+
+    # Command 21: Cryptographic Hash-Chained Audit Ledger Verifier
+    if args.command == "verify-ledger":
+        ledger = CryptographicLedger(ledger_path=args.ledger)
+        valid, count, msg = ledger.verify_chain()
+        if valid:
+            print(f"\n✓ AUDIT LEDGER VERIFIED: All {count} HMAC-SHA512 cryptographic blocks are tamper-free and intact.\n")
+            return 0
+        else:
+            print(f"\n✗ TAMPER DETECTED: {msg}\n")
             return 1
 
     # 1. Autonomous AI Engineer: Build entire project from spec

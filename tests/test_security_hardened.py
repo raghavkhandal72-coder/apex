@@ -75,6 +75,37 @@ assert "ANTHROPIC_API_KEY" not in os.environ, "Leak: Anthropic key exposed!"
         with self.assertRaises(ASTBombDetected):
             ASTShield.inspect_ast_safety(deep_expr)
 
+    def test_pep578_audit_hook_blocks_subprocess(self):
+        hostile_code = """
+import subprocess
+subprocess.Popen(["echo", "exploit"])
+"""
+        passed, _, output = HermeticExecutionSandbox.execute_isolated(hostile_code)
+        self.assertFalse(passed)
+        self.assertIn("APEX-PEP578-BLOCK", output)
+        self.assertIn("Subprocess execution", output)
+
+    def test_pep578_audit_hook_blocks_network_socket(self):
+        hostile_code = """
+import socket
+s = socket.socket()
+s.connect(("127.0.0.1", 80))
+"""
+        passed, _, output = HermeticExecutionSandbox.execute_isolated(hostile_code)
+        self.assertFalse(passed)
+        self.assertIn("APEX-PEP578-BLOCK", output)
+        self.assertIn("Network exfiltration", output)
+
+    def test_pep578_audit_hook_blocks_unauthorized_write(self):
+        hostile_code = """
+with open("/root_unauthorized_test_file.txt", "w") as f:
+    f.write("exploit")
+"""
+        passed, _, output = HermeticExecutionSandbox.execute_isolated(hostile_code)
+        self.assertFalse(passed)
+        self.assertIn("APEX-PEP578-BLOCK", output)
+        self.assertIn("Unauthorized file write", output)
+
 
 if __name__ == "__main__":
     unittest.main()
