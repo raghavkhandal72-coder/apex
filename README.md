@@ -5,67 +5,45 @@
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Council Members](https://img.shields.io/badge/Council-Gemini%20%7C%20Claude%20%7C%20OpenAI-purple.svg)]()
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)]()
+[![Web Dashboard](https://img.shields.io/badge/Web%20UI-Included-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-7%20passing-brightgreen.svg)]()
 
 ---
 
 ## ⚡ The Big Idea
 
-Every frontier AI provider claims to be the "best coding model":
-* **Anthropic Claude** is praised for architectural elegance and defensive style.
-* **Google Gemini** dominates with massive context reasoning, multimodal ingestion, and blazing speed.
-* **OpenAI (GPT-4o / o1)** provides battle-tested algorithmic logic and strict formatting.
+Frontier AI providers constantly debate who has the best coding model:
+* **Google Gemini** dominates in massive context windows, multimodal reasoning, and speed.
+* **Anthropic Claude** is revered for defensive architectural design and boundary rigor.
+* **OpenAI (GPT-4o / o1)** provides concise algorithmic logic and strict formatting.
 
-Yet in reality, **individual models still make mistakes**—leaving open command injection, subtle race conditions, or unhandled edge cases.
+Yet in reality, **no single model is immune to flaws**: isolated models leave open subtle command injections, path traversals, or unhandled edge cases.
 
-**Apex-Council** eliminates this by convening an autonomous **Multi-Model Supreme Council**:
-1. **Parallel Dispatch:** Dispatches your coding challenge simultaneously to Google Gemini, Anthropic Claude, and OpenAI.
-2. **The Cross-Critique Matrix (Peer Review):** Each model audits the others' code to expose security flaws, hallucinated libraries, and performance bottlenecks.
-3. **Automated Verification Gate:** Runs AST security scanning (CWE-78, CWE-22, CWE-798) and sandbox execution tests with millisecond timing.
-4. **The Synthesizer:** Merges the winning architecture with peer-reviewed patches to produce the **Consensus Code**—verifiably superior to any single model's isolated output.
-
----
-
-## 🔄 How It Works
-
-```
-                                [Your Coding Prompt]
-                                         │
-                 ┌───────────────────────┼───────────────────────┐
-                 ▼                       ▼                       ▼
-         [Google Gemini]         [Anthropic Claude]      [OpenAI / Microsoft]
-                 │                       │                       │
-                 └───────────────┬───────┴───────┬───────────────┘
-                                 │               │
-                                 ▼               ▼
-                     [Peer Review Cross-Critique Matrix]
-                      (Each model audits rivals' code)
-                                         │
-                                         ▼
-                     [AST Security & Isolated Sandbox Tests]
-                     (CWE Checks, Runtime Latency, Unit Tests)
-                                         │
-                                         ▼
-                     [Supreme Verdict & Flaw-Free Consensus]
-```
+**Apex-Council** solves this by convening an autonomous **Multi-Model Supreme Council**:
+1. ⚔️ **Competitive Battle Mode:** Dispatches prompts simultaneously to Gemini, Claude, and OpenAI.
+2. 🔍 **Cross-Critique Matrix (Peer Review):** Each model audits its rivals' code, exposing hallucinations, security bugs, and performance bottlenecks.
+3. 🛡️ **Automated Verification Gate:** Runs AST security scanning (CWE-78, CWE-22, CWE-798) and sandbox execution tests with millisecond timing.
+4. ✨ **Consensus Synthesizer:** Merges the winning architecture with peer-reviewed patches to produce the **Consensus Code**—verifiably superior to any single model's isolated output.
+5. 🤝 **Collaborative Relay Pipeline:** Gemini (Architect) ➔ Claude (Defensive Code) ➔ OpenAI (Unit Tests).
+6. 🌐 **Built-in Web Dashboard:** Futuristic dark-mode UI with live model scorecards and real-time deliberation.
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Clone & Run Instantly
-
-Zero external dependencies required out-of-the-box:
+### 1. Instant Run (Zero Dependencies)
 
 ```bash
 git clone https://github.com/your-username/apex-council.git
 cd apex-council
+
+# Run head-to-head battle
 python -m apex_council "Build a thread-safe LRU Cache with TTL"
 ```
 
-### 2. Optional: Plug in Live API Keys
+### 2. Optional: Connect Live Cloud Models
 
-Whenever environment keys are set, Apex-Council automatically upgrades from simulation to live cloud model execution:
+Whenever environment keys are set, Apex-Council automatically queries live endpoints via native zero-dependency HTTP:
 
 ```bash
 export GEMINI_API_KEY="your-gemini-key"
@@ -77,25 +55,36 @@ python -m apex_council "Write an authenticated FastAPI rate-limiter"
 
 ---
 
-## 💻 CLI Usage
+## 💻 CLI Commands
 
-### Live Interactive Arena
-
+### 1. Head-to-Head Battle Arena
 ```bash
-python -m apex_council "Design a concurrent distributed lock using Redis"
+python -m apex_council battle "Design a concurrent distributed lock using Redis"
 ```
 
-### Output Formats
-
+### 2. File Audit Mode
+Have the Supreme Council audit, benchmark, and refactor any existing file:
 ```bash
-# Pretty terminal output with ANSI colors (default)
-python -m apex_council "Write a secure file upload handler"
+python -m apex_council audit ./src/auth.py
+```
 
-# Export Markdown summary for GitHub pull requests
-python -m apex_council "Refactor auth middleware" --format markdown -o council_verdict.md
+### 3. Collaborative Relay Pipeline
+Let Gemini design the architecture, Claude write the defensive code, and OpenAI generate unit tests:
+```bash
+python -m apex_council relay "Build an event bus in Python" -o event_bus.py
+```
 
-# Output JSON for CI/CD automation pipelines
-python -m apex_council "Generate SQL migration" --format json
+### 4. Interactive Web Dashboard
+Launch the local dark-mode developer studio:
+```bash
+python -m apex_council serve --port 8080
+# Visit http://127.0.0.1:8080
+```
+
+### 5. Automated CI/CD Generator
+Generate automated GitHub Actions PR review gating:
+```bash
+python -m apex_council init-ci
 ```
 
 ---

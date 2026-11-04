@@ -1,0 +1,24 @@
+name: Apex-Council Code Review
+
+on:
+  pull_request:
+    branches: [ main, dev, master ]
+
+jobs:
+  council_audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Apex-Council
+        run: pip install .
+      - name: Run Council Audit on PR
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          apex-council "Review PR diff for security flaws, edge cases, and algorithmic optimality" --format markdown -o council_verdict.md

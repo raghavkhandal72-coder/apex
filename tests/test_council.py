@@ -1,8 +1,10 @@
 import unittest
+from pathlib import Path
 from apex_council.engine import CouncilEngine
 from apex_council.evaluator.security_eval import evaluate_security
 from apex_council.evaluator.runtime_eval import evaluate_runtime
 from apex_council.models import ModelProvider
+from apex_council.providers.live_http import LiveGeminiProvider, LiveClaudeProvider, LiveOpenAIProvider
 
 
 class TestApexCouncil(unittest.TestCase):
@@ -49,6 +51,24 @@ assert multiply(3, 4) == 12
         self.assertEqual(len(result.submissions), 3)
         self.assertEqual(len(result.critiques), 6)  # 3 models * 2 critiques each
         self.assertTrue(result.consensus_code.startswith('"""Apex-Council Synthesized Implementation'))
+
+    def test_collaborative_relay_pipeline(self):
+        res = self.engine.collaborative_relay("Build a task scheduler")
+        self.assertIn("combined_code", res)
+        self.assertIn("IMPLEMENTATION", res["combined_code"])
+        self.assertIn("VERIFICATION SUITE", res["combined_code"])
+
+    def test_audit_file(self):
+        this_file = Path(__file__)
+        audit_res = self.engine.audit_file(this_file)
+        self.assertIn("original_security_score", audit_res)
+        self.assertIsNotNone(audit_res["council_result"])
+
+    def test_live_adapters_error_handling(self):
+        # Verify fallback error handling when dummy invalid key is provided
+        gemini = LiveGeminiProvider("invalid-dummy-key")
+        sub = gemini.generate("test task")
+        self.assertIn("Fallback", sub.model_name)
 
 
 if __name__ == "__main__":
