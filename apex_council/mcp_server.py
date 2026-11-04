@@ -254,6 +254,110 @@ class ApexCouncilMCPServer:
                                 "required": ["issue", "target_file"],
                             },
                         },
+                        {
+                            "name": "apex_perf",
+                            "description": "Staff Performance Engineer: Profile latency, detect O(N^2) nested loops, in-loop string concatenations, memory allocations, and auto-optimize AST.",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "code": {
+                                        "type": "string",
+                                        "description": "Python source code to profile and optimize.",
+                                    },
+                                    "tests": {
+                                        "type": "string",
+                                        "description": "Optional unit test harness code.",
+                                    },
+                                },
+                                "required": ["code"],
+                            },
+                        },
+                        {
+                            "name": "apex_chaos",
+                            "description": "Autonomous Chaos & Resilience SRE: Injects socket timeouts, disk full (ENOSPC), and transient RPC jitter into code execution to measure resilience score.",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "code": {
+                                        "type": "string",
+                                        "description": "Target Python source code to test.",
+                                    },
+                                    "tests": {
+                                        "type": "string",
+                                        "description": "Optional unit test harness code.",
+                                    },
+                                },
+                                "required": ["code"],
+                            },
+                        },
+                        {
+                            "name": "apex_appsec",
+                            "description": "Principal AppSec & Penetration Tester: AST taint flow analysis from untrusted sources to dangerous sinks, weak cryptography detection, and automated secure remediation.",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "code": {
+                                        "type": "string",
+                                        "description": "Target Python source code to audit.",
+                                    },
+                                    "remediate": {
+                                        "type": "boolean",
+                                        "description": "Whether to auto-remediate insecure patterns (e.g. eval -> ast.literal_eval).",
+                                    },
+                                },
+                                "required": ["code"],
+                            },
+                        },
+                        {
+                            "name": "apex_db_tune",
+                            "description": "Principal Database Architect: Scans for N+1 query antipatterns in loops, auto-synthesizes B-Tree index DDLs, and recommends SQLite WAL configuration.",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "code": {
+                                        "type": "string",
+                                        "description": "Python source code containing database operations.",
+                                    },
+                                },
+                                "required": ["code"],
+                            },
+                        },
+                        {
+                            "name": "apex_modernize",
+                            "description": "Legacy Modernizer: Applies modern Python 3.10+ AST codemods (pathlib.Path, PEP 604 type unions, clean I/O with context managers).",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "code": {
+                                        "type": "string",
+                                        "description": "Legacy Python source code to modernize.",
+                                    },
+                                },
+                                "required": ["code"],
+                            },
+                        },
+                        {
+                            "name": "apex_release",
+                            "description": "Autonomous Release Captain: Compares base and candidate AST public APIs, calculates strict SemVer bumps (MAJOR/MINOR/PATCH), generates Markdown changelogs, and seals with HMAC-SHA512.",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "base_code": {
+                                        "type": "string",
+                                        "description": "Base/current version Python source code.",
+                                    },
+                                    "candidate_code": {
+                                        "type": "string",
+                                        "description": "Candidate/new version Python source code.",
+                                    },
+                                    "current_version": {
+                                        "type": "string",
+                                        "description": "Current semantic version string (default: 1.0.0).",
+                                    },
+                                },
+                                "required": ["base_code", "candidate_code"],
+                            },
+                        },
                     ]
                 },
             }
@@ -482,6 +586,209 @@ class ApexCouncilMCPServer:
                                         "suspicious_lines": report.suspicious_lines,
                                         "patched_code": report.patched_code,
                                         "duration_ms": report.duration_ms,
+                                    },
+                                    indent=2,
+                                ),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_perf":
+                from .swarm.specialists.performance_engineer import PerformanceOptimizer
+                code = arguments.get("code", "")
+                tests = arguments.get("tests", "")
+                rep = PerformanceOptimizer.profile_and_optimize(code, test_harness=tests)
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(
+                                    {
+                                        "antipatterns_detected": [
+                                            {
+                                                "category": b.category,
+                                                "lineno": b.lineno,
+                                                "description": b.description,
+                                                "severity": b.severity,
+                                            }
+                                            for b in rep.antipatterns_detected
+                                        ],
+                                        "original_duration_ms": rep.original_duration_ms,
+                                        "optimized_duration_ms": rep.optimized_duration_ms,
+                                        "peak_memory_bytes": rep.peak_memory_bytes,
+                                        "speedup_ratio": rep.speedup_ratio,
+                                        "has_regressed": rep.has_regressed,
+                                        "optimized_code": rep.optimized_code,
+                                    },
+                                    indent=2,
+                                ),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_chaos":
+                from .swarm.specialists.chaos_engineer import ChaosResilienceEngineer
+                code = arguments.get("code", "")
+                tests = arguments.get("tests", "")
+                rep = ChaosResilienceEngineer.run_chaos_experiments(code, test_harness=tests)
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(
+                                    {
+                                        "total_experiments": rep.total_experiments,
+                                        "resilient_count": rep.resilient_count,
+                                        "resilience_score": rep.resilience_score,
+                                        "is_production_ready": rep.is_production_ready,
+                                        "results": [
+                                            {
+                                                "scenario_name": r.scenario_name,
+                                                "fault_type": r.fault_type,
+                                                "survived": r.survived,
+                                                "duration_ms": r.duration_ms,
+                                            }
+                                            for r in rep.results
+                                        ],
+                                    },
+                                    indent=2,
+                                ),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_appsec":
+                from .swarm.specialists.appsec_engineer import AppSecPenetrationTester
+                code = arguments.get("code", "")
+                remediate = arguments.get("remediate", False)
+                rep = AppSecPenetrationTester.audit_and_remediate(code)
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(
+                                    {
+                                        "security_score": rep.security_score,
+                                        "is_airtight": rep.is_airtight,
+                                        "taint_flows_count": len(rep.taint_flows),
+                                        "vulnerabilities": [
+                                            {
+                                                "category": v.category,
+                                                "lineno": v.lineno,
+                                                "severity": v.severity,
+                                                "description": v.description,
+                                            }
+                                            for v in rep.vulnerabilities
+                                        ],
+                                        "remediated_code": rep.remediated_code if remediate else None,
+                                    },
+                                    indent=2,
+                                ),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_db_tune":
+                from .swarm.specialists.database_architect import DatabaseArchitect
+                code = arguments.get("code", "")
+                rep = DatabaseArchitect.analyze_and_tune(code)
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(
+                                    {
+                                        "optimization_score": rep.optimization_score,
+                                        "is_optimized": rep.is_optimized,
+                                        "antipatterns": [
+                                            {
+                                                "category": a.category,
+                                                "lineno": a.lineno,
+                                                "severity": a.severity,
+                                                "description": a.description,
+                                            }
+                                            for a in rep.antipatterns
+                                        ],
+                                        "recommended_indexes": rep.recommended_indexes,
+                                        "tuned_code": rep.tuned_code,
+                                    },
+                                    indent=2,
+                                ),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_modernize":
+                from .swarm.specialists.codebase_modernizer import CodebaseModernizer
+                code = arguments.get("code", "")
+                rep = CodebaseModernizer.modernize_code(code)
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(
+                                    {
+                                        "modernity_score": rep.modernity_score,
+                                        "transformations_applied": [
+                                            {
+                                                "category": t.category,
+                                                "lineno": t.lineno,
+                                                "description": t.description,
+                                            }
+                                            for t in rep.transformations_applied
+                                        ],
+                                        "modernized_code": rep.modernized_code,
+                                    },
+                                    indent=2,
+                                ),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_release":
+                from .swarm.specialists.release_captain import ReleaseCaptain
+                base_code = arguments.get("base_code", "")
+                candidate_code = arguments.get("candidate_code", "")
+                current_version = arguments.get("current_version", "1.0.0")
+                rep = ReleaseCaptain.evaluate_release(base_code, candidate_code, current_version=current_version)
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(
+                                    {
+                                        "current_version": rep.current_version,
+                                        "next_version": rep.next_version,
+                                        "bump_type": rep.bump_type,
+                                        "is_breaking": rep.is_breaking,
+                                        "deltas_count": len(rep.deltas),
+                                        "release_merkle_root": rep.release_merkle_root,
+                                        "release_signature": rep.release_signature,
+                                        "changelog_markdown": rep.changelog_markdown,
                                     },
                                     indent=2,
                                 ),

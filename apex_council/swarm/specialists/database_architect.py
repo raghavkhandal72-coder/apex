@@ -83,8 +83,18 @@ class _DatabaseScanner(ast.NodeVisitor):
                 )
 
             # Inspect query string for WHERE clauses and PRAGMA
-            if node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
-                query = node.args[0].value.strip()
+            query = ""
+            if node.args:
+                if isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
+                    query = node.args[0].value.strip()
+                elif isinstance(node.args[0], ast.JoinedStr):
+                    parts = [
+                        p.value for p in node.args[0].values
+                        if isinstance(p, ast.Constant) and isinstance(p.value, str)
+                    ]
+                    query = " ".join(parts).strip()
+
+            if query:
                 if "journal_mode=WAL" in query.upper() or "journal_mode = WAL" in query.upper():
                     self.has_wal_pragma = True
 

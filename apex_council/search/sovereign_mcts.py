@@ -55,15 +55,35 @@ class SovereignMCTSNode:
     def average_value(self) -> float:
         return self.total_value / self.visits if self.visits > 0 else 0.0
 
-    def puct(self, c_puct: float = 1.414) -> float:
+    def puct(
+        self,
+        c_puct: Optional[float] = None,
+        c_init: float = 1.25,
+        c_base: float = 19652.0,
+        q_min: Optional[float] = None,
+        q_max: Optional[float] = None,
+    ) -> float:
         """
         AlphaZero PUCT Selection Formula:
-        Q(s, a) + c_puct * P(s, a) * (sqrt(N(s)) / (1 + N(s, a)))
+        Q_bar(s, a) + c_puct(s) * P(s, a) * (sqrt(N(s)) / (1 + N(s, a)))
+        Dynamic c_puct(s) = log((1 + N(s) + c_base) / c_base) + c_init
         """
         if not self.parent or self.parent.visits == 0:
             return self.average_value
-        exploration = c_puct * self.prior * (math.sqrt(self.parent.visits) / (1 + self.visits))
-        return self.average_value + exploration
+        parent_visits = self.parent.visits
+        if c_puct is None or c_puct == 1.414:
+            scale = math.log((1.0 + parent_visits + c_base) / c_base) + c_init
+        else:
+            scale = c_puct
+
+        q_val = self.average_value
+        if q_min is not None and q_max is not None and q_max > q_min:
+            q_norm = (q_val - q_min) / (q_max - q_min + 1e-7)
+        else:
+            q_norm = q_val
+
+        exploration = scale * self.prior * (math.sqrt(parent_visits) / (1 + self.visits))
+        return q_norm + exploration
 
     def ucb1(self, exploration_constant: float = 1.414) -> float:
         """Backward-compatible alias."""
@@ -331,6 +351,36 @@ class SovereignMCTSEngine:
         self.transposition_table = ASTTranspositionTable()
         self.plumbing = GitPlumbingEngine(self.repo_dir) if self.repo_dir and (self.repo_dir / ".git").exists() else None
         self.pruned_count = 0
+        self.q_min: float = 0.0
+        self.q_max: float = 1.0
+
+    @classmethod
+    def evaluate_composite_value(
+        cls,
+        test_passed: bool,
+        syntax_valid: bool = True,
+        timed_out: bool = False,
+        critique_score: float = 0.8,
+        complexity_delta: int = 0,
+    ) -> float:
+        """
+        Multi-objective leaf reward formulation:
+        V(s) = w_test * R_test(s) + w_critique * V_critique(s) + w_static * V_static(s)
+        Weights: w_test = 0.50, w_critique = 0.35, w_static = 0.15
+        """
+        if not syntax_valid or timed_out:
+            r_test = -1.0
+        elif test_passed:
+            r_test = 1.0
+        else:
+            r_test = -0.5
+
+        v_critique = max(0.0, min(1.0, critique_score))
+        v_static = 1.0 if syntax_valid else 0.0
+        if complexity_delta > 0:
+            v_static = max(0.0, v_static - 0.05 * complexity_delta)
+
+        return 0.50 * r_test + 0.35 * v_critique + 0.15 * v_static
 
     def evaluate_candidate(self, code: str) -> Tuple[float, Dict[str, Any], int]:
         """
@@ -389,6 +439,8 @@ class SovereignMCTSEngine:
         num_iters = iterations if iterations is not None else self.default_iterations
         root = SovereignMCTSNode(state=initial_code, action_description="Initial Code")
         score, details, op_count = self.evaluate_candidate(initial_code)
+        self.q_min = min(self.q_min, score)
+        self.q_max = max(self.q_max, score)
         root.eval_score = score
         root.eval_details = details
         root.visits = 1
@@ -441,7 +493,10 @@ class SovereignMCTSEngine:
                 max_allowed = max(2, int(self.pw_c * (curr.visits ** self.pw_alpha)))
                 if len(curr.children) < max_allowed and not curr.is_terminal:
                     break
-                curr = max(active_children, key=lambda c: c.puct(self.exploration_constant))
+                curr = max(
+                    active_children,
+                    key=lambda c: c.puct(self.exploration_constant, q_min=self.q_min, q_max=self.q_max),
+                )
                 depth += 1
 
             # 2. Expansion
@@ -474,6 +529,8 @@ class SovereignMCTSEngine:
                 for idx, cand_code in enumerate(candidates, start=1):
                     # 3. Simulation / Rollout
                     c_score, c_details, c_ops = self.evaluate_candidate(cand_code)
+                    self.q_min = min(self.q_min, c_score)
+                    self.q_max = max(self.q_max, c_score)
                     child = SovereignMCTSNode(
                         state=cand_code,
                         parent=curr,
