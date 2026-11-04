@@ -35,6 +35,7 @@ KNOWN_COMMANDS = {
     "dlp-test", "policy-check", "init-ci", "repomap", "swarm", "memory",
     "demo", "verify-ledger", "localize", "build-pyz", "swe-bench",
     "autopsy", "synthesize", "verify-proof", "edge",
+    "perf", "chaos", "appsec", "db-tune", "modernize", "release",
     "-h", "--help"
 }
 
@@ -199,6 +200,36 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     edge_parser.add_argument("file", nargs="?", type=Path, help="Target Python source file to repair on edge")
     edge_parser.add_argument("--tests", default="", help="Test harness code")
     edge_parser.add_argument("--verify", action="store_true", help="Run 3-case built-in edge verification suite")
+
+    # Command 29: Staff Performance & Latency Optimizer
+    perf_parser = subparsers.add_parser("perf", help="Staff Performance Engineer: profile latency, detect O(N^2) loops & optimize AST")
+    perf_parser.add_argument("file", type=Path, help="Target Python source file to profile")
+    perf_parser.add_argument("--tests", default="", help="Optional test harness")
+
+    # Command 30: Autonomous Chaos & Resilience SRE
+    chaos_parser = subparsers.add_parser("chaos", help="Chaos SRE Engineer: inject socket timeouts, disk full, & transient RPC faults")
+    chaos_parser.add_argument("file", type=Path, help="Target Python source file to test")
+    chaos_parser.add_argument("--tests", default="", help="Optional test harness")
+
+    # Command 31: Principal AppSec & Penetration Tester
+    appsec_parser = subparsers.add_parser("appsec", help="Principal AppSec Engineer: AST taint flow analysis & automated secure remediation")
+    appsec_parser.add_argument("file", type=Path, help="Target Python source file to audit")
+    appsec_parser.add_argument("--remediate", action="store_true", help="Auto-remediate vulnerabilities")
+
+    # Command 32: Principal Database & Storage Architect
+    db_parser = subparsers.add_parser("db-tune", help="Database Architect: detect N+1 queries, synthesize B-Tree indexes, & tune SQLite WAL")
+    db_parser.add_argument("file", type=Path, help="Target Python source file to analyze")
+
+    # Command 33: Legacy Modernizer & Refactoring Engineer
+    mod_parser = subparsers.add_parser("modernize", help="Legacy Modernizer: apply modern Python 3.10+ AST codemods (pathlib, PEP 604 unions)")
+    mod_parser.add_argument("file", type=Path, help="Target Python source file to modernize")
+    mod_parser.add_argument("--write", action="store_true", help="Overwrite file on disk with modernized code")
+
+    # Command 34: Autonomous Release Captain & SemVer Auditor
+    rel_parser = subparsers.add_parser("release", help="Release Captain: diff public API surfaces, calculate SemVer bump & generate changelog")
+    rel_parser.add_argument("base_file", type=Path, help="Base / current version file")
+    rel_parser.add_argument("candidate_file", type=Path, help="Candidate / new version file")
+    rel_parser.add_argument("--version", default="1.0.0", help="Current version (default: 1.0.0)")
 
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
@@ -731,7 +762,154 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[✓] Overwritten {args.file} with verified patch.\n")
         return 0 if res.repaired else 1
 
-    # 20. Handle battle / default prompt
+    # 20. Staff Performance & Latency Optimizer
+    if args.command == "perf":
+        from .swarm.specialists.performance_engineer import PerformanceOptimizer
+        if not args.file.exists():
+            sys.stderr.write(f"Error: File not found: {args.file}\n")
+            return 2
+        code = args.file.read_text(encoding="utf-8")
+        rep = PerformanceOptimizer.profile_and_optimize(code, getattr(args, "tests", ""))
+        print("==========================================================")
+        print("   ⚡ STAFF PERFORMANCE & LATENCY REPORT   ")
+        print("==========================================================")
+        print(f"  Target File:     {args.file}")
+        print(f"  Antipatterns:    {len(rep.antipatterns_detected)}")
+        print(f"  Orig Duration:   {rep.original_duration_ms:.2f} ms")
+        print(f"  Opt Duration:    {rep.optimized_duration_ms:.2f} ms")
+        print(f"  Peak Memory:     {rep.peak_memory_bytes} bytes")
+        print(f"  Speedup Ratio:   {rep.speedup_ratio:.2f}x")
+        print(f"  Has Regressed:   {'✗ YES (>5%)' if rep.has_regressed else '✓ NO'}")
+        if rep.antipatterns_detected:
+            print("  Detected Bottlenecks:")
+            for a in rep.antipatterns_detected:
+                print(f"    - [{a.severity}] {a.category} (Line {a.lineno}): {a.description}")
+        print("==========================================================\n")
+        return 1 if rep.has_regressed else 0
+
+    # 21. Autonomous Chaos & Resilience SRE
+    if args.command == "chaos":
+        from .swarm.specialists.chaos_engineer import ChaosResilienceEngineer
+        if not args.file.exists():
+            sys.stderr.write(f"Error: File not found: {args.file}\n")
+            return 2
+        code = args.file.read_text(encoding="utf-8")
+        rep = ChaosResilienceEngineer.run_chaos_experiments(code, getattr(args, "tests", ""))
+        print("==========================================================")
+        print("   🐒 AUTONOMOUS CHAOS & SRE RESILIENCE REPORT   ")
+        print("==========================================================")
+        print(f"  Target File:     {args.file}")
+        print(f"  Experiments:     {rep.total_experiments}")
+        print(f"  Resilient Count: {rep.resilient_count} / {rep.total_experiments}")
+        print(f"  Resilience Score:{rep.resilience_score:.1f}%")
+        print(f"  Production Ready:{'✓ YES' if rep.is_production_ready else '✗ FRAGILE'}")
+        print("  Chaos Experiment Results:")
+        for r in rep.results:
+            mark = "✓ PASS" if r.survived else "✗ FAIL"
+            print(f"    - [{mark}] {r.scenario_name} ({r.fault_type}): {r.duration_ms:.1f}ms")
+        print("==========================================================\n")
+        return 0 if rep.is_production_ready else 1
+
+    # 22. Principal AppSec & Penetration Tester
+    if args.command == "appsec":
+        from .swarm.specialists.appsec_engineer import AppSecPenetrationTester
+        if not args.file.exists():
+            sys.stderr.write(f"Error: File not found: {args.file}\n")
+            return 2
+        code = args.file.read_text(encoding="utf-8")
+        rep = AppSecPenetrationTester.audit_and_remediate(code)
+        print("==========================================================")
+        print("   🛡️ PRINCIPAL APPSEC PENETRATION AUDIT   ")
+        print("==========================================================")
+        print(f"  Target File:     {args.file}")
+        print(f"  Taint Flows:     {len(rep.taint_flows)}")
+        print(f"  Vulnerabilities: {len(rep.vulnerabilities)}")
+        print(f"  Security Score:  {rep.security_score:.1f}%")
+        print(f"  Airtight:        {'✓ YES' if rep.is_airtight else '✗ VULNERABLE'}")
+        if rep.vulnerabilities:
+            print("  Security Findings:")
+            for v in rep.vulnerabilities:
+                print(f"    - [{v.severity}] {v.category} (Line {v.lineno}): {v.description}")
+        print("==========================================================\n")
+        if getattr(args, "remediate", False) and not rep.is_airtight:
+            args.file.write_text(rep.remediated_code, encoding="utf-8")
+            print(f"[✓] Overwritten {args.file} with remediated secure code.\n")
+        return 0 if rep.is_airtight else 1
+
+    # 23. Principal Database & Storage Architect
+    if args.command == "db-tune":
+        from .swarm.specialists.database_architect import DatabaseArchitect
+        if not args.file.exists():
+            sys.stderr.write(f"Error: File not found: {args.file}\n")
+            return 2
+        code = args.file.read_text(encoding="utf-8")
+        rep = DatabaseArchitect.analyze_and_tune(code)
+        print("==========================================================")
+        print("   🗄️ PRINCIPAL DATABASE ARCHITECTURE REPORT   ")
+        print("==========================================================")
+        print(f"  Target File:     {args.file}")
+        print(f"  Antipatterns:    {len(rep.antipatterns)}")
+        print(f"  Opt Score:       {rep.optimization_score:.1f}%")
+        print(f"  Optimized:       {'✓ YES' if rep.is_optimized else '✗ BOTTLENECKS DETECTED'}")
+        if rep.antipatterns:
+            print("  Query Antipatterns:")
+            for a in rep.antipatterns:
+                print(f"    - [{a.severity}] {a.category} (Line {a.lineno}): {a.description}")
+        if rep.recommended_indexes:
+            print("  Synthesized B-Tree Indexes:")
+            for idx in rep.recommended_indexes:
+                print(f"    + {idx}")
+        print("==========================================================\n")
+        return 0
+
+    # 24. Legacy Modernizer & Refactoring Engineer
+    if args.command == "modernize":
+        from .swarm.specialists.codebase_modernizer import CodebaseModernizer
+        if not args.file.exists():
+            sys.stderr.write(f"Error: File not found: {args.file}\n")
+            return 2
+        code = args.file.read_text(encoding="utf-8")
+        rep = CodebaseModernizer.modernize_code(code)
+        print("==========================================================")
+        print("   🔄 PYTHON 3.10+ MODERNIZATION REPORT   ")
+        print("==========================================================")
+        print(f"  Target File:     {args.file}")
+        print(f"  Transformations: {len(rep.transformations_applied)}")
+        print(f"  Modernity Score: {rep.modernity_score:.1f}%")
+        if rep.transformations_applied:
+            print("  Codemods Applied:")
+            for t in rep.transformations_applied:
+                print(f"    - [{t.category}] (Line {t.lineno}): {t.description}")
+        print("==========================================================\n")
+        if getattr(args, "write", False):
+            args.file.write_text(rep.modernized_code, encoding="utf-8")
+            print(f"[✓] Overwritten {args.file} with modern Python 3.10+ AST syntax.\n")
+        return 0
+
+    # 25. Autonomous Release Captain & SemVer Auditor
+    if args.command == "release":
+        from .swarm.specialists.release_captain import ReleaseCaptain
+        if not args.base_file.exists() or not args.candidate_file.exists():
+            sys.stderr.write("Error: Both base_file and candidate_file must exist.\n")
+            return 2
+        base_src = args.base_file.read_text(encoding="utf-8")
+        cand_src = args.candidate_file.read_text(encoding="utf-8")
+        rep = ReleaseCaptain.evaluate_release(base_src, cand_src, current_version=getattr(args, "version", "1.0.0"))
+        print("==========================================================")
+        print("   🚀 AUTONOMOUS RELEASE CAPTAIN & SEMVER REPORT   ")
+        print("==========================================================")
+        print(f"  Current Version: {rep.current_version}")
+        print(f"  Next Version:    {rep.next_version} ({rep.bump_type})")
+        print(f"  Breaking Change: {'⚠️ YES (Major Bump)' if rep.is_breaking else '✓ NO'}")
+        print(f"  API Deltas:      {len(rep.deltas)}")
+        print(f"  Release Root:    {rep.release_merkle_root[:16]}...")
+        print(f"  Release Sig:     {rep.release_signature[:32]}...")
+        print("\n--- GENERATED CHANGELOG ---")
+        print(rep.changelog_markdown)
+        print("==========================================================\n")
+        return 0
+
+    # 26. Handle battle / default prompt
     prompt = getattr(args, "prompt", None) or args.direct_prompt or "Build an LRU cache with TTL support"
     offline = getattr(args, "offline", False)
     fmt = getattr(args, "format", "table")

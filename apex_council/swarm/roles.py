@@ -185,3 +185,29 @@ class SovereignGatekeeper:
         signature = sig_match.group(1) if sig_match else "signed"
 
         return True, signed_code, signature
+
+
+# --- Specialized Autonomous Engineering Swarm Roles ---
+from apex_council.swarm.specialists.performance_engineer import PerformanceOptimizer
+from apex_council.swarm.specialists.chaos_engineer import ChaosResilienceEngineer
+from apex_council.swarm.specialists.appsec_engineer import AppSecPenetrationTester
+from apex_council.swarm.specialists.database_architect import DatabaseArchitect
+from apex_council.swarm.specialists.codebase_modernizer import CodebaseModernizer
+from apex_council.swarm.specialists.release_captain import ReleaseCaptain
+
+__all__ = [
+    "StaffArchitect",
+    "TestFirstSpeculator",
+    "RedTeamBreaker",
+    "SovereignGatekeeper",
+    "ArchitecturalBlueprint",
+    "ReproductionSuite",
+    "SwarmSolution",
+    "PerformanceOptimizer",
+    "ChaosResilienceEngineer",
+    "AppSecPenetrationTester",
+    "DatabaseArchitect",
+    "CodebaseModernizer",
+    "ReleaseCaptain",
+]
+
