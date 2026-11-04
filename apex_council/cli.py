@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 from .engine import CouncilEngine
+from .engineer.autonomous_engineer import AutonomousEngineer
 from .evaluator.benchmark import format_benchmark_table, run_benchmark_tournament
 from .evaluator.git_review import review_git_diff
 from .evaluator.github_pr import review_github_pr
@@ -31,7 +32,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     battle_parser.add_argument("-o", "--output", type=Path, help="Save report to file")
     battle_parser.add_argument("--offline", action="store_true", help="Force offline simulation mode")
 
-    # Command 2: Autonomous Self-Healing / Auto-Repair
+    # Command 2: Autonomous AI Software Engineer (Build entire repo from scratch)
+    eng_parser = subparsers.add_parser("engineer", help="Autonomous AI Engineer: Deconstruct spec, build multi-file codebase, write tests, & git commit")
+    eng_parser.add_argument("spec", help="Natural language application or feature specification")
+    eng_parser.add_argument("-o", "--output", type=Path, required=True, help="Directory to create the engineered project in")
+    eng_parser.add_argument("--offline", action="store_true")
+
+    # Command 3: Autonomous Issue Solver / Bug Hunter
+    solve_parser = subparsers.add_parser("solve", help="Autonomous Issue Resolver: Localize bug, patch files, and verify fix")
+    solve_parser.add_argument("issue", help="Bug report or issue description to resolve")
+    solve_parser.add_argument("--repo", type=Path, default=Path("."), help="Target repository directory (default: current directory)")
+    solve_parser.add_argument("--offline", action="store_true")
+
+    # Command 4: Autonomous Closed-Loop Self-Healing
     heal_parser = subparsers.add_parser("heal", help="Autonomous Closed-Loop Code Repair (Tests -> Traceback -> Fix -> Re-test)")
     heal_parser.add_argument("file", type=Path, help="Path to code file to auto-heal")
     heal_parser.add_argument("--tests", default="", help="Optional test harness script to verify fixes against")
@@ -39,49 +52,49 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     heal_parser.add_argument("--no-write", action="store_true", help="Do not overwrite file on disk (dry run)")
     heal_parser.add_argument("--offline", action="store_true")
 
-    # Command 3: GitHub PR Review
+    # Command 5: GitHub PR Review
     pr_parser = subparsers.add_parser("pr", help="Review a live GitHub Pull Request (URL or owner/repo#123)")
     pr_parser.add_argument("target", help="GitHub PR URL or 'owner/repo#number'")
     pr_parser.add_argument("--token", help="GitHub Personal Access Token (or GITHUB_TOKEN env var)")
     pr_parser.add_argument("--offline", action="store_true")
 
-    # Command 4: Audit File
+    # Command 6: Audit File
     audit_parser = subparsers.add_parser("audit", help="Audit an existing file using the Supreme Council")
     audit_parser.add_argument("file", type=Path, help="Path to code file to audit")
     audit_parser.add_argument("--format", choices=["table", "markdown", "json"], default="table", help="Output format")
     audit_parser.add_argument("--offline", action="store_true", help="Force offline simulation mode")
 
-    # Command 5: Collaborative Relay
+    # Command 7: Collaborative Relay
     relay_parser = subparsers.add_parser("relay", help="Run Collaborative Relay: Gemini (Architecture) -> Claude (Defensive Code) -> OpenAI (Tests)")
     relay_parser.add_argument("prompt", help="Task prompt for the relay pipeline")
     relay_parser.add_argument("-o", "--output", type=Path, help="Save generated code and tests to file")
     relay_parser.add_argument("--offline", action="store_true", help="Force offline simulation mode")
 
-    # Command 6: Web UI Server
+    # Command 8: Web UI Server
     serve_parser = subparsers.add_parser("serve", help="Launch the local interactive Web Dashboard")
     serve_parser.add_argument("--port", type=int, default=8080, help="Port to bind server (default: 8080)")
     serve_parser.add_argument("--host", default="127.0.0.1", help="Host address (default: 127.0.0.1)")
 
-    # Command 7: MCP Server
+    # Command 9: MCP Server
     mcp_parser = subparsers.add_parser("mcp", help="Run Apex-Council as a Model Context Protocol (MCP) server for Claude Desktop / Cursor")
     mcp_parser.add_argument("--offline", action="store_true", help="Force offline simulation mode")
 
-    # Command 8: Git Diff Pre-Commit Review
+    # Command 10: Git Diff Pre-Commit Review
     diff_parser = subparsers.add_parser("diff", help="Audit uncommitted Git diff changes before commit/push")
     diff_parser.add_argument("--staged", action="store_true", help="Review staged changes only")
     diff_parser.add_argument("--format", choices=["table", "markdown", "json"], default="table")
     diff_parser.add_argument("--offline", action="store_true")
 
-    # Command 9: Red-Team Adversarial Fuzzer
+    # Command 11: Red-Team Adversarial Fuzzer
     redteam_parser = subparsers.add_parser("redteam", help="Fuzz code file against adversarial injections and stress vectors")
     redteam_parser.add_argument("file", type=Path, help="Path to file to fuzz")
 
-    # Command 10: SWE Benchmark Tournament
+    # Command 12: SWE Benchmark Tournament
     bench_parser = subparsers.add_parser("benchmark", help="Run 5-Challenge SWE Tournament across Gemini, Claude, and OpenAI")
     bench_parser.add_argument("--format", choices=["table", "json"], default="table")
     bench_parser.add_argument("--offline", action="store_true")
 
-    # Command 11: Init CI Workflow
+    # Command 13: Init CI Workflow
     ci_parser = subparsers.add_parser("init-ci", help="Generate GitHub Actions PR workflow file")
 
     # Direct prompt fallback: `apex-council "my prompt"`
@@ -138,7 +151,43 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parse_args(argv)
 
-    # 1. Autonomous Self-Healing Mode
+    # 1. Autonomous AI Engineer: Build entire project from spec
+    if args.command == "engineer":
+        print(f"\n[APEX-COUNCIL] Autonomous AI Engineer activated for: \"{args.spec}\"...")
+        print(f"[APEX-COUNCIL] Target output directory: {args.output}\n")
+        engineer = AutonomousEngineer(force_offline=args.offline)
+        proj = engineer.build_project(args.spec, args.output)
+        print("==========================================================")
+        print("   🤖 AUTONOMOUS AI ENGINEER: PROJECT COMPLETE   ")
+        print("==========================================================")
+        print(f"  Target Dir:    {proj.output_dir}")
+        print(f"  Files Built:   {len(proj.files_created)}")
+        for f in proj.files_created:
+            status = "✓ OK" if f.syntax_valid and f.security_score >= 80 else "✗ CHECK"
+            print(f"    • {f.relative_path:<16} (Security: {f.security_score:.0f}%, Status: {status})")
+        print(f"  Tests Verified: {'✓ PASSED' if proj.tests_passed else '✗ FAILED'}")
+        print(f"  Total Duration: {proj.total_time_ms:.1f} ms")
+        print(f"  Git Status:     Initialized and committed autonomously!")
+        print("==========================================================\n")
+        return 0 if proj.tests_passed else 1
+
+    # 2. Autonomous Issue Solver / Bug Hunter
+    if args.command == "solve":
+        print(f"\n[APEX-COUNCIL] Autonomous Bug Hunter investigating issue: \"{args.issue}\"...")
+        print(f"[APEX-COUNCIL] Scanning repository: {args.repo}...\n")
+        engineer = AutonomousEngineer(force_offline=args.offline)
+        res = engineer.solve_issue(args.repo, args.issue)
+        print("==========================================================")
+        print("   🔍 AUTONOMOUS ISSUE RESOLUTION REPORT   ")
+        print("==========================================================")
+        print(f"  Status:         {res['status'].upper()}")
+        print(f"  Files Patched:  {res['files_repaired']}")
+        print(f"  Summary:        {res['summary']}")
+        print(f"  Duration:       {res['duration_ms']:.1f} ms")
+        print("==========================================================\n")
+        return 0
+
+    # 3. Autonomous Self-Healing Mode
     if args.command == "heal":
         print(f"\n[APEX-COUNCIL] Starting Autonomous Closed-Loop Self-Healing for: {args.file}...\n")
         healer = SelfHealingLoop(force_offline=args.offline)
@@ -164,20 +213,20 @@ def main(argv: list[str] | None = None) -> int:
         print("==========================================================\n")
         return 0 if res.healed else 1
 
-    # 2. GitHub PR Review
+    # 4. GitHub PR Review
     if args.command == "pr":
         print(f"\n[APEX-COUNCIL] Fetching and reviewing GitHub PR: {args.target}...\n")
         pr_res = review_github_pr(args.target, token=args.token, force_offline=args.offline)
         print(pr_res["markdown_comment"])
         return 0
 
-    # 3. MCP Server
+    # 5. MCP Server
     if args.command == "mcp":
         server = ApexCouncilMCPServer(force_offline=args.offline)
         server.run()
         return 0
 
-    # 4. Benchmark Tournament
+    # 6. Benchmark Tournament
     if args.command == "benchmark":
         print("\n[APEX-COUNCIL] Starting SWE Benchmark Tournament across 5 production challenges...\n")
         bench_data = run_benchmark_tournament(force_offline=args.offline)
@@ -188,7 +237,7 @@ def main(argv: list[str] | None = None) -> int:
             print(format_benchmark_table(bench_data))
         return 0
 
-    # 5. Red-Team Fuzzer
+    # 7. Red-Team Fuzzer
     if args.command == "redteam":
         if not args.file.exists():
             sys.stderr.write(f"Error: File not found: {args.file}\n")
@@ -212,7 +261,7 @@ def main(argv: list[str] | None = None) -> int:
         print("==========================================================\n")
         return 0 if report.failed_probes == 0 else 1
 
-    # 6. Git Diff Review
+    # 8. Git Diff Review
     if args.command == "diff":
         print("\n[APEX-COUNCIL] Inspecting uncommitted Git diff...\n")
         diff_res = review_git_diff(staged_only=args.staged, force_offline=args.offline)
@@ -228,16 +277,16 @@ def main(argv: list[str] | None = None) -> int:
             print(CouncilReporter.format_terminal(c_res))
         return 0
 
-    # 7. Handle init-ci
+    # 9. Handle init-ci
     if args.command == "init-ci":
         return handle_init_ci()
 
-    # 8. Handle serve
+    # 10. Handle serve
     if args.command == "serve":
         run_server(host=args.host, port=args.port)
         return 0
 
-    # 9. Handle relay
+    # 11. Handle relay
     if args.command == "relay":
         print(f"\n[APEX-COUNCIL] Running Collaborative Relay for: \"{args.prompt}\"...\n")
         engine = CouncilEngine(force_offline=args.offline)
@@ -251,7 +300,7 @@ def main(argv: list[str] | None = None) -> int:
             print(res["combined_code"])
         return 0
 
-    # 10. Handle audit
+    # 12. Handle audit
     if args.command == "audit":
         print(f"\n[APEX-COUNCIL] Auditing file: {args.file}...\n")
         engine = CouncilEngine(force_offline=args.offline)
@@ -268,7 +317,7 @@ def main(argv: list[str] | None = None) -> int:
             print(CouncilReporter.format_terminal(c_res))
         return 0
 
-    # 11. Handle battle / default prompt
+    # 13. Handle battle / default prompt
     prompt = getattr(args, "prompt", None) or args.direct_prompt or "Build an LRU cache with TTL support"
     offline = getattr(args, "offline", False)
     fmt = getattr(args, "format", "table")

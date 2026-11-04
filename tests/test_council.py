@@ -93,5 +93,15 @@ assert multiply(3, 4) == 12
         self.assertEqual(res.iterations_run, 0)
 
 
+    def test_autonomous_engineer_build(self):
+        from apex_council.engineer import AutonomousEngineer
+        import tempfile
+        engineer = AutonomousEngineer(engine=self.engine)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            proj = engineer.build_project("Build a thread-safe counter with reset", tmp_dir)
+            self.assertTrue(proj.tests_passed)
+            self.assertGreaterEqual(len(proj.files_created), 3)
+
+
 if __name__ == "__main__":
     unittest.main()
