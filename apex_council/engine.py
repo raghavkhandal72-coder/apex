@@ -4,6 +4,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List
 
+from .context import load_project_context
 from .evaluator.consensus import synthesize_consensus
 from .evaluator.runtime_eval import evaluate_runtime
 from .evaluator.security_eval import evaluate_security
@@ -20,10 +21,14 @@ class CouncilEngine:
         """Runs the Competitive Head-to-Head Council deliberation."""
         start_time = time.perf_counter()
 
+        # Enrich prompt with local repository guidelines (AGENTS.md / CLAUDE.md) if present
+        repo_ctx = load_project_context(".")
+        full_prompt = f"{task_prompt}\n\n[Context]\n{repo_ctx}" if repo_ctx else task_prompt
+
         # Step 1: Parallel Code Generation
         submissions: Dict[ModelProvider, CodeSubmission] = {}
         for provider_enum, provider_impl in self.providers.items():
-            submissions[provider_enum] = provider_impl.generate(task_prompt)
+            submissions[provider_enum] = provider_impl.generate(full_prompt)
 
         # Step 2: Cross-Examination (Peer Review Matrix)
         critiques: List[Critique] = []

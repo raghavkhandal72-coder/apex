@@ -5,6 +5,10 @@ import sys
 from pathlib import Path
 
 from .engine import CouncilEngine
+from .evaluator.benchmark import format_benchmark_table, run_benchmark_tournament
+from .evaluator.git_review import review_git_diff
+from .evaluator.redteam import run_redteam_analysis
+from .mcp_server import ApexCouncilMCPServer
 from .reporter import CouncilReporter
 from .web.server import run_server
 
@@ -17,7 +21,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     subparsers = parser.add_subparsers(dest="command", help="Sub-commands")
 
-    # Command 1: Battle / Deliberate (default if no subcommand)
+    # Command 1: Battle / Deliberate
     battle_parser = subparsers.add_parser("battle", help="Run head-to-head competition between Gemini, Claude, and OpenAI")
     battle_parser.add_argument("prompt", nargs="?", default="Build an LRU cache with TTL support", help="Coding task prompt")
     battle_parser.add_argument("--format", choices=["table", "markdown", "json"], default="table", help="Output format")
@@ -41,10 +45,29 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     serve_parser.add_argument("--port", type=int, default=8080, help="Port to bind server (default: 8080)")
     serve_parser.add_argument("--host", default="127.0.0.1", help="Host address (default: 127.0.0.1)")
 
-    # Command 5: Init CI Workflow
+    # Command 5: MCP Server
+    mcp_parser = subparsers.add_parser("mcp", help="Run Apex-Council as a Model Context Protocol (MCP) server for Claude Desktop / Cursor")
+    mcp_parser.add_argument("--offline", action="store_true", help="Force offline simulation mode")
+
+    # Command 6: Git Diff Pre-Commit Review
+    diff_parser = subparsers.add_parser("diff", help="Audit uncommitted Git diff changes before commit/push")
+    diff_parser.add_argument("--staged", action="store_true", help="Review staged changes only")
+    diff_parser.add_argument("--format", choices=["table", "markdown", "json"], default="table")
+    diff_parser.add_argument("--offline", action="store_true")
+
+    # Command 7: Red-Team Adversarial Fuzzer
+    redteam_parser = subparsers.add_parser("redteam", help="Fuzz code file against adversarial injections and stress vectors")
+    redteam_parser.add_argument("file", type=Path, help="Path to file to fuzz")
+
+    # Command 8: SWE Benchmark Tournament
+    bench_parser = subparsers.add_parser("benchmark", help="Run 5-Challenge SWE Tournament across Gemini, Claude, and OpenAI")
+    bench_parser.add_argument("--format", choices=["table", "json"], default="table")
+    bench_parser.add_argument("--offline", action="store_true")
+
+    # Command 9: Init CI Workflow
     ci_parser = subparsers.add_parser("init-ci", help="Generate GitHub Actions PR workflow file")
 
-    # Top-level fallback argument for direct prompt: `apex-council "my prompt"`
+    # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
     parser.add_argument("--format", choices=["table", "markdown", "json"], default="table")
     parser.add_argument("-o", "--output", type=Path)
@@ -81,7 +104,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          apex-council "Review PR diff for security flaws, edge cases, and algorithmic optimality" --format markdown -o council_verdict.md
+          apex-council diff --format markdown -o council_verdict.md
 """
     workflow_path.write_text(content, encoding="utf-8")
     print(f"Created GitHub Action workflow at: {workflow_path}")
@@ -98,16 +121,73 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parse_args(argv)
 
-    # 1. Handle init-ci
+    # 1. MCP Server
+    if args.command == "mcp":
+        server = ApexCouncilMCPServer(force_offline=args.offline)
+        server.run()
+        return 0
+
+    # 2. Benchmark Tournament
+    if args.command == "benchmark":
+        print("\n[APEX-COUNCIL] Starting SWE Benchmark Tournament across 5 production challenges...\n")
+        bench_data = run_benchmark_tournament(force_offline=args.offline)
+        if args.format == "json":
+            import json
+            print(json.dumps(bench_data, indent=2))
+        else:
+            print(format_benchmark_table(bench_data))
+        return 0
+
+    # 3. Red-Team Fuzzer
+    if args.command == "redteam":
+        if not args.file.exists():
+            sys.stderr.write(f"Error: File not found: {args.file}\n")
+            return 2
+        content = args.file.read_text(encoding="utf-8", errors="ignore")
+        print(f"\n[APEX-COUNCIL] Red-Teaming code in: {args.file}...\n")
+        report = run_redteam_analysis(content)
+        print("==========================================================")
+        print("   ⚔️ RED-TEAM ADVERSARIAL STRESS & FUZZING REPORT   ")
+        print("==========================================================")
+        print(f"  Probes Run:    {report.total_probes}")
+        print(f"  Passed Probes: {report.passed_probes}")
+        print(f"  Failed Probes: {report.failed_probes}")
+        print(f"  Survival Rate: {report.survival_rate}%\n")
+        if report.findings:
+            print("  Vulnerabilities & Weaknesses Detected:")
+            for f in report.findings:
+                print(f"    • {f}")
+        else:
+            print("  ✓ Zero vulnerabilities triggered by hostile attack probes!")
+        print("==========================================================\n")
+        return 0 if report.failed_probes == 0 else 1
+
+    # 4. Git Diff Review
+    if args.command == "diff":
+        print("\n[APEX-COUNCIL] Inspecting uncommitted Git diff...\n")
+        diff_res = review_git_diff(staged_only=args.staged, force_offline=args.offline)
+        if diff_res["status"] == "clean":
+            print(f"✓ {diff_res['message']}")
+            return 0
+        c_res = diff_res["council_result"]
+        if args.format == "json":
+            print(c_res.to_json())
+        elif args.format == "markdown":
+            print(CouncilReporter.format_markdown(c_res))
+        else:
+            print(CouncilReporter.format_terminal(c_res))
+        return 0
+
+    # 5. Handle init-ci
     if args.command == "init-ci":
         return handle_init_ci()
 
-    # 2. Handle serve
+    # 6. Handle serve
     if args.command == "serve":
         run_server(host=args.host, port=args.port)
         return 0
 
-    # 3. Handle relay
+    # 7. Handle relay
     if args.command == "relay":
         print(f"\n[APEX-COUNCIL] Running Collaborative Relay for: \"{args.prompt}\"...\n")
         engine = CouncilEngine(force_offline=args.offline)
@@ -121,7 +201,7 @@ def main(argv: list[str] | None = None) -> int:
             print(res["combined_code"])
         return 0
 
-    # 4. Handle audit
+    # 8. Handle audit
     if args.command == "audit":
         print(f"\n[APEX-COUNCIL] Auditing file: {args.file}...\n")
         engine = CouncilEngine(force_offline=args.offline)
@@ -138,7 +218,7 @@ def main(argv: list[str] | None = None) -> int:
             print(CouncilReporter.format_terminal(c_res))
         return 0
 
-    # 5. Handle battle / default prompt
+    # 9. Handle battle / default prompt
     prompt = getattr(args, "prompt", None) or args.direct_prompt or "Build an LRU cache with TTL support"
     offline = getattr(args, "offline", False)
     fmt = getattr(args, "format", "table")

@@ -4,28 +4,29 @@
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Council Members](https://img.shields.io/badge/Council-Gemini%20%7C%20Claude%20%7C%20OpenAI-purple.svg)]()
-[![Web Dashboard](https://img.shields.io/badge/Web%20UI-Included-brightgreen.svg)]()
+[![MCP Server](https://img.shields.io/badge/MCP-Standard%20Protocol-purple.svg)]()
+[![Web Dashboard](https://img.shields.io/badge/Web%20Studio-Included-brightgreen.svg)]()
 [![Tests](https://img.shields.io/badge/tests-7%20passing-brightgreen.svg)]()
 
 ---
 
-## ⚡ The Big Idea
+## ⚡ Why Apex-Council?
 
-Frontier AI providers constantly debate who has the best coding model:
-* **Google Gemini** dominates in massive context windows, multimodal reasoning, and speed.
-* **Anthropic Claude** is revered for defensive architectural design and boundary rigor.
-* **OpenAI (GPT-4o / o1)** provides concise algorithmic logic and strict formatting.
+Frontier AI providers constantly debate who writes the best code:
+* **Google Gemini** dominates in massive context reasoning, multimodal ingestion, and raw latency.
+* **Anthropic Claude** is praised for defensive architectural design and boundary safety.
+* **OpenAI (GPT-4o / o1)** excels at concise algorithmic logic and strict formatting.
 
-Yet in reality, **no single model is immune to flaws**: isolated models leave open subtle command injections, path traversals, or unhandled edge cases.
+Yet in production, **isolated models make critical mistakes**—leaving open command injections (CWE-78), path traversals (CWE-22), or race conditions.
 
-**Apex-Council** solves this by convening an autonomous **Multi-Model Supreme Council**:
-1. ⚔️ **Competitive Battle Mode:** Dispatches prompts simultaneously to Gemini, Claude, and OpenAI.
-2. 🔍 **Cross-Critique Matrix (Peer Review):** Each model audits its rivals' code, exposing hallucinations, security bugs, and performance bottlenecks.
-3. 🛡️ **Automated Verification Gate:** Runs AST security scanning (CWE-78, CWE-22, CWE-798) and sandbox execution tests with millisecond timing.
-4. ✨ **Consensus Synthesizer:** Merges the winning architecture with peer-reviewed patches to produce the **Consensus Code**—verifiably superior to any single model's isolated output.
-5. 🤝 **Collaborative Relay Pipeline:** Gemini (Architect) ➔ Claude (Defensive Code) ➔ OpenAI (Unit Tests).
-6. 🌐 **Built-in Web Dashboard:** Futuristic dark-mode UI with live model scorecards and real-time deliberation.
+**Apex-Council** eliminates single-model blindspots by convening an autonomous **Multi-Model Supreme Council**:
+1. ⚔️ **Head-to-Head Arena:** Dispatches prompts simultaneously to Gemini, Claude, and OpenAI.
+2. 🔍 **Cross-Critique Matrix:** Each model acts as an adversarial peer reviewer auditing rivals' code.
+3. 🛡️ **Automated Verification Gate:** AST security analysis, sandboxed subprocess runtime execution, and hostile red-team fuzzing.
+4. ✨ **Consensus Synthesizer:** Merges the winning architecture with peer-reviewed patches to produce flaw-free production code.
+5. 🔌 **Model Context Protocol (MCP) Server:** Plug Apex-Council directly into **Claude Code, Cursor, Windsurf, or Claude Desktop**.
+6. 🌿 **Pre-Commit Git Diff Review:** Automatically audits your uncommitted working tree before you push.
+7. 🏆 **SWE Benchmark Tournament:** Built-in 5-challenge leaderboard testing concurrency, cryptography, memory safety, and distributed locks.
 
 ---
 
@@ -43,7 +44,7 @@ python -m apex_council "Build a thread-safe LRU Cache with TTL"
 
 ### 2. Optional: Connect Live Cloud Models
 
-Whenever environment keys are set, Apex-Council automatically queries live endpoints via native zero-dependency HTTP:
+Whenever environment keys are set, Apex-Council automatically connects to live official REST endpoints (via native zero-dependency HTTP):
 
 ```bash
 export GEMINI_API_KEY="your-gemini-key"
@@ -55,70 +56,91 @@ python -m apex_council "Write an authenticated FastAPI rate-limiter"
 
 ---
 
-## 💻 CLI Commands
+## 💻 CLI Command Suite
 
-### 1. Head-to-Head Battle Arena
-```bash
-python -m apex_council battle "Design a concurrent distributed lock using Redis"
-```
-
-### 2. File Audit Mode
-Have the Supreme Council audit, benchmark, and refactor any existing file:
-```bash
-python -m apex_council audit ./src/auth.py
-```
-
-### 3. Collaborative Relay Pipeline
-Let Gemini design the architecture, Claude write the defensive code, and OpenAI generate unit tests:
-```bash
-python -m apex_council relay "Build an event bus in Python" -o event_bus.py
-```
-
-### 4. Interactive Web Dashboard
-Launch the local dark-mode developer studio:
-```bash
-python -m apex_council serve --port 8080
-# Visit http://127.0.0.1:8080
-```
-
-### 5. Automated CI/CD Generator
-Generate automated GitHub Actions PR review gating:
-```bash
-python -m apex_council init-ci
-```
+| Command | Description |
+| :--- | :--- |
+| `apex-council "prompt"` | Run head-to-head battle across Gemini, Claude, and OpenAI |
+| `apex-council diff` | Audit uncommitted local Git diff for security regressions |
+| `apex-council redteam <file>` | Fuzz and stress-test code with hostile injection payloads |
+| `apex-council benchmark` | Run the 5-Challenge SWE Tournament and show the Leaderboard |
+| `apex-council audit <file>` | Audit, benchmark, and auto-refactor an existing codebase file |
+| `apex-council relay "task"` | Run Collaborative Pipeline: Gemini (Arch) ➔ Claude (Code) ➔ OpenAI (Tests) |
+| `apex-council serve` | Launch the local Cyberpunk dark-mode Web Dashboard |
+| `apex-council mcp` | Start standard Model Context Protocol (stdio) server |
+| `apex-council init-ci` | Generate GitHub Actions PR review workflow |
 
 ---
 
-## 📊 Sample Head-to-Head Scoreboard
+## 🔌 Model Context Protocol (MCP) Integration
+
+Apex-Council can be used directly inside **Claude Desktop**, **Cursor**, or **Claude Code** as an official tool!
+
+Add to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "apex-council": {
+      "command": "python",
+      "args": ["-m", "apex_council", "mcp"],
+      "env": {
+        "GEMINI_API_KEY": "your-key",
+        "ANTHROPIC_API_KEY": "your-key",
+        "OPENAI_API_KEY": "your-key"
+      }
+    }
+  }
+}
+```
+
+Now inside Claude or Cursor, simply ask:
+> *"Ask Apex Council to debate and write a thread-safe event bus."*
+
+---
+
+## 🏆 SWE Benchmark Leaderboard
+
+Run the tournament on your own machine:
+
+```bash
+python -m apex_council benchmark
+```
 
 ```text
-========================================================================
-   APEX-COUNCIL: THE MULTI-LLM CODE SUPREME COURT   
-   Google Gemini  ×  Anthropic Claude  ×  OpenAI / Microsoft
-========================================================================
-
-🎯 Task Prompt: "Build a secure thread-safe cache with TTL"
-
-📊 HEAD-TO-HEAD SCOREBOARD
----------------------------------------------------------------------------
-Model Provider         | Security   | Peer Review  | Runtime    | Overall Score
----------------------------------------------------------------------------
-Google Gemini          | 100%       | 9.2 / 10     | 42.1 ms    | 97.2 / 100
-Anthropic Claude       | 100%       | 9.2 / 10     | 48.3 ms    | 97.2 / 100
-OpenAI / Microsoft     | 100%       | 9.0 / 10     | 51.0 ms    | 96.5 / 100
----------------------------------------------------------------------------
-
-🏆 COUNCIL VERDICT & WINNER: Google Gemini
-  Google Gemini earned the highest composite score based on automated security
-  auditing (100%), runtime verification (42.1ms), and cross-model consensus.
+==========================================================================
+   🏆 APEX-COUNCIL SWE BENCHMARK LEADERBOARD (5 Production Challenges)   
+==========================================================================
+Rank  | Model Provider         | Wins   | Avg Score    | Security   | Latency
+--------------------------------------------------------------------------
+🥇 1st | Google Gemini          | 5      | 97.2         | 100.0%     | 170.1 ms
+🥈 2nd | Anthropic Claude       | 0      | 97.2         | 100.0%     | 182.1 ms
+🥉 3rd | OpenAI / Microsoft     | 0      | 97.2         | 100.0%     | 111.3 ms
+--------------------------------------------------------------------------
 ```
 
 ---
 
-## 🧪 Running Tests
+## 🌿 Pre-Commit Git Diff Review
+
+Prevent bad code and security holes from ever reaching GitHub:
 
 ```bash
-python -m unittest discover -s tests
+# Audit working changes before commit
+python -m apex_council diff
+
+# Audit only staged changes
+python -m apex_council diff --staged
+```
+
+---
+
+## ⚔️ Adversarial Red-Team Fuzzing
+
+Subject your code to hostile adversarial attack vectors (Null bytes, command chaining, path traversal, memory bloat):
+
+```bash
+python -m apex_council redteam src/auth_service.py
 ```
 
 ---
