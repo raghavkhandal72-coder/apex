@@ -189,3 +189,46 @@ class CryptographicLedger:
                 block_count += 1
 
         return True, block_count, "All cryptographic hash chains verified and intact."
+
+
+class MerkleTreeAttestor:
+    """Computes Merkle tree roots for repository-wide integrity attestation."""
+
+    @staticmethod
+    def compute_merkle_root(leaf_hashes: List[str]) -> str:
+        """Pairwise HMAC/SHA-256 Merkle root computation."""
+        if not leaf_hashes:
+            return hashlib.sha256(b"EMPTY_MERKLE_TREE").hexdigest()
+
+        current_level = sorted(leaf_hashes)
+
+        while len(current_level) > 1:
+            next_level: List[str] = []
+            for i in range(0, len(current_level), 2):
+                left = current_level[i]
+                right = current_level[i + 1] if i + 1 < len(current_level) else left
+                combined = hashlib.sha256(f"{left}:{right}".encode("utf-8")).hexdigest()
+                next_level.append(combined)
+            current_level = next_level
+
+        return current_level[0]
+
+    @classmethod
+    def attest_repository(cls, repo_path: Path | str) -> Tuple[str, Dict[str, str]]:
+        """Walks repository files, computes leaf SHA-256 hashes, and returns (merkle_root, file_hashes)."""
+        root = Path(repo_path)
+        file_hashes: Dict[str, str] = {}
+        ignored_dirs = {".git", ".apex", "__pycache__", ".pytest_cache", ".venv", "venv"}
+
+        for p in root.rglob("*"):
+            if p.is_file():
+                if any(ignored in p.parts for ignored in ignored_dirs):
+                    continue
+                try:
+                    rel = p.relative_to(root).as_posix()
+                    file_hashes[rel] = hashlib.sha256(p.read_bytes()).hexdigest()
+                except Exception:
+                    continue
+
+        merkle_root = cls.compute_merkle_root(list(file_hashes.values()))
+        return merkle_root, file_hashes
