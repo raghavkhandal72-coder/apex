@@ -4,11 +4,13 @@
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Security Hardening](https://img.shields.io/badge/Sandbox-Hermetic%20Isolated-red.svg)]()
+[![Code Integrity](https://img.shields.io/badge/Signatures-HMAC--SHA512%20Attested-purple.svg)]()
 [![SOC2 Audit](https://img.shields.io/badge/SOC2-Cryptographically%20Chained-success.svg)]()
 [![Enterprise DLP](https://img.shields.io/badge/DLP-Zero--Leakage%20Sanitizer-blue.svg)]()
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-Production%20Manifests-326CE5.svg)]()
 [![Prometheus](https://img.shields.io/badge/Prometheus-Metrics%20Ready-E6522C.svg)]()
-[![Tests](https://img.shields.io/badge/tests-15%20passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-19%20passing-brightgreen.svg)]()
 
 ---
 
@@ -21,6 +23,10 @@ Enterprises like **Google, Microsoft, Netflix, Stripe, and Meta** cannot deploy 
 
 **Apex-Council** resolves all three enterprise barriers with an all-in-one architecture:
 * 🛡️ **Enterprise Data Loss Prevention (DLP):** Automatically redacts emails, SSNs, credit cards, JWTs, and private keys *before* prompts reach any model.
+* 🔒 **Hermetic Subprocess Sandbox:** All code execution runs in an isolated, scrubbed environment with zero parent credentials or SSH keys exposed.
+* 🔏 **HMAC-SHA512 Code Integrity Signing:** All synthesized consensus code is cryptographically signed with constant-time verification against tampering.
+* 🏰 **Zero-Trust Filesystem Chroot Jail:** Defeats path traversal, symlink escapes, null bytes, and NTFS Alternate Data Streams (ADS).
+* 🛡️ **AST Bomb & Recursion Shield:** Prevents parser overflows, DoS attacks, and deeply nested syntax explosion exploits.
 * 📜 **Cryptographically Chained Audit Trail (SHA-256):** Every single generation and code fix is chained like a blockchain block, guaranteeing non-repudiation.
 * 🔐 **Multi-Tenant Role-Based Access Control (RBAC):** Scoped permissions for `ADMIN`, `SECURITY_LEAD`, `DEVELOPER`, and `AUDITOR`.
 * ⚖️ **Enterprise Governance Policy Engine:** Blocks viral licenses (AGPL/GPL) and prohibited insecure modules (pickle, telnetlib, pycrypto).
@@ -152,6 +158,17 @@ apex_council_model_wins_total{model="Google Gemini"} 890
 apex_council_model_wins_total{model="Anthropic Claude"} 520
 apex_council_model_wins_total{model="OpenAI / Microsoft"} 390
 ```
+
+---
+
+## 🔒 Military-Grade Defense Hardening
+
+Apex-Council enforces defense-in-depth security to ensure that no untrusted code, malicious prompt injection, or parser exploit can breach the runtime environment:
+
+* **Hermetic Sandbox Execution:** Isolates child processes with stripped environments. Denies child processes any access to parent AWS/GCP/Azure tokens, SSH keys, or shell secrets.
+* **HMAC-SHA512 Sovereign Code Attestation:** Emits `# APEX-SIG-SHA512:` cryptographic signatures on generated files. The system rejects execution if even a single byte has been modified out-of-band.
+* **Zero-Trust Filesystem Chroot Jail:** Restricts all file reads and writes within strict root bounds. Automatically rejects path traversals (`../../`), symlink escapes, null-byte poisoning (`\x00`), and Windows NTFS Alternate Data Streams (`::$DATA`).
+* **AST Bomb & Recursion Shield:** Inspects incoming code before parsing. Flags parser-exploding depth attacks, excessive AST node floods (>50,000 nodes), and nested bracket exhaustion before execution occurs.
 
 ---
 
