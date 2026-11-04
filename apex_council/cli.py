@@ -6,6 +6,9 @@ from pathlib import Path
 
 from .engine import CouncilEngine
 from .engineer.autonomous_engineer import AutonomousEngineer
+from .enterprise.audit import CryptographicAuditLogger
+from .enterprise.dlp import EnterpriseDLP
+from .enterprise.policy import EnterprisePolicyEngine
 from .evaluator.benchmark import format_benchmark_table, run_benchmark_tournament
 from .evaluator.git_review import review_git_diff
 from .evaluator.github_pr import review_github_pr
@@ -20,7 +23,7 @@ from .web.server import run_server
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="apex-council",
-        description="🏛️ The Multi-LLM Code Supreme Court: Pitting Google Gemini, Anthropic Claude, and OpenAI against each other.",
+        description="🏛️ The Multi-LLM Code Supreme Court: Enterprise AI Engineering & Consensus Platform.",
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Sub-commands")
@@ -32,7 +35,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     battle_parser.add_argument("-o", "--output", type=Path, help="Save report to file")
     battle_parser.add_argument("--offline", action="store_true", help="Force offline simulation mode")
 
-    # Command 2: Autonomous AI Software Engineer (Build entire repo from scratch)
+    # Command 2: Autonomous AI Software Engineer
     eng_parser = subparsers.add_parser("engineer", help="Autonomous AI Engineer: Deconstruct spec, build multi-file codebase, write tests, & git commit")
     eng_parser.add_argument("spec", help="Natural language application or feature specification")
     eng_parser.add_argument("-o", "--output", type=Path, required=True, help="Directory to create the engineered project in")
@@ -94,7 +97,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     bench_parser.add_argument("--format", choices=["table", "json"], default="table")
     bench_parser.add_argument("--offline", action="store_true")
 
-    # Command 13: Init CI Workflow
+    # Command 13: Enterprise SOC2 Cryptographic Audit Verifier
+    audit_ver_parser = subparsers.add_parser("audit-verify", help="Verify cryptographic SHA-256 integrity of SOC2 / ISO 27001 audit logs")
+    audit_ver_parser.add_argument("--log", type=Path, default=Path("audit_trail.jsonl"), help="Path to audit trail log file")
+
+    # Command 14: Enterprise Data Loss Prevention (DLP) Tester
+    dlp_parser = subparsers.add_parser("dlp-test", help="Test Enterprise DLP sanitization of PII, credit cards, and corporate secrets")
+    dlp_parser.add_argument("text", help="Text containing potential secrets or customer PII to sanitize")
+
+    # Command 15: Enterprise Policy & Compliance Guardrail Checker
+    policy_parser = subparsers.add_parser("policy-check", help="Audit code against Enterprise Compliance policies (licenses, banned libs, type hints)")
+    policy_parser.add_argument("file", type=Path, help="Code file to audit for enterprise compliance")
+
+    # Command 16: Init CI Workflow
     ci_parser = subparsers.add_parser("init-ci", help="Generate GitHub Actions PR workflow file")
 
     # Direct prompt fallback: `apex-council "my prompt"`
@@ -150,6 +165,45 @@ def main(argv: list[str] | None = None) -> int:
             pass
 
     args = parse_args(argv)
+
+    # Enterprise DLP Test
+    if args.command == "dlp-test":
+        print("\n[APEX-COUNCIL] Running Enterprise DLP Sanitization...\n")
+        res = EnterpriseDLP.sanitize(args.text)
+        print(f"Redactions Made: {res.redactions_count}")
+        print(f"Categories Found: {res.categories_found}")
+        print(f"Sanitized Text:   {res.clean_text}\n")
+        return 0
+
+    # Enterprise Audit Verify
+    if args.command == "audit-verify":
+        print(f"\n[APEX-COUNCIL] Verifying SOC2 Cryptographic Audit Trail: {args.log}...\n")
+        logger = CryptographicAuditLogger(log_path=args.log)
+        valid, count, err = logger.verify_integrity()
+        if valid:
+            print(f"✓ AUDIT TRAIL VERIFIED: All {count} cryptographic hash chains are intact and tamper-free.")
+            return 0
+        else:
+            print(f"✗ AUDIT INTEGRITY BREACH: {err}")
+            return 1
+
+    # Enterprise Policy Check
+    if args.command == "policy-check":
+        if not args.file.exists():
+            sys.stderr.write(f"Error: File not found: {args.file}\n")
+            return 2
+        content = args.file.read_text(encoding="utf-8", errors="ignore")
+        print(f"\n[APEX-COUNCIL] Checking Enterprise Compliance Policies for: {args.file}...\n")
+        passed, violations = EnterprisePolicyEngine.audit_enterprise_policies(content)
+        if passed:
+            print("✓ PASSED: Code adheres 100% to Enterprise Compliance & Licensing Baselines.")
+            return 0
+        else:
+            print(f"✗ VIOLATIONS DETECTED ({len(violations)}):")
+            for v in violations:
+                print(f"  • [{v.rule_id}] {v.policy_name}: {v.description}")
+                print(f"    Fix: {v.remediation}")
+            return 1
 
     # 1. Autonomous AI Engineer: Build entire project from spec
     if args.command == "engineer":

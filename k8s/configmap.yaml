@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apex-council-config
+  namespace: ai-platform
+data:
+  APEX_AUTH_REQUIRED: "true"
+  APEX_DLP_ENABLED: "true"
+  APEX_AUDIT_LOG_ENABLED: "true"
+  APEX_PROMETHEUS_METRICS: "true"
