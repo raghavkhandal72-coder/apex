@@ -18,6 +18,7 @@ from apex_council.memory.vault import MemoryVault
 from apex_council.search.crossover import SemanticASTCrossover
 from apex_council.search.mcts import MCTSEngine
 from apex_council.security.mutator import ASTMutationEngine
+from apex_council.security.sandbox import HermeticExecutionSandbox
 from apex_council.security.scanner import SovereignSecurityScanner
 from apex_council.swarm.contracts import ContractSpecification, ContractVerifier
 from apex_council.swarm.fuzzy_patch import AutoImportFixer
@@ -122,14 +123,31 @@ class BlindPeerReviewer:
                 )
             )
 
-            # Aggregate weighted votes
+            # 3. Test Execution Verification (Speculator)
+            test_passed = False
+            if test_harness:
+                test_passed, _, _ = HermeticExecutionSandbox.execute_isolated(
+                    f"{code}\n\n{test_harness}", timeout_sec=2.5
+                )
+            test_conf = 1.0 if test_passed else 0.8
+            votes.append(
+                PeerReviewVote(
+                    candidate_id=cand_id,
+                    reviewer_role="Speculator",
+                    confidence=test_conf,
+                    approved=test_passed,
+                    critique="Tests passed in sandbox" if test_passed else "Tests failed in sandbox",
+                )
+            )
+
+            # Aggregate weighted votes: heavy bonus for test pass, heavy penalty for test fail
             for vote in [v for v in votes if v.candidate_id == cand_id]:
                 weight = calibration.get_role_weight(vote.reviewer_role)
-                contribution = (1.0 if vote.approved else -1.0) * vote.confidence * weight
+                contribution = (2.0 if vote.approved else -3.0) * vote.confidence * weight
                 scores[cand_id] += contribution
 
-        # Select highest scoring candidate
-        best_cand_id = max(scores.keys(), key=lambda k: scores[k])
+        # Select highest scoring candidate (prioritizing Candidate-A if tied)
+        best_cand_id = max(scores.keys(), key=lambda k: (scores[k], -ord(k[-1])))
         best_index = ord(best_cand_id.split("-")[1]) - 65
         return candidates[best_index], votes
 

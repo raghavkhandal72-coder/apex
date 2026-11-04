@@ -138,6 +138,17 @@ class MemoryVault:
         except Exception:
             pass
 
+        # Safe schema migration for pre-existing databases
+        for col, col_def in [("ast_fingerprint", "TEXT NOT NULL DEFAULT ''")]:
+            try:
+                conn.execute(f"ALTER TABLE episodes ADD COLUMN {col} {col_def};")
+            except Exception:
+                pass
+            try:
+                conn.execute(f"ALTER TABLE heuristics ADD COLUMN {col} {col_def};")
+            except Exception:
+                pass
+
         conn.commit()
         if self._persistent_conn is None:
             conn.close()
@@ -259,7 +270,7 @@ class MemoryVault:
                     error_signature=r["error_signature"],
                     lesson_learned=r["lesson_learned"],
                     solution_summary=r["solution_summary"],
-                    ast_fingerprint=r["ast_fingerprint"],
+                    ast_fingerprint=r["ast_fingerprint"] if "ast_fingerprint" in r.keys() else "",
                     status=r["status"],
                     created_at=r["created_at"],
                 )
@@ -287,7 +298,7 @@ class MemoryVault:
                     category=r["category"],
                     pattern=r["pattern"],
                     rule_text=r["rule_text"],
-                    ast_fingerprint=r["ast_fingerprint"],
+                    ast_fingerprint=r["ast_fingerprint"] if "ast_fingerprint" in r.keys() else "",
                     confidence_score=r["confidence_score"],
                     strength_days=r["strength_days"] if "strength_days" in r.keys() else 30.0,
                     last_reinforced_at=r["last_reinforced_at"] if "last_reinforced_at" in r.keys() else "",
@@ -314,7 +325,7 @@ class MemoryVault:
                     error_signature=r["error_signature"],
                     lesson_learned=r["lesson_learned"],
                     solution_summary=r["solution_summary"],
-                    ast_fingerprint=r["ast_fingerprint"],
+                    ast_fingerprint=r["ast_fingerprint"] if "ast_fingerprint" in r.keys() else "",
                     status=r["status"],
                     created_at=r["created_at"],
                 )
@@ -334,7 +345,7 @@ class MemoryVault:
                     category=r["category"],
                     pattern=r["pattern"],
                     rule_text=r["rule_text"],
-                    ast_fingerprint=r["ast_fingerprint"],
+                    ast_fingerprint=r["ast_fingerprint"] if "ast_fingerprint" in r.keys() else "",
                     confidence_score=r["confidence_score"],
                     strength_days=r["strength_days"] if "strength_days" in r.keys() else 30.0,
                     last_reinforced_at=r["last_reinforced_at"] if "last_reinforced_at" in r.keys() else "",

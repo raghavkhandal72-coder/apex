@@ -157,3 +157,7 @@ class PageRankGraph:
         # Normalize final scores to sum strictly to 1.0
         total_sum = sum(ranks.values()) or 1.0
         return {node: score / total_sum for node, score in ranks.items()}
+
+
+PersonalizedPageRankEngine = PageRankGraph
+

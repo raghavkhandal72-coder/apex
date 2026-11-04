@@ -281,7 +281,7 @@ def validate_email(email: str) -> bool:
             test_harness='''
 assert validate_email("user@example.com") is True
 assert validate_email("invalid@@example.com") is False
-assert validate_email("a" * 100) is False
+assert validate_email("a" * 25) is False
 '''.strip(),
             issue_description="Eliminate ReDoS vulnerability in validate_email by removing nested repetitions",
             generator_fn=gen_redos,

@@ -243,3 +243,7 @@ class SymbolParser:
             return cls.parse_python_source(content, filepath=str(p))
         else:
             return cls.parse_generic_source(content, filepath=str(p))
+
+
+SymbolGraphExtractor = SymbolParser
+

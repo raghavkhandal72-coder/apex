@@ -14,7 +14,7 @@ from .evaluator.git_review import review_git_diff
 from .evaluator.github_pr import review_github_pr
 from .evaluator.redteam import run_redteam_analysis
 from .evaluator.self_healing import SelfHealingLoop
-from .graph.ochiai import OchiaiFaultLocalizer
+from .autopsy.ochiai import OchiaiFaultLocalizer
 from .graph.repo_map import RepoMap
 from .mcp_server import ApexCouncilMCPServer
 from .memory.matcher import MemoryMatcher
@@ -34,6 +34,7 @@ KNOWN_COMMANDS = {
     "serve", "mcp", "diff", "redteam", "benchmark", "audit-verify",
     "dlp-test", "policy-check", "init-ci", "repomap", "swarm", "memory",
     "demo", "verify-ledger", "localize", "build-pyz", "swe-bench",
+    "autopsy", "synthesize", "verify-proof", "edge",
     "-h", "--help"
 }
 
@@ -178,6 +179,27 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     # Command 24: Micro-SWE-Bench Harness
     swe_parser = subparsers.add_parser("swe-bench", help="Run 5-Bug Real-World Micro-SWE-Bench harness")
 
+    # Command 25: CPython Bytecode Autopsy Inspector
+    autopsy_parser = subparsers.add_parser("autopsy", help="Disassemble crash site and capture opcode telemetry & frame locals")
+    autopsy_parser.add_argument("file", type=Path, help="Python source file")
+    autopsy_parser.add_argument("--tests", default="", help="Test harness code")
+
+    # Command 26: Deterministic AST Program Synthesizer
+    synth_parser = subparsers.add_parser("synthesize", help="Synthesize verified bug repairs using AST mutations with zero LLM calls")
+    synth_parser.add_argument("file", type=Path, help="Target Python source file")
+    synth_parser.add_argument("--line", type=int, help="Target line number (optional)")
+
+    # Command 27: Verify Git Proof Note
+    proof_parser = subparsers.add_parser("verify-proof", help="Verify HMAC-SHA512 cryptographic proof note on refs/notes/apex-proof")
+    proof_parser.add_argument("commit", nargs="?", default="HEAD", help="Commit SHA or reference (default: HEAD)")
+    proof_parser.add_argument("--repo", type=Path, default=Path("."), help="Repository path")
+
+    # Command 28: Raspberry Pi & ESP32 Edge Runner
+    edge_parser = subparsers.add_parser("edge", help="Raspberry Pi & ESP32 lightweight edge runner with thermal/RAM guards")
+    edge_parser.add_argument("file", nargs="?", type=Path, help="Target Python source file to repair on edge")
+    edge_parser.add_argument("--tests", default="", help="Test harness code")
+    edge_parser.add_argument("--verify", action="store_true", help="Run 3-case built-in edge verification suite")
+
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
     parser.add_argument("--format", choices=["table", "markdown", "json"], default="table")
@@ -225,8 +247,8 @@ jobs:
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         try:
-            sys.stdout.reconfigure(encoding="utf-8")
-            sys.stderr.reconfigure(encoding="utf-8")
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
         except Exception:
             pass
 
@@ -579,7 +601,137 @@ def main(argv: list[str] | None = None) -> int:
         run_benchmark()
         return 0
 
-    # 16. Handle battle / default prompt
+    # 16. CPython Bytecode Autopsy
+    if args.command == "autopsy":
+        from .autopsy.bytecode_inspector import BytecodeInspector
+        if not args.file.exists():
+            sys.stderr.write(f"Error: File not found: {args.file}\n")
+            return 2
+        code = args.file.read_text(encoding="utf-8")
+        def run_target() -> None:
+            scope = {}
+            code_obj = compile(code, str(args.file), "exec")
+            exec(code_obj, scope)
+            if args.tests:
+                test_obj = compile(args.tests, f"test_{args.file.name}", "exec")
+                exec(test_obj, scope)
+
+        _, report = BytecodeInspector.execute_and_autopsy(run_target)
+        print("==========================================================")
+        print("   🔬 CPYTHON BYTECODE CRASH AUTOPSY REPORT   ")
+        print("==========================================================")
+        if report and report.crashed:
+            print(f"  Crashed: True")
+            print(f"  Exception: {report.exception_type}: {report.exception_message}")
+            print(f"  Location: {report.crashing_file}:{report.crashing_line} in {report.crashing_function}()")
+            if report.crashing_instruction:
+                print(f"  Crashing Opcode: {report.crashing_instruction.opname} (offset {report.crashing_instruction.offset})")
+            print("  Surrounding Disassembly:")
+            for op in report.surrounding_opcodes:
+                marker = ">>>" if op.is_crashing else "   "
+                print(f"    {marker} {op.offset:4d} {op.opname:<20} {op.argval if op.argval is not None else ''}")
+        else:
+            print("  Crashed: False")
+            print("  Execution completed cleanly with zero unhandled exceptions.")
+        print("==========================================================\n")
+        return 0
+
+    # 17. Deterministic AST Synthesis
+    if args.command == "synthesize":
+        from .synthesis.ast_synthesizer import DeterministicASTSynthesizer
+        if not args.file.exists():
+            sys.stderr.write(f"Error: File not found: {args.file}\n")
+            return 2
+        code = args.file.read_text(encoding="utf-8")
+        target_lines = [args.line] if args.line else None
+        candidates = DeterministicASTSynthesizer.synthesize_repairs(code, suspicious_lines=target_lines)
+        print("==========================================================")
+        print(f"   🧬 DETERMINISTIC AST SYNTHESIS ({len(candidates)} candidates)   ")
+        print("==========================================================")
+        for i, cand in enumerate(candidates, 1):
+            print(f"\nCandidate {i} [{cand.repair_strategy} | Edit Dist: {cand.ast_edit_distance}]:")
+            print(cand.candidate_code)
+        print("==========================================================\n")
+        return 0
+
+    # 18. Verify Git Proof Note
+    if args.command == "verify-proof":
+        from .git_engine.proof_notes import GitProofNotesEngine
+        engine = GitProofNotesEngine(args.repo)
+        valid, msg, proof = engine.verify_proof(args.commit)
+        print("==========================================================")
+        print("   🛡️ APEX-SOVEREIGN CRYPTOGRAPHIC PROOF VERIFICATION   ")
+        print("==========================================================")
+        print(f"  Status: {'[VALID]' if valid else '[INVALID]'}")
+        print(f"  Message: {msg}")
+        if proof:
+            print(f"  Commit: {proof.commit_sha}")
+            print(f"  Target File: {proof.target_file}")
+            print(f"  Ochiai SBFL Score: {proof.ochiai_score}")
+            print(f"  Mutation Kill Score: {proof.mutation_kill_score:.1f}%")
+            print(f"  Merkle Root: {proof.merkle_root}")
+            print(f"  Timestamp: {proof.timestamp_iso}")
+        print("==========================================================\n")
+        return 0 if valid else 1
+
+    # 19. Raspberry Pi & ESP32 Edge Runner
+    if args.command == "edge":
+        from .edge.edge_runner import ApexEdgeRunner
+        runner = ApexEdgeRunner()
+        if args.verify or not args.file:
+            print("\n[APEX-COUNCIL] Running Raspberry Pi & ESP32 Edge Self-Verification Suite...\n")
+            test_cases = [
+                (
+                    "Case 1: Sensor Window Off-By-One Bug (IndexError)",
+                    "def moving_sum(readings):\n    total = 0\n    for i in range(len(readings) + 1):\n        total += readings[i]\n    return total\n",
+                    "assert moving_sum([10, 20, 30]) == 60\nassert moving_sum([]) == 0\n",
+                ),
+                (
+                    "Case 2: Telemetry Voltage Divider Crash (ZeroDivisionError)",
+                    "def compute_efficiency(output_watts, input_watts):\n    ratio = output_watts / input_watts\n    return round(ratio * 100.0, 2)\n",
+                    "assert compute_efficiency(50.0, 100.0) == 50.0\nassert compute_efficiency(0.0, 0.0) == 0.0\n",
+                ),
+                (
+                    "Case 3: ESP32 Packet Header Missing Key (KeyError)",
+                    "def extract_rssi(packet):\n    rssi = packet['rssi_dbm']\n    return rssi if rssi is not None else -100\n",
+                    "assert extract_rssi({'rssi_dbm': -62}) == -62\nassert extract_rssi({'node_id': 'esp32_01'}) == -100\n",
+                ),
+            ]
+            for title, buggy_src, test_src in test_cases:
+                res = runner.solve(buggy_src.strip(), test_src.strip())
+                status_mark = "✓" if res.repaired else "✗"
+                print(f"[{status_mark}] {title}")
+                print(f"    Strategy: {res.strategy} ({res.execution_ms:.1f}ms) | Opcodes: {res.post_patch_opcodes} | Peak RAM: {res.post_patch_peak_bytes}B")
+                print(f"    HMAC-SHA512: {res.hmac_sha512_signature[:40]}...")
+            print("\n[✓] Edge runner verification complete.\n")
+            return 0
+
+        if not args.file.exists():
+            sys.stderr.write(f"Error: Target file not found: {args.file}\n")
+            return 2
+        code = args.file.read_text(encoding="utf-8")
+        res = runner.solve(code, args.tests)
+        print("==========================================================")
+        print("   ⚡ APEX-SOVEREIGN EDGE RUNNER REPORT   ")
+        print("==========================================================")
+        print(f"  Repaired:        {res.repaired}")
+        print(f"  Strategy:        {res.strategy}")
+        print(f"  Opcodes:         {res.post_patch_opcodes} VM instructions")
+        print(f"  Peak RAM:        {res.post_patch_peak_bytes} bytes")
+        print(f"  Latency:         {res.execution_ms:.1f} ms")
+        print(f"  HMAC-SHA512:     {res.hmac_sha512_signature[:48]}...")
+        print(f"  Hardware Temp:   {res.hardware_status.cpu_temp_celsius:.1f}°C")
+        print(f"  Free RAM:        {res.hardware_status.available_ram_mb} MB")
+        print("  Patched AST:")
+        for l in res.patched_code.splitlines():
+            print(f"    | {l}")
+        print("==========================================================\n")
+        if res.repaired:
+            args.file.write_text(res.patched_code, encoding="utf-8")
+            print(f"[✓] Overwritten {args.file} with verified patch.\n")
+        return 0 if res.repaired else 1
+
+    # 20. Handle battle / default prompt
     prompt = getattr(args, "prompt", None) or args.direct_prompt or "Build an LRU cache with TTL support"
     offline = getattr(args, "offline", False)
     fmt = getattr(args, "format", "table")

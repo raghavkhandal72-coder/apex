@@ -125,3 +125,7 @@ class ASTCache:
         finally:
             if self._persistent_conn is None:
                 conn.close()
+
+
+IncrementalASTCache = ASTCache
+
