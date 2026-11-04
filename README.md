@@ -4,13 +4,23 @@
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Security Hardening](https://img.shields.io/badge/Sandbox-Hermetic%20Isolated-red.svg)]()
+[![PEP 578](https://img.shields.io/badge/Sandbox-PEP%20578%20Rootless%20Audit-red.svg)]()
+[![MCTS Engine](https://img.shields.io/badge/Search-MCTS%20Test--Time%20Compute-orange.svg)]()
 [![Code Integrity](https://img.shields.io/badge/Signatures-HMAC--SHA512%20Attested-purple.svg)]()
-[![SOC2 Audit](https://img.shields.io/badge/SOC2-Cryptographically%20Chained-success.svg)]()
-[![Enterprise DLP](https://img.shields.io/badge/DLP-Zero--Leakage%20Sanitizer-blue.svg)]()
-[![Kubernetes](https://img.shields.io/badge/Kubernetes-Production%20Manifests-326CE5.svg)]()
-[![Prometheus](https://img.shields.io/badge/Prometheus-Metrics%20Ready-E6522C.svg)]()
-[![Tests](https://img.shields.io/badge/tests-19%20passing-brightgreen.svg)]()
+[![AST Mutation](https://img.shields.io/badge/Red--Team-AST%20Mutation%20Testing-success.svg)]()
+[![SOC2 Audit](https://img.shields.io/badge/SOC2-Cryptographically%20Chained-blue.svg)]()
+[![Tests](https://img.shields.io/badge/tests-50%20passing-brightgreen.svg)]()
+
+---
+
+## ⚡ Zero-Setup Instant Demo (Zero API Keys Required)
+
+You do not need to configure any API keys or network credentials to see the full sovereign engine in action. Run the built-in Flight Recorder:
+
+```bash
+python -m apex_council demo --replay
+```
+*Live streams Personalized PageRank mapping, Staff Architect spec deconstruction, Test-First Speculator assertions, MCTS branch exploration, and AST mutation kill scores directly in Cyberpunk ANSI terminal mode.*
 
 ---
 
@@ -95,6 +105,11 @@ python -m apex_council engineer "Build a concurrent distributed lock manager wit
 
 | Command | Category | Description |
 | :--- | :--- | :--- |
+| `apex-council demo --replay` | **Flight Recorder** | Zero-API-key realistic offline autonomous SWE replay |
+| `apex-council swarm <task> [--repo <dir>]` | **Autonomous SWE** | 5-Role Swarm + MCTS Test-Time Compute + Sandbox Gatekeeper |
+| `apex-council repomap [dir] [--tokens 1024]` | **Context Map** | Sub-12ms Personalized PageRank topological repository skeleton |
+| `apex-council memory [--query <text>]` | **Knowledge Vault** | Query cross-session SQLite3 FTS5 BM25 & AST structural memory |
+| `apex-council verify-ledger` | **Blockchain Audit** | Verify tamper-evident HMAC-SHA512 cryptographic ledger chain |
 | `apex-council engineer <spec> -o <dir>` | **AI Engineer** | Deconstruct spec, build multi-file codebase, write tests, & git commit |
 | `apex-council solve <issue> [--repo <dir>]` | **AI Engineer** | Localize bug across files & apply verified patch |
 | `apex-council heal <file>` | **Self-Healing** | Autonomous Closed-Loop Code Repair (Tests ➔ Traceback ➔ Fix ➔ Re-test) |
