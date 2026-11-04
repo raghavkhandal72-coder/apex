@@ -14,6 +14,7 @@ from .evaluator.git_review import review_git_diff
 from .evaluator.github_pr import review_github_pr
 from .evaluator.redteam import run_redteam_analysis
 from .evaluator.self_healing import SelfHealingLoop
+from .graph.ochiai import OchiaiFaultLocalizer
 from .graph.repo_map import RepoMap
 from .mcp_server import ApexCouncilMCPServer
 from .memory.matcher import MemoryMatcher
@@ -22,7 +23,8 @@ from .polyglot import detect_language, get_language_prompt_guidelines
 from .reporter import CouncilReporter
 from .security.ledger import CryptographicLedger
 from .swarm.coordinator import SwarmCoordinator
-from .ui.replay import FlightRecorderReplay
+from .swarm.solver import AutonomousIssueSolver
+from .ui.replay import FlightRecorderReplay, HTMLReportGenerator
 from .ui.terminal import CyberpunkTUI
 from .web.server import run_server
 
@@ -31,7 +33,7 @@ KNOWN_COMMANDS = {
     "battle", "engineer", "solve", "heal", "pr", "audit", "relay",
     "serve", "mcp", "diff", "redteam", "benchmark", "audit-verify",
     "dlp-test", "policy-check", "init-ci", "repomap", "swarm", "memory",
-    "demo", "verify-ledger",
+    "demo", "verify-ledger", "localize", "build-pyz", "swe-bench",
     "-h", "--help"
 }
 
@@ -67,6 +69,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     solve_parser = subparsers.add_parser("solve", help="Autonomous Issue Resolver: Localize bug, patch files, and verify fix")
     solve_parser.add_argument("issue", help="Bug report or issue description to resolve")
     solve_parser.add_argument("--repo", type=Path, default=Path("."), help="Target repository directory (default: current directory)")
+    solve_parser.add_argument("--file", help="Specific target file relative to repository root")
+    solve_parser.add_argument("--tests", default="", help="Optional test harness code or script")
+    solve_parser.add_argument("--html", type=Path, help="Save standalone HTML verification report to file")
     solve_parser.add_argument("--offline", action="store_true")
 
     # Command 4: Autonomous Closed-Loop Self-Healing
@@ -160,6 +165,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     # Command 21: Cryptographic Hash-Chained Audit Ledger Verifier
     ledger_parser = subparsers.add_parser("verify-ledger", help="Verify HMAC-SHA512 cryptographic audit chain")
     ledger_parser.add_argument("--ledger", type=Path, default=Path(".apex/audit_chain.jsonl"), help="Path to audit ledger")
+
+    # Command 22: Spectrum-Based Fault Localization (Ochiai)
+    local_parser = subparsers.add_parser("localize", help="Spectrum-based fault localization using Ochiai algorithm")
+    local_parser.add_argument("file", type=Path, help="Target Python source file to trace")
+    local_parser.add_argument("--tests", required=True, help="Test code to run against the source file")
+
+    # Command 23: Standalone Executable Compiler (zipapp)
+    pyz_parser = subparsers.add_parser("build-pyz", help="Compile standalone zero-dependency apex.pyz executable")
+    pyz_parser.add_argument("-o", "--output", default="dist/apex.pyz", help="Output path for .pyz archive")
+
+    # Command 24: Micro-SWE-Bench Harness
+    swe_parser = subparsers.add_parser("swe-bench", help="Run 5-Bug Real-World Micro-SWE-Bench harness")
 
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
@@ -351,6 +368,40 @@ def main(argv: list[str] | None = None) -> int:
 
     # 2. Autonomous Issue Solver / Bug Hunter
     if args.command == "solve":
+        if getattr(args, "file", None):
+            print(f"\n[APEX-COUNCIL] Sovereign Issue Solver investigating: \"{args.issue}\" in {args.file}...\n")
+            solver = AutonomousIssueSolver(repo_dir=args.repo)
+            report = solver.solve_issue(
+                target_file_rel=args.file,
+                issue_description=args.issue,
+                test_harness=getattr(args, "tests", ""),
+            )
+            print("==========================================================")
+            print("   🔍 APEX-SOVEREIGN ISSUE RESOLUTION REPORT   ")
+            print("==========================================================")
+            print(f"  Target File:    {report.target_file}")
+            print(f"  Status:         {'✓ PASSED & SIGNED' if report.success else '✗ FAILED'}")
+            print(f"  Suspicious Lns: {report.suspicious_lines}")
+            print(f"  Merkle Root:    {report.merkle_root[:16]}...")
+            print(f"  Ledger Block:   #{report.ledger_block_index}")
+            print(f"  Duration:       {report.duration_ms:.1f} ms")
+            print("==========================================================\n")
+            if getattr(args, "html", None):
+                diff_text = CyberpunkTUI.render_diff(report.original_code, report.patched_code)
+                HTMLReportGenerator.generate_report(
+                    title="Apex-Sovereign Issue Resolution",
+                    task_prompt=args.issue,
+                    target_file=report.target_file,
+                    diff_text=diff_text,
+                    is_passing=report.success,
+                    merkle_root=report.merkle_root,
+                    signature=report.details.get("signature", "N/A"),
+                    duration_ms=report.duration_ms,
+                    output_path=args.html,
+                )
+                print(f"[✓] Standalone HTML report generated: {args.html}\n")
+            return 0 if report.success else 1
+
         print(f"\n[APEX-COUNCIL] Autonomous Bug Hunter investigating issue: \"{args.issue}\"...")
         print(f"[APEX-COUNCIL] Scanning repository: {args.repo}...\n")
         engineer = AutonomousEngineer(force_offline=args.offline)
@@ -495,7 +546,40 @@ def main(argv: list[str] | None = None) -> int:
             print(CouncilReporter.format_terminal(c_res))
         return 0
 
-    # 13. Handle battle / default prompt
+    # 13. Spectrum-Based Fault Localization (Ochiai)
+    if args.command == "localize":
+        if not args.file.exists():
+            sys.stderr.write(f"Error: Target file not found: {args.file}\n")
+            return 2
+        code = args.file.read_text(encoding="utf-8")
+        print(f"\n[APEX-COUNCIL] Running Ochiai Fault Localization on: {args.file}...")
+        localizer = OchiaiFaultLocalizer()
+        localizer.trace_execution(code, args.tests, args.file.name)
+        ranked = localizer.rank_suspicious_statements()
+        print("==========================================================")
+        print("   🔍 OCHIAI SPECTRUM-BASED FAULT LOCALIZATION   ")
+        print("==========================================================")
+        if not ranked:
+            print("  No suspicious statements identified (all tests passed or no trace).")
+        else:
+            for s in ranked[:10]:
+                print(f"  Line {s.line_number:4d} | Suspiciousness: {s.suspiciousness:.4f} | {s.source_code.strip()[:60]}")
+        print("==========================================================\n")
+        return 0
+
+    # 14. Build Standalone Executable (zipapp)
+    if args.command == "build-pyz":
+        from scripts.build_pyz import build_standalone_pyz
+        out_path = build_standalone_pyz(output_path=args.output)
+        return 0
+
+    # 15. Micro-SWE-Bench Tournament
+    if args.command == "swe-bench":
+        from benchmarks.micro_swebench import run_benchmark
+        run_benchmark()
+        return 0
+
+    # 16. Handle battle / default prompt
     prompt = getattr(args, "prompt", None) or args.direct_prompt or "Build an LRU cache with TTL support"
     offline = getattr(args, "offline", False)
     fmt = getattr(args, "format", "table")

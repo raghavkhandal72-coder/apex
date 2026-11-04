@@ -1,10 +1,11 @@
-"""Cyberpunk Terminal TUI and Real-Time Event Streamer.
+"""Cyberpunk Terminal TUI, Braille Sparklines, Split-Pane Dashboard, and Real-Time Event Streamer.
 Pure Python standard library implementation with zero external dependencies.
 """
 
 from __future__ import annotations
 
 import difflib
+import math
 import os
 import shutil
 import sys
@@ -24,6 +25,7 @@ class TerminalColors:
     ORANGE = "\033[38;5;208m"
     RED = "\033[38;5;196m"
     DARK_GRAY = "\033[38;5;240m"
+    LIGHT_GRAY = "\033[38;5;250m"
     BG_DARK = "\033[48;5;234m"
 
     @classmethod
@@ -35,16 +37,78 @@ class TerminalColors:
 class CyberpunkTUI:
     """Terminal dashboard for Swarm deliberations, PageRank repo-maps, and diff streams."""
 
+    SPARK_CHARS = (" ", "▂", "▃", "▄", "▅", "▆", "▇", "█")
+    BRAILLE_SPINNER = ("⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏")
+
+    @classmethod
+    def render_sparkline(cls, values: List[float], width: Optional[int] = None) -> str:
+        """Renders an ASCII/Unicode Braille sparkline chart from numeric values."""
+        if not values:
+            return ""
+        min_v = min(values)
+        max_v = max(values)
+        range_v = max_v - min_v if max_v != min_v else 1.0
+
+        target_vals = values[-width:] if width and len(values) > width else values
+        chars = []
+        for v in target_vals:
+            idx = int(((v - min_v) / range_v) * (len(cls.SPARK_CHARS) - 1))
+            idx = max(0, min(len(cls.SPARK_CHARS) - 1, idx))
+            chars.append(cls.SPARK_CHARS[idx])
+        return "".join(chars)
+
+    @classmethod
+    def get_spinner_frame(cls, index: int) -> str:
+        return cls.BRAILLE_SPINNER[index % len(cls.BRAILLE_SPINNER)]
+
     @staticmethod
     def render_banner() -> str:
         term_width = min(shutil.get_terminal_size((80, 24)).columns, 100)
         c = TerminalColors
+        inner_width = term_width - 4
+        title1 = "🏛️  APEX-SOVEREIGN: AUTONOMOUS SWE SWARM & REPO-GRAPH ENGINE"
+        title2 = "Multi-Model Adversarial Swarm × MCTS Test-Time Compute [v2.0]"
         lines = [
-            f"{c.CYAN}{c.BOLD}╔═" + "═" * (term_width - 4) + "═╗",
-            f"║  🏛️  APEX-SOVEREIGN: AUTONOMOUS SWE SWARM & REPO-GRAPH ENGINE" + " " * (term_width - 64) + "║",
-            f"║     Multi-Model Adversarial Swarm × MCTS Test-Time Compute [v2.0]" + " " * (term_width - 69) + "║",
-            f"╚═" + "═" * (term_width - 4) + "═╝{c.RESET}",
+            f"{c.CYAN}{c.BOLD}╔═" + "═" * inner_width + "═╗",
+            f"║  {title1}" + " " * max(0, inner_width - len(title1) + 2) + "║",
+            f"║     {title2}" + " " * max(0, inner_width - len(title2) - 3) + "║",
+            f"╚═" + "═" * inner_width + "═╝{c.RESET}",
         ]
+        return "\n".join(lines)
+
+    @classmethod
+    def render_split_pane(cls, left_lines: List[str], right_lines: List[str], width: int = 90) -> str:
+        """Renders two columns side-by-side with a vertical ANSI divider."""
+        c = TerminalColors
+        col_width = (width - 3) // 2
+        max_rows = max(len(left_lines), len(right_lines))
+        out: List[str] = []
+
+        header = f"{c.GOLD}┌{'─' * col_width}┬{'─' * col_width}┐{c.RESET}"
+        out.append(header)
+
+        for i in range(max_rows):
+            l = left_lines[i] if i < len(left_lines) else ""
+            r = right_lines[i] if i < len(right_lines) else ""
+            clean_l = c.strip_ansi(l)[:col_width]
+            clean_r = c.strip_ansi(r)[:col_width]
+            pad_l = " " * (col_width - len(clean_l))
+            pad_r = " " * (col_width - len(clean_r))
+            out.append(f"{c.GOLD}│{c.RESET} {l}{pad_l} {c.GOLD}│{c.RESET} {r}{pad_r} {c.GOLD}│{c.RESET}")
+
+        footer = f"{c.GOLD}└{'─' * col_width}┴{'─' * col_width}┘{c.RESET}"
+        out.append(footer)
+        return "\n".join(out)
+
+    @classmethod
+    def render_mcts_tree(cls, trajectory: List[str]) -> str:
+        """Renders an MCTS winning trajectory as a visual tree."""
+        c = TerminalColors
+        lines = [f"{c.CYAN}{c.BOLD}🌲 MCTS Rollout Trajectory Spine:{c.RESET}"]
+        for i, step in enumerate(trajectory):
+            is_last = (i == len(trajectory) - 1)
+            prefix = "└── " if is_last else "├── "
+            lines.append(f"  {c.GOLD}{prefix}{c.RESET}{step}")
         return "\n".join(lines)
 
     @staticmethod
@@ -100,6 +164,5 @@ class CyberpunkTUI:
             elif clean.startswith("-"):
                 rendered.append(f"{c.RED}{clean}{c.RESET}")
             else:
-                rendered.append(f"{c.DARK_GRAY}{clean}{c.RESET}")
-
+                rendered.append(f"  {clean}")
         return "\n".join(rendered)
