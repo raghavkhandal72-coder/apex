@@ -54,7 +54,7 @@ assert multiply(3, 4) == 12
         self.assertIn(result.winner, [ModelProvider.GEMINI, ModelProvider.CLAUDE, ModelProvider.OPENAI])
         self.assertEqual(len(result.submissions), 3)
         self.assertEqual(len(result.critiques), 6)  # 3 models * 2 critiques each
-        self.assertTrue(result.consensus_code.startswith('"""Apex-Council Synthesized Implementation'))
+        self.assertIn("Apex-Council Sovereign Implementation", result.consensus_code)
 
     def test_collaborative_relay_pipeline(self):
         res = self.engine.collaborative_relay("Build a task scheduler")

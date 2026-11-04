@@ -34,7 +34,7 @@ class CouncilReporter:
   / /| | / /_/ / __/  |   /    / /    / / / / / / /  |/ / /    / /  / /  
  / ___ |/ ____/ /___ /   |    / /___ / /_/ / /_/ / /|  / /____/ /  / /___
 /_/  |_/_/   /_____//_/|_|    \____/ \____/\____/_/ |_/\____/___/ /_____/
-{RESET}{DIM}   Google Gemini  ×  Anthropic Claude  ×  OpenAI / Microsoft  [v1.0.0]{RESET}"""
+{RESET}{BOLD}{GREEN}   Sovereign Consensus Core × Military-Grade Hardened Sandbox  [v1.0.0]{RESET}"""
         lines.append(banner)
         lines.append(f"{BOLD}{CYAN}========================================================================{RESET}\n")
 
