@@ -45,9 +45,70 @@ class TestMCPSpecialistsAndPUCT(unittest.TestCase):
             "apex_sbfl_triad",
             "apex_shapley_consensus",
             "apex_hoare_verify",
+            "apex_cfg",
+            "apex_abstract_interp",
+            "apex_cegis_solve",
+            "apex_solomonoff_eval",
         }
         for expected in expected_tools:
             self.assertIn(expected, tool_names, f"Missing MCP tool: {expected}")
+
+    def test_mcp_call_apex_cfg(self) -> None:
+        src = "def f(x):\n    if x > 0:\n        return x\n    return -x\n"
+        req = {
+            "jsonrpc": "2.0",
+            "id": 201,
+            "method": "tools/call",
+            "params": {"name": "apex_cfg", "arguments": {"source_code": src}},
+        }
+        resp = self.server.handle_request(req)
+        self.assertIsNotNone(resp)
+        payload = json.loads(resp["result"]["content"][0]["text"])
+        self.assertGreater(payload["total_blocks"], 2)
+        self.assertIn("immediate_dominators", payload)
+
+    def test_mcp_call_apex_abstract_interp(self) -> None:
+        src = "x = 10\ny = 2\nz = x / y\n"
+        req = {
+            "jsonrpc": "2.0",
+            "id": 202,
+            "method": "tools/call",
+            "params": {"name": "apex_abstract_interp", "arguments": {"source_code": src}},
+        }
+        resp = self.server.handle_request(req)
+        self.assertIsNotNone(resp)
+        payload = json.loads(resp["result"]["content"][0]["text"])
+        self.assertEqual(payload["zero_division_risks"], 0)
+        self.assertGreaterEqual(payload["proven_safe_count"], 1)
+
+    def test_mcp_call_apex_cegis_solve(self) -> None:
+        src = "def inc(x): return x - 1\n"
+        tests = "assert inc(5) == 6\n"
+        req = {
+            "jsonrpc": "2.0",
+            "id": 203,
+            "method": "tools/call",
+            "params": {"name": "apex_cegis_solve", "arguments": {"source_code": src, "test_code": tests}},
+        }
+        resp = self.server.handle_request(req)
+        self.assertIsNotNone(resp)
+        payload = json.loads(resp["result"]["content"][0]["text"])
+        self.assertTrue(payload["success"])
+        self.assertIn("+", payload["synthesized_code"])
+
+    def test_mcp_call_apex_solomonoff_eval(self) -> None:
+        src = "def add(a, b): return a + b\n"
+        req = {
+            "jsonrpc": "2.0",
+            "id": 204,
+            "method": "tools/call",
+            "params": {"name": "apex_solomonoff_eval", "arguments": {"source_code": src}},
+        }
+        resp = self.server.handle_request(req)
+        self.assertIsNotNone(resp)
+        payload = json.loads(resp["result"]["content"][0]["text"])
+        self.assertGreater(payload["lzw_token_count"], 0)
+        self.assertGreater(payload["solomonoff_prior_score"], 0.0)
 
     def test_mcp_call_apex_sbfl_triad(self) -> None:
         src = "def add(a, b):\n    return a - b\n"

@@ -36,6 +36,7 @@ KNOWN_COMMANDS = {
     "demo", "verify-ledger", "localize", "build-pyz", "swe-bench",
     "autopsy", "synthesize", "verify-proof", "edge",
     "perf", "chaos", "appsec", "db-tune", "modernize", "release", "sbfl", "hoare",
+    "cfg", "abstract-interp", "cegis", "solomonoff",
     "-h", "--help"
 }
 
@@ -240,6 +241,23 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     # Command 36: Formal Hoare Logic & Invariant Verifier
     hoare_parser = subparsers.add_parser("hoare", help="Formal Verifier: verify zero-division, loop termination, & None dereferences via Dijkstra WP")
     hoare_parser.add_argument("file", type=Path, help="Target Python source file to verify")
+
+    # Command 37: Control Flow Graph & Lengauer-Tarjan Dominator Trees
+    cfg_parser = subparsers.add_parser("cfg", help="Control Flow Graph & Lengauer-Tarjan Dominator Tree analysis")
+    cfg_parser.add_argument("file", type=Path, help="Target Python source file to analyze")
+
+    # Command 38: Abstract Interpretation & Interval Polyhedra Prover
+    ai_parser = subparsers.add_parser("abstract-interp", help="Abstract Interpretation & Interval Polyhedra static safety prover")
+    ai_parser.add_argument("file", type=Path, help="Target Python source file to prove")
+
+    # Command 39: Counterexample-Guided Inductive Synthesis (CEGIS)
+    cegis_parser = subparsers.add_parser("cegis", help="Counterexample-Guided Inductive Synthesizer (CEGIS)")
+    cegis_parser.add_argument("file", type=Path, help="Target Python source file to repair")
+    cegis_parser.add_argument("--tests", required=True, help="Test harness code")
+
+    # Command 40: Solomonoff Algorithmic Prior & Kolmogorov Upper Bound
+    sol_parser = subparsers.add_parser("solomonoff", help="Solomonoff Algorithmic Prior, Kolmogorov Bound, & Shannon AST Entropy")
+    sol_parser.add_argument("file", type=Path, help="Target Python source file to evaluate")
 
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
@@ -969,6 +987,110 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"      Remediation:          {v.remediation_hint}")
         print("==========================================================\n")
         return 0 if rep.is_provably_safe else 1
+
+    # Command 37: Control Flow Graph & Dominator Trees
+    if args.command == "cfg":
+        from .graph.cfg_dominator import CFGDominatorEngine
+        if not args.file.exists():
+            sys.stderr.write(f"Error: File not found: {args.file}\n")
+            return 2
+        src = args.file.read_text(encoding="utf-8")
+        rep = CFGDominatorEngine.analyze_source(src)
+        print("==========================================================")
+        print("   🌳 CONTROL FLOW GRAPH & LENGAUER-TARJAN DOMINATOR TREE   ")
+        print("==========================================================")
+        print(f"  Target File:     {args.file}")
+        print(f"  Basic Blocks:    {rep.total_blocks}")
+        print(f"  CFG Edges:       {rep.total_edges}")
+        print(f"  Complexity M:    {rep.cyclomatic_complexity}")
+        print(f"  Natural Loops:   {len(rep.natural_loops)}")
+        print("  Immediate Dominators (idom):")
+        for node, dom in sorted(rep.immediate_dominators.items()):
+            print(f"    - Block {node} <= idom: {f'Block {dom}' if dom is not None else 'ROOT (Entry)'}")
+        if rep.natural_loops:
+            print("  Natural Loop Headers:")
+            for idx, loop in enumerate(rep.natural_loops, 1):
+                print(f"    + Loop #{idx}: Header B{loop.header} (Back-edge: B{loop.back_edge_source} -> B{loop.header}, Blocks: {sorted(loop.body_blocks)})")
+        print("==========================================================\n")
+        return 0
+
+    # Command 38: Abstract Interpretation & Interval Polyhedra Prover
+    if args.command == "abstract-interp":
+        from .formal.abstract_interpreter import ASTAbstractInterpreter
+        if not args.file.exists():
+            sys.stderr.write(f"Error: File not found: {args.file}\n")
+            return 2
+        src = args.file.read_text(encoding="utf-8")
+        analyzer = ASTAbstractInterpreter()
+        rep = analyzer.analyze(src)
+        print("==========================================================")
+        print("   🌐 ABSTRACT INTERPRETATION & INTERVAL POLYHEDRA PROVER   ")
+        print("==========================================================")
+        print(f"  Target File:     {args.file}")
+        print(f"  Total Proofs:    {rep.total_proofs}")
+        print(f"  Certified Safe:  {rep.proven_safe_count} / {rep.total_proofs}")
+        print(f"  Zero-Div Risks:  {rep.zero_division_risks}")
+        print("  Variable Intervals (Fixed-Point):")
+        for var, inv in sorted(rep.final_state.environment.items()):
+            print(f"    • {var}: {inv}")
+        if rep.safety_proofs:
+            print("  Static Safety Invariant Proofs:")
+            for p in rep.safety_proofs:
+                mark = "✓ SAFE" if p.is_provably_safe else "✗ VIOLATION"
+                print(f"    - [{mark}] Line {p.lineno} ({p.proof_type}): {p.explanation}")
+        print("==========================================================\n")
+        return 0 if rep.zero_division_risks == 0 else 1
+
+    # Command 39: Counterexample-Guided Inductive Synthesis (CEGIS)
+    if args.command == "cegis":
+        from .synthesis.cegis_engine import CEGISEngine
+        if not args.file.exists():
+            sys.stderr.write(f"Error: File not found: {args.file}\n")
+            return 2
+        src = args.file.read_text(encoding="utf-8")
+        tests = args.tests
+        test_path = Path(args.tests)
+        if test_path.exists():
+            tests = test_path.read_text(encoding="utf-8")
+        engine = CEGISEngine()
+        rep = engine.synthesize_and_verify(src, tests)
+        print("==========================================================")
+        print("   ⚙️ COUNTEREXAMPLE-GUIDED INDUCTIVE SYNTHESIZER (CEGIS)   ")
+        print("==========================================================")
+        print(f"  Target File:     {args.file}")
+        print(f"  Certified:       {'✓ PROVABLY CORRECT' if rep.verification_certified else '✗ INCOMPLETE'}")
+        print(f"  Iterations:      {rep.iterations_run}")
+        print(f"  Candidates:      {rep.total_candidates_explored}")
+        print(f"  Duration:        {rep.duration_ms:.1f}ms")
+        print(f"  Counterexamples: {len(rep.counterexamples_found)}")
+        if rep.success:
+            print("\n--- SYNTHESIZED REPAIRED CODE ---")
+            print(rep.synthesized_code)
+        print("==========================================================\n")
+        return 0 if rep.success else 1
+
+    # Command 40: Solomonoff Algorithmic Prior
+    if args.command == "solomonoff":
+        from .search.solomonoff_prior import SolomonoffPriorEngine
+        if not args.file.exists():
+            sys.stderr.write(f"Error: File not found: {args.file}\n")
+            return 2
+        src = args.file.read_text(encoding="utf-8")
+        engine = SolomonoffPriorEngine()
+        rep = engine.evaluate_program(src)
+        print("==========================================================")
+        print("   🧠 SOLOMONOFF UNIVERSAL PRIOR & ALGORITHMIC COMPLEXITY   ")
+        print("==========================================================")
+        print(f"  Target File:     {args.file}")
+        print(f"  Character Count: {rep.raw_character_count}")
+        print(f"  LZW Tokens:      {rep.lzw_token_count}")
+        print(f"  Compressed Bits: {rep.compressed_bits}")
+        print(f"  Compression:     {rep.compression_ratio * 100:.1f}%")
+        print(f"  AST Entropy:     {rep.ast_shannon_entropy:.4f} bits/symbol")
+        print(f"  Solomonoff Prior:{rep.solomonoff_prior_score:.6f} (Occam Likelihood)")
+        print(f"  Kolmogorov Bound:<= {rep.kolmogorov_upper_bound} bits")
+        print("==========================================================\n")
+        return 0
 
     # 26. Handle battle / default prompt
     prompt = getattr(args, "prompt", None) or args.direct_prompt or "Build an LRU cache with TTL support"

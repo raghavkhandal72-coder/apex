@@ -421,6 +421,66 @@ class ApexCouncilMCPServer:
                                 "required": ["source_code"],
                             },
                         },
+                        {
+                            "name": "apex_cfg",
+                            "description": "Control Flow Graph & Lengauer-Tarjan Dominator Tree analyzer: Extracts basic blocks, immediate dominators, dominance frontiers, and natural loops.",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "source_code": {
+                                        "type": "string",
+                                        "description": "Python source code to analyze.",
+                                    },
+                                },
+                                "required": ["source_code"],
+                            },
+                        },
+                        {
+                            "name": "apex_abstract_interp",
+                            "description": "Abstract Interpretation & Interval Polyhedra safety prover: Computes fixed-point variable intervals and statically proves zero-division and array bounds safety.",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "source_code": {
+                                        "type": "string",
+                                        "description": "Python source code to analyze.",
+                                    },
+                                },
+                                "required": ["source_code"],
+                            },
+                        },
+                        {
+                            "name": "apex_cegis_solve",
+                            "description": "Counterexample-Guided Inductive Synthesizer (CEGIS): Synthesizes provably correct program repairs via inductive search and counterexample verification.",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "source_code": {
+                                        "type": "string",
+                                        "description": "Buggy Python source code.",
+                                    },
+                                    "test_code": {
+                                        "type": "string",
+                                        "description": "Initial test harness code.",
+                                    },
+                                },
+                                "required": ["source_code", "test_code"],
+                            },
+                        },
+                        {
+                            "name": "apex_solomonoff_eval",
+                            "description": "Solomonoff universal prior and algorithmic information evaluator: Computes LZW compressed bits, Kolmogorov complexity upper bound, and Shannon AST entropy.",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "source_code": {
+                                        "type": "string",
+                                        "description": "Python source code to evaluate.",
+                                    },
+                                },
+                                "required": ["source_code"],
+                            },
+                        },
                     ]
                 },
             }
@@ -982,6 +1042,126 @@ class ApexCouncilMCPServer:
                                             }
                                             for v in rep.violations
                                         ],
+                                    },
+                                    indent=2,
+                                ),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_cfg":
+                from .graph.cfg_dominator import CFGDominatorEngine
+                src = arguments.get("source_code", "")
+                rep = CFGDominatorEngine.analyze_source(src)
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(
+                                    {
+                                        "total_blocks": rep.total_blocks,
+                                        "total_edges": rep.total_edges,
+                                        "cyclomatic_complexity": rep.cyclomatic_complexity,
+                                        "natural_loops_count": len(rep.natural_loops),
+                                        "immediate_dominators": {str(k): v for k, v in rep.immediate_dominators.items()},
+                                    },
+                                    indent=2,
+                                ),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_abstract_interp":
+                from .formal.abstract_interpreter import ASTAbstractInterpreter
+                src = arguments.get("source_code", "")
+                analyzer = ASTAbstractInterpreter()
+                rep = analyzer.analyze(src)
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(
+                                    {
+                                        "total_proofs": rep.total_proofs,
+                                        "proven_safe_count": rep.proven_safe_count,
+                                        "zero_division_risks": rep.zero_division_risks,
+                                        "variable_intervals": {k: str(v) for k, v in rep.final_state.environment.items()},
+                                        "safety_proofs": [
+                                            {
+                                                "lineno": p.lineno,
+                                                "operation": p.operation,
+                                                "proof_type": p.proof_type,
+                                                "is_safe": p.is_provably_safe,
+                                                "explanation": p.explanation,
+                                            }
+                                            for p in rep.safety_proofs
+                                        ],
+                                    },
+                                    indent=2,
+                                ),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_cegis_solve":
+                from .synthesis.cegis_engine import CEGISEngine
+                src = arguments.get("source_code", "")
+                tests = arguments.get("test_code", "")
+                engine = CEGISEngine()
+                rep = engine.synthesize_and_verify(src, tests)
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(
+                                    {
+                                        "success": rep.success,
+                                        "verification_certified": rep.verification_certified,
+                                        "iterations_run": rep.iterations_run,
+                                        "total_candidates_explored": rep.total_candidates_explored,
+                                        "duration_ms": rep.duration_ms,
+                                        "synthesized_code": rep.synthesized_code,
+                                    },
+                                    indent=2,
+                                ),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_solomonoff_eval":
+                from .search.solomonoff_prior import SolomonoffPriorEngine
+                src = arguments.get("source_code", "")
+                engine = SolomonoffPriorEngine()
+                rep = engine.evaluate_program(src)
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(
+                                    {
+                                        "raw_character_count": rep.raw_character_count,
+                                        "lzw_token_count": rep.lzw_token_count,
+                                        "compressed_bits": rep.compressed_bits,
+                                        "compression_ratio": rep.compression_ratio,
+                                        "ast_shannon_entropy": rep.ast_shannon_entropy,
+                                        "solomonoff_prior_score": rep.solomonoff_prior_score,
+                                        "kolmogorov_upper_bound": rep.kolmogorov_upper_bound,
                                     },
                                     indent=2,
                                 ),
