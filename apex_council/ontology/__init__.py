@@ -11,6 +11,13 @@ from .code_ontology import (
     OntologyRule,
     OntologyViolation,
 )
+from .enterprise_auto_ontology import (
+    EnterpriseAutoOntology,
+    ColumnMetadata,
+    TableMetadata,
+    SemanticForeignKey,
+    QueryPlan,
+)
 
 __all__ = [
     "CodeOntologyEngine",
@@ -18,4 +25,9 @@ __all__ = [
     "OntologyRelation",
     "OntologyRule",
     "OntologyViolation",
+    "EnterpriseAutoOntology",
+    "ColumnMetadata",
+    "TableMetadata",
+    "SemanticForeignKey",
+    "QueryPlan",
 ]

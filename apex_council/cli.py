@@ -286,6 +286,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ont_parser.add_argument("path", type=Path, help="Target file or directory to construct semantic ontology for")
     ont_parser.add_argument("--check-invariants", action="store_true", help="Validate architectural layer boundary invariants")
     ont_parser.add_argument("--impact", help="Explain blast radius and transitive callers of a symbol")
+    ont_parser.add_argument("--hr-audit", action="store_true", help="Run Enterprise HR & Workforce Analytics diagnostic audit")
+    ont_parser.add_argument("--query", help="Ask a natural language question over the semantic catalog")
 
     # Command 46: Spec-Driven Development Engine (github/spec-kit style)
     sdd_parser = subparsers.add_parser("sdd", help="Spec-Driven Development (SDD) Contract Compiler (github/spec-kit style)")
@@ -1263,6 +1265,54 @@ def main(argv: list[str] | None = None) -> int:
             print(f"    Blast Radius Count: {impact['transitive_impact_count']}")
             print(f"    Impacted Layers:    {', '.join(impact['impacted_layers'])}")
             print(f"    High Blast Radius:  {impact['is_high_blast_radius']}")
+        if getattr(args, "hr_audit", False):
+            from .ontology.enterprise_auto_ontology import EnterpriseAutoOntology
+            ent_onto = EnterpriseAutoOntology()
+            # Register typical HR organizational schema
+            ent_onto.register_table("employees", [
+                {"name": "id", "type": "INTEGER", "is_pk": True},
+                {"name": "name", "type": "TEXT"},
+                {"name": "salary", "type": "REAL"},
+                {"name": "department_id", "type": "INTEGER"},
+                {"name": "manager_id", "type": "INTEGER"},
+            ])
+            ent_onto.register_table("departments", [
+                {"name": "id", "type": "INTEGER", "is_pk": True},
+                {"name": "name", "type": "TEXT"},
+            ])
+            ent_onto.infer_semantic_foreign_keys()
+            audit_res = ent_onto.hr_workforce_analytics_audit()
+            print("----------------------------------------------------------")
+            print("   👥 ENTERPRISE HR & PEOPLE ANALYTICS AUDIT              ")
+            print("----------------------------------------------------------")
+            print(f"  HR Schema Ready:          {audit_res['hr_schema_ready']}")
+            print(f"  Span of Control Enabled:  {audit_res['span_of_control_supported']}")
+            print(f"  PII Governed Columns:     {audit_res['pii_governed_columns']}")
+            for ins in audit_res['hr_diagnostic_insights']:
+                print(f"  - {ins}")
+        if getattr(args, "query", None):
+            from .ontology.enterprise_auto_ontology import EnterpriseAutoOntology
+            ent_onto = EnterpriseAutoOntology()
+            ent_onto.register_table("employees", [
+                {"name": "id", "type": "INTEGER", "is_pk": True},
+                {"name": "name", "type": "TEXT"},
+                {"name": "salary", "type": "REAL"},
+                {"name": "department_id", "type": "INTEGER"},
+                {"name": "manager_id", "type": "INTEGER"},
+            ])
+            ent_onto.register_table("departments", [
+                {"name": "id", "type": "INTEGER", "is_pk": True},
+                {"name": "name", "type": "TEXT"},
+            ])
+            ent_onto.infer_semantic_foreign_keys()
+            plan = ent_onto.generate_nl_query_plan(args.query)
+            print("----------------------------------------------------------")
+            print(f"   💬 NL-TO-SQL QUERY: \"{args.query}\"")
+            print("----------------------------------------------------------")
+            print(plan.sql)
+            print("\n  Provenance Trace:")
+            for tr in plan.provenance_trace:
+                print(f"    - {tr}")
         print("==========================================================\n")
         return 0
 
