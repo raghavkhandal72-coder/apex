@@ -210,11 +210,26 @@ class CEGISEngine:
                     fn_name.startswith(("is_", "has_", "can_", "check_"))
                     or (isinstance(node.returns, ast.Name) and node.returns.id == "bool")
                 ):
-                    probes.extend([
-                        f"assert {fn_name}(0) is False",
-                        f"assert {fn_name}(1) is True",
-                        f"assert {fn_name}(-1) is False",
-                    ])
+                    arg_name = args[0]
+                    first_arg = node.args.args[0]
+                    is_str = arg_name in ("s", "text", "string", "st") or (
+                        first_arg.annotation
+                        and isinstance(first_arg.annotation, ast.Name)
+                        and first_arg.annotation.id == "str"
+                    )
+                    if is_str:
+                        probes.extend([
+                            f'assert {fn_name}("") is True',
+                            f'assert {fn_name}("a") is True',
+                            f'assert {fn_name}("aba") is True',
+                            f'assert {fn_name}("ab") is False',
+                        ])
+                    else:
+                        probes.extend([
+                            f"assert {fn_name}(0) is False",
+                            f"assert {fn_name}(1) is True",
+                            f"assert {fn_name}(-1) is False",
+                        ])
 
         return probes
 
