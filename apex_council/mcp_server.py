@@ -481,6 +481,73 @@ class ApexCouncilMCPServer:
                                 "required": ["source_code"],
                             },
                         },
+                        {
+                            "name": "apex_oracle_synthesize",
+                            "description": "Synthesizes an executable reproduce_issue.py bug reproduction test oracle from unstructured issue text and stack traces (Agentless style).",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "issue_text": {
+                                        "type": "string",
+                                        "description": "Issue description or stack trace text.",
+                                    },
+                                },
+                                "required": ["issue_text"],
+                            },
+                        },
+                        {
+                            "name": "apex_ast_navigate",
+                            "description": "Surgical AST symbol search and call hierarchy navigation without full-repo scanning (AutoCodeRover style).",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "query": {
+                                        "type": "string",
+                                        "description": "Symbol, function, or class name to search.",
+                                    },
+                                    "root_dir": {
+                                        "type": "string",
+                                        "description": "Root directory to index (default: current directory).",
+                                    },
+                                },
+                                "required": ["query"],
+                            },
+                        },
+                        {
+                            "name": "apex_cognitive_memory",
+                            "description": "Queries or updates institutional memory and exports cache-optimized CLAUDE.md / AGENTS.md (claude-mem style).",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "query": {
+                                        "type": "string",
+                                        "description": "Search query for institutional memory.",
+                                    },
+                                    "export_claude_md": {
+                                        "type": "boolean",
+                                        "description": "Whether to export CLAUDE.md context document.",
+                                    },
+                                },
+                            },
+                        },
+                        {
+                            "name": "apex_mini_swe_solve",
+                            "description": "Executes Mini-SWE-Agent ACI loop with Linter-in-the-Loop on an issue description.",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "issue_text": {
+                                        "type": "string",
+                                        "description": "Issue description or bug report.",
+                                    },
+                                    "workspace_dir": {
+                                        "type": "string",
+                                        "description": "Target workspace directory.",
+                                    },
+                                },
+                                "required": ["issue_text"],
+                            },
+                        },
                     ]
                 },
             }
@@ -1165,6 +1232,110 @@ class ApexCouncilMCPServer:
                                     },
                                     indent=2,
                                 ),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_oracle_synthesize":
+                from .claude_engine.oracle_synthesizer import BugReproductionOracle
+                issue_text = arguments.get("issue_text", "")
+                spec = BugReproductionOracle.parse_issue(issue_text)
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(
+                                    {
+                                        "target_file": spec.target_file,
+                                        "target_symbol": spec.target_symbol,
+                                        "exception_type": spec.exception_type,
+                                        "reproduction_code": spec.reproduction_code,
+                                    },
+                                    indent=2,
+                                ),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_ast_navigate":
+                from .claude_engine.ast_navigator import ASTSymbolNavigator
+                query = arguments.get("query", "")
+                root_dir = arguments.get("root_dir", ".")
+                nav = ASTSymbolNavigator(root_dir)
+                matches = nav.search_function(query) + nav.search_class(query) + nav.search_method(query)
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(
+                                    [
+                                        {
+                                            "name": m.name,
+                                            "kind": m.kind,
+                                            "file_path": m.file_path,
+                                            "lineno": m.lineno,
+                                            "end_lineno": m.end_lineno,
+                                            "parameters": m.parameters,
+                                            "docstring": m.docstring,
+                                        }
+                                        for m in matches
+                                    ],
+                                    indent=2,
+                                ),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_cognitive_memory":
+                from .claude_engine.cognitive_memory import CognitiveMemoryStream
+                query = arguments.get("query", "")
+                export_claude = arguments.get("export_claude_md", False)
+                stream = CognitiveMemoryStream()
+                hits = stream.search(query, top_k=5) if query else []
+                claude_md_content = stream.synthesize_claude_md() if export_claude else None
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(
+                                    {
+                                        "records_found": len(hits),
+                                        "results": [h.to_dict() for h in hits],
+                                        "claude_md": claude_md_content,
+                                    },
+                                    indent=2,
+                                ),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_mini_swe_solve":
+                from .claude_engine.mini_swe_aci import MiniSWEAgentACI
+                issue_text = arguments.get("issue_text", "")
+                workspace_dir = arguments.get("workspace_dir", ".")
+                aci = MiniSWEAgentACI(workspace_dir)
+                res = aci.solve_issue_loop(issue_text)
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(res, indent=2),
                             }
                         ]
                     },

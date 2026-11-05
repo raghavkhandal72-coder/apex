@@ -37,6 +37,7 @@ KNOWN_COMMANDS = {
     "autopsy", "synthesize", "verify-proof", "edge",
     "perf", "chaos", "appsec", "db-tune", "modernize", "release", "sbfl", "hoare",
     "cfg", "abstract-interp", "cegis", "solomonoff",
+    "oracle", "ast-nav", "memo-sync", "mini-swe",
     "-h", "--help"
 }
 
@@ -258,6 +259,26 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     # Command 40: Solomonoff Algorithmic Prior & Kolmogorov Upper Bound
     sol_parser = subparsers.add_parser("solomonoff", help="Solomonoff Algorithmic Prior, Kolmogorov Bound, & Shannon AST Entropy")
     sol_parser.add_argument("file", type=Path, help="Target Python source file to evaluate")
+
+    # Command 41: Bug Reproduction Oracle (Agentless-style)
+    oracle_parser = subparsers.add_parser("oracle", help="Autonomous Bug Reproduction Oracle Synthesizer (Agentless style)")
+    oracle_parser.add_argument("issue", help="Path to issue file or raw text description")
+    oracle_parser.add_argument("--verify", action="store_true", help="Execute the generated oracle against local directory")
+
+    # Command 42: Surgical AST Symbol Navigator (AutoCodeRover-style)
+    ast_parser = subparsers.add_parser("ast-nav", help="Surgical AST Symbol Navigator & Call Hierarchy (AutoCodeRover style)")
+    ast_parser.add_argument("query", help="Symbol or function or class name to search")
+    ast_parser.add_argument("--dir", type=Path, default=Path("."), help="Root directory to search (default: current dir)")
+
+    # Command 43: Cognitive Memory Stream & Context Guide (claude-mem style)
+    memo_parser = subparsers.add_parser("memo-sync", help="Cognitive Memory Stream & CLAUDE.md Generator (claude-mem style)")
+    memo_parser.add_argument("--export-claude-md", type=Path, help="Export high-density cache-optimized CLAUDE.md")
+    memo_parser.add_argument("--search", help="Search institutional memory for past solutions")
+
+    # Command 44: Mini-SWE Agent-Computer Interface (mini-swe-agent style)
+    mini_parser = subparsers.add_parser("mini-swe", help="Mini-SWE-Agent ACI with Linter-in-the-Loop (mini-swe-agent style)")
+    mini_parser.add_argument("issue", help="Path to issue text or bug description")
+    mini_parser.add_argument("--workspace", type=Path, default=Path("."), help="Target workspace directory")
 
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
@@ -1089,6 +1110,99 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  AST Entropy:     {rep.ast_shannon_entropy:.4f} bits/symbol")
         print(f"  Solomonoff Prior:{rep.solomonoff_prior_score:.6f} (Occam Likelihood)")
         print(f"  Kolmogorov Bound:<= {rep.kolmogorov_upper_bound} bits")
+        print("==========================================================\n")
+        return 0
+
+    # Command 41: Bug Reproduction Oracle (Agentless-style)
+    if args.command == "oracle":
+        from .claude_engine.oracle_synthesizer import BugReproductionOracle
+        issue_p = Path(args.issue)
+        issue_text = issue_p.read_text(encoding="utf-8") if issue_p.exists() else args.issue
+        spec = BugReproductionOracle.parse_issue(issue_text)
+        print("==========================================================")
+        print("   🔍 AUTONOMOUS BUG REPRODUCTION ORACLE (AGENTLESS)      ")
+        print("==========================================================")
+        print(f"  Target File:     {spec.target_file or 'Unknown'}")
+        print(f"  Target Symbol:   {spec.target_symbol or 'Unknown'}")
+        print(f"  Exception Type:  {spec.exception_type or 'None Detected'}")
+        print("----------------------------------------------------------")
+        print("Generated reproduce_issue.py:\n")
+        print(spec.reproduction_code)
+        if args.verify:
+            print("\nExecuting oracle against current directory...")
+            ok, code, stdout, stderr = BugReproductionOracle.execute_oracle(spec.reproduction_code)
+            status_str = "SUCCESS (Bug Resolved)" if ok else f"CRASH / DEFECT REPRODUCED (code {code})"
+            print(f"  Execution Status: {status_str}")
+            if stdout:
+                print(f"  Output: {stdout.strip()}")
+            if stderr:
+                print(f"  Error:  {stderr.strip()}")
+        print("==========================================================\n")
+        return 0
+
+    # Command 42: Surgical AST Symbol Navigator (AutoCodeRover-style)
+    if args.command == "ast-nav":
+        from .claude_engine.ast_navigator import ASTSymbolNavigator
+        nav = ASTSymbolNavigator(args.dir)
+        matches = nav.search_function(args.query) + nav.search_class(args.query) + nav.search_method(args.query)
+        print("==========================================================")
+        print("   🧭 SURGICAL AST SYMBOL NAVIGATOR (AUTOCODEROVER)       ")
+        print("==========================================================")
+        print(f"  Query:           {args.query}")
+        print(f"  Search Root:     {args.dir.resolve()}")
+        print(f"  Matches Found:   {len(matches)}")
+        print("----------------------------------------------------------")
+        if not matches:
+            print("  No symbols found matching query.")
+        for idx, m in enumerate(matches, 1):
+            print(f"  {idx}. [{m.kind.upper()}] {m.name}")
+            print(f"     Location:   {m.file_path}:{m.lineno}-{m.end_lineno}")
+            if m.parameters:
+                print(f"     Parameters: ({', '.join(m.parameters)})")
+            if m.docstring:
+                print(f"     Docstring:  {m.docstring.strip()[:60]}...")
+            hier = nav.get_call_hierarchy(m.name)
+            if hier.callees:
+                print(f"     Calls:      {', '.join(hier.callees[:5])}")
+        print("==========================================================\n")
+        return 0
+
+    # Command 43: Cognitive Memory Stream (claude-mem style)
+    if args.command == "memo-sync":
+        from .claude_engine.cognitive_memory import CognitiveMemoryStream
+        stream = CognitiveMemoryStream()
+        print("==========================================================")
+        print("   🧠 COGNITIVE MEMORY STREAM & KNOWLEDGE GRAPH           ")
+        print("==========================================================")
+        print(f"  Storage Path:    {stream.storage_path}")
+        print(f"  Total Records:   {len(stream._records)}")
+        if args.search:
+            print(f"  Search Query:    {args.search}")
+            hits = stream.search(args.search, top_k=3)
+            for idx, h in enumerate(hits, 1):
+                print(f"    {idx}. [{h.category.upper()}] {h.title} (conf: {h.confidence * 100:.0f}%)")
+                print(f"       {h.description}")
+        if args.export_claude_md:
+            stream.synthesize_claude_md(args.export_claude_md)
+            print(f"  [OK] Exported cache-optimized CLAUDE.md to: {args.export_claude_md}")
+        print("==========================================================\n")
+        return 0
+
+    # Command 44: Mini-SWE ACI
+    if args.command == "mini-swe":
+        from .claude_engine.mini_swe_aci import MiniSWEAgentACI
+        issue_p = Path(args.issue)
+        issue_text = issue_p.read_text(encoding="utf-8") if issue_p.exists() else args.issue
+        aci = MiniSWEAgentACI(args.workspace)
+        print("==========================================================")
+        print("   ⚡ MINI-SWE AGENT-COMPUTER INTERFACE (ACI)            ")
+        print("==========================================================")
+        res = aci.solve_issue_loop(issue_text)
+        print(f"  Defect Reproduced on Baseline: {res['defect_reproduced']}")
+        print(f"  Target File:                   {res['target_file']}")
+        print(f"  Target Symbol:                 {res['target_symbol']}")
+        if res.get('symbol_context'):
+            print(f"  Symbol Context:\n{res['symbol_context']}")
         print("==========================================================\n")
         return 0
 
