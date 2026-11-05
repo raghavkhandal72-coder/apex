@@ -42,6 +42,7 @@ KNOWN_COMMANDS = {
     "wt", "console", "mlflow-trace", "mlflow-eval",
     "omo", "dag", "gstack",
     "gbrain", "scrape", "floci", "voice", "skills", "browser", "electron",
+    "rea", "reviewdog", "netdata",
     "-h", "--help"
 }
 
@@ -388,6 +389,47 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     electron_p.add_argument("action", choices=["scaffold", "bridge"], help="Scaffold desktop app or start bridge")
     electron_p.add_argument("--dir", default="electron", help="Target scaffold directory")
     electron_p.add_argument("--port", type=int, default=4242, help="Bridge port")
+
+    # Command 63: REA (Reverse Engineering Anything)
+    rea_p = subparsers.add_parser("rea", help="Reverse Engineering Anything: binary inspection, bytecode disasm, & evidence ledger")
+    rea_p.add_argument("target", nargs="?", help="Target binary, archive, or code file to inspect")
+    rea_p.add_argument("--file", dest="target_file", type=Path, help="Alternative flag for target file")
+    rea_p.add_argument("--disasm", action="store_true", help="Disassemble bytecode or extract instruction heuristics")
+    rea_p.add_argument("--evidence", action="store_true", help="Record finding into cryptographic Evidence Ledger")
+    rea_p.add_argument("--claim", default="Automated REA artifact inspection", help="Assertion claim for evidence recording")
+    rea_p.add_argument("--verify-ledger", action="store_true", help="Verify integrity of existing Evidence Ledger")
+    rea_p.add_argument("--ledger-file", type=Path, default=Path(".apex/evidence_ledger.jsonl"), help="Path to ledger JSONL file")
+    rea_p.add_argument("--format", choices=["table", "json", "markdown", "text"], default="table", help="Output report format")
+    rea_p.add_argument("-o", "--output", type=Path, help="Save report to file")
+    rea_p.add_argument("--export", type=Path, help="Export evidence or analysis to file")
+
+    # Command 64: reviewdog (Automated Code Review Reporting)
+    rd_p = subparsers.add_parser("reviewdog", help="Automated code review reporting & git diff-filtered diagnostics")
+    rd_p.add_argument("input", nargs="?", default="-", help="Diagnostic input file or '-' for stdin")
+    rd_p.add_argument("--file", dest="input_file", type=Path, help="Diagnostic input file (rdjson, checkstyle XML, or line format)")
+    rd_p.add_argument("--format", choices=["auto", "rdjson", "rdjsonl", "checkstyle", "line"], default="auto", help="Diagnostic format")
+    rd_p.add_argument("--diff", help="Git diff string or path to diff file")
+    rd_p.add_argument("--git", action="store_true", help="Auto-capture git diff HEAD from repository")
+    rd_p.add_argument("--filter", dest="filter_mode", choices=["added", "diff-context", "file", "nofilter"], default="added", help="Diff filter mode")
+    rd_p.add_argument("--filter-mode", dest="filter_mode", choices=["added", "diff-context", "file", "nofilter"], default="added", help="Diff filter mode")
+    rd_p.add_argument("--reporter", choices=["text", "terminal", "markdown", "github-pr", "github-annotations", "rdjson", "checkstyle"], default="text", help="Output reporter")
+    rd_p.add_argument("--pattern", help="Custom regex pattern for line format parsing")
+    rd_p.add_argument("--no-color", action="store_true", help="Disable ANSI color output")
+    rd_p.add_argument("--fail-on-error", action="store_true", help="Exit code 1 if ERROR findings exist")
+    rd_p.add_argument("-o", "--output", type=Path, help="Save report to file")
+    rd_p.add_argument("--export", type=Path, help="Save report to file")
+
+    # Command 65: Netdata (Real-Time Telemetry & Monitoring)
+    nd_p = subparsers.add_parser("netdata", help="Real-time system telemetry collector, wire streaming, & REST client")
+    nd_p.add_argument("--stream", action="store_true", help="Stream Netdata wire protocol to stdout")
+    nd_p.add_argument("--interval", type=float, default=1.0, help="Sampling interval in seconds (default: 1.0)")
+    nd_p.add_argument("--export", choices=["json", "wire", "allmetrics"], default="json", help="Export format for telemetry snapshot")
+    nd_p.add_argument("--serve", action="store_true", help="Run local Netdata REST API emulator daemon")
+    nd_p.add_argument("--port", type=int, default=19999, help="Port for REST emulator server (default: 19999)")
+    nd_p.add_argument("--info", action="store_true", help="Query /api/v1/info from local daemon or emulator")
+    nd_p.add_argument("--url", default="http://127.0.0.1:19999", help="Target Netdata daemon URL")
+    nd_p.add_argument("--once", action="store_true", help="Capture a single telemetry snapshot and exit")
+    nd_p.add_argument("-o", "--output", type=Path, help="Save output to file")
 
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
@@ -2023,6 +2065,255 @@ def main(argv: list[str] | None = None) -> int:
                 bridge.stop()
                 print("[ELECTRON-BRIDGE] Stopped bridge.")
             return 0
+
+    # Command 63: REA (Reverse Engineering Anything)
+    if args.command == "rea":
+        from .rea import inspect_artifact, disassemble_source, EvidenceLedger
+        import json
+
+        # Ledger verification action
+        if getattr(args, "verify_ledger", False):
+            ledger_file = getattr(args, "ledger_file", None)
+            ledger = EvidenceLedger(ledger_file=ledger_file)
+            valid, count, msg = ledger.verify_chain()
+            if valid:
+                print(f"\n✓ REA EVIDENCE CHAIN VERIFIED: {count} cryptographic blocks intact and tamper-free.\n")
+                return 0
+            else:
+                print(f"\n✗ REA EVIDENCE CHAIN BREACH: {msg}\n")
+                return 1
+
+        target = getattr(args, "target_file", None) or getattr(args, "target", None)
+        if not target:
+            sys.stderr.write("Error: Please specify target artifact path or --verify-ledger.\n")
+            return 2
+
+        target_path = Path(target)
+        if not target_path.exists():
+            sys.stderr.write(f"Error: Target artifact not found: {target_path}\n")
+            return 2
+
+        print(f"\n[APEX-REA] Inspecting artifact: {target_path}...")
+        inspection = inspect_artifact(target_path)
+        disasm_res = None
+        evidence_rec = None
+
+        if getattr(args, "disasm", False) or target_path.suffix.lower() in (".py", ".pyc"):
+            disasm_res = disassemble_source(target_path)
+
+        if getattr(args, "evidence", False):
+            ledger_file = getattr(args, "ledger_file", None)
+            ledger = EvidenceLedger(ledger_file=ledger_file)
+            claim = getattr(args, "claim", "Automated REA artifact inspection")
+            ev_data = {
+                "format": inspection.format,
+                "size_bytes": inspection.size_bytes,
+                "sha256": inspection.sha256,
+                "metadata": inspection.metadata,
+            }
+            if disasm_res:
+                ev_data["complexity_score"] = disasm_res.complexity_score
+                ev_data["heuristics"] = disasm_res.heuristics
+            evidence_rec = ledger.record(
+                claim=claim,
+                artifact_path=str(target_path),
+                data=ev_data,
+            )
+            print(f"[APEX-REA] Recorded Evidence: {evidence_rec.evidence_id}")
+
+        fmt = getattr(args, "format", "table")
+        if fmt == "json":
+            out_dict = {"inspection": inspection.to_dict()}
+            if disasm_res:
+                out_dict["disassembly"] = disasm_res.to_dict()
+            if evidence_rec:
+                out_dict["evidence"] = evidence_rec.to_dict()
+            rendered = json.dumps(out_dict, indent=2, default=str)
+        else:
+            lines = [
+                "=" * 64,
+                "   🔍 APEX-COUNCIL REVERSE ENGINEERING INSPECTION (REA)   ",
+                "=" * 64,
+                f"  Target:       {inspection.target_path}",
+                f"  Format:       {inspection.format} ({'Binary' if inspection.is_binary else 'Source/Text'})",
+                f"  Size:         {inspection.size_bytes:,} bytes",
+                f"  SHA-256:      {inspection.sha256}",
+                f"  MIME:         {inspection.mime_type}",
+            ]
+            if "machine" in inspection.metadata:
+                lines.append(f"  Architecture: {inspection.metadata['machine']}")
+            if "entry_point" in inspection.metadata:
+                lines.append(f"  Entry Point:  {inspection.metadata['entry_point']}")
+            if "section_names" in inspection.metadata:
+                lines.append(f"  Sections:     {', '.join(inspection.metadata['section_names'][:8])}")
+
+            if disasm_res:
+                lines.extend([
+                    "-" * 64,
+                    f"  Disassembly:  {disasm_res.architecture} ({len(disasm_res.instructions)} opcodes)",
+                    f"  Complexity:   {disasm_res.complexity_score} (Branch count: {disasm_res.heuristics.get('branch_count', 0)})",
+                    f"  Symbols:      {len(disasm_res.symbols)} symbols detected",
+                ])
+                if disasm_res.heuristics.get("dangerous_calls_detected"):
+                    lines.append(f"  ⚠️ Risk Flags: {', '.join(disasm_res.heuristics['dangerous_calls_detected'])}")
+
+            if evidence_rec:
+                lines.extend([
+                    "-" * 64,
+                    f"  Evidence ID:  {evidence_rec.evidence_id}",
+                    f"  Claim:        {evidence_rec.claim}",
+                    f"  Signature:    {evidence_rec.signature[:24]}...",
+                ])
+            lines.append("=" * 64)
+            rendered = "\n".join(lines)
+
+        print("\n" + rendered + "\n")
+        out_file = getattr(args, "output", None) or getattr(args, "export", None)
+        if out_file:
+            out_file.parent.mkdir(parents=True, exist_ok=True)
+            out_file.write_text(rendered, encoding="utf-8")
+            print(f"Report saved to: {out_file}")
+        return 0
+
+    # Command 64: reviewdog
+    if args.command == "reviewdog":
+        from .reviewdog import parse_diagnostics, filter_diagnostics, report_diagnostics, Severity
+        import subprocess
+
+        raw_content = ""
+        inp_file = getattr(args, "input_file", None)
+        if not inp_file and getattr(args, "input", None) and args.input != "-":
+            inp_file = Path(args.input)
+
+        if inp_file:
+            if not inp_file.exists():
+                sys.stderr.write(f"Error: Input diagnostic file not found: {inp_file}\n")
+                return 2
+            raw_content = inp_file.read_text(encoding="utf-8", errors="replace")
+        elif not sys.stdin.isatty():
+            raw_content = sys.stdin.read()
+        else:
+            sys.stderr.write("Error: Please provide diagnostics via file or pipe to stdin.\n")
+            return 1
+
+        diagnostics = parse_diagnostics(
+            raw_content,
+            format_type=getattr(args, "format", "auto"),
+            pattern=getattr(args, "pattern", None),
+        )
+
+        diff_text = ""
+        if getattr(args, "git", False):
+            try:
+                proc = subprocess.run(["git", "diff", "HEAD"], capture_output=True, text=True, check=False)
+                diff_text = proc.stdout
+            except Exception:
+                diff_text = ""
+        elif getattr(args, "diff", None):
+            diff_arg = str(args.diff)
+            if Path(diff_arg).exists():
+                diff_text = Path(diff_arg).read_text(encoding="utf-8", errors="replace")
+            else:
+                diff_text = diff_arg
+
+        filter_mode = getattr(args, "filter_mode", "added")
+        if diff_text and filter_mode != "nofilter":
+            filtered = filter_diagnostics(diagnostics, diff_text, mode=filter_mode)
+        else:
+            filtered = diagnostics
+
+        reporter_fmt = getattr(args, "reporter", "text")
+        if reporter_fmt == "terminal":
+            reporter_fmt = "text"
+        elif reporter_fmt == "github-pr":
+            reporter_fmt = "markdown"
+
+        rendered = report_diagnostics(
+            filtered,
+            output_format=reporter_fmt,
+            no_color=getattr(args, "no_color", False),
+        )
+        print("\n" + rendered + "\n")
+
+        out_file = getattr(args, "output", None) or getattr(args, "export", None)
+        if out_file:
+            out_file.parent.mkdir(parents=True, exist_ok=True)
+            out_file.write_text(rendered, encoding="utf-8")
+            print(f"[APEX-REVIEWDOG] Report saved to: {out_file}")
+
+        if getattr(args, "fail_on_error", False) and any(d.severity == Severity.ERROR for d in filtered):
+            return 1
+        return 0
+
+    # Command 65: Netdata
+    if args.command == "netdata":
+        from .netdata import (
+            collect_snapshot,
+            collect_system_metrics,
+            NetdataProtocol,
+            NetdataClient,
+            NetdataEmulatorServer,
+        )
+        import json
+        import time
+
+        # Mode A: Run Local REST API Emulator Server
+        if getattr(args, "serve", False):
+            port = getattr(args, "port", 19999)
+            print(f"\n[APEX-NETDATA] Starting Netdata REST API Emulator daemon on http://127.0.0.1:{port}...")
+            server = NetdataEmulatorServer(port=port)
+            bound_port = server.start(background=False)
+            return 0
+
+        # Mode B: Query /api/v1/info
+        if getattr(args, "info", False):
+            url = getattr(args, "url", "http://127.0.0.1:19999")
+            print(f"\n[APEX-NETDATA] Querying Netdata info from: {url}...")
+            client = NetdataClient(base_url=url)
+            info = client.get_info()
+            print("\n" + json.dumps(info, indent=2) + "\n")
+            return 0 if "error" not in info else 1
+
+        # Mode C: Stream Netdata Wire Protocol to stdout
+        if getattr(args, "stream", False):
+            interval = getattr(args, "interval", 1.0)
+            print(f"\n[APEX-NETDATA] Streaming Netdata wire protocol (interval: {interval}s, Press Ctrl+C to stop)...")
+            try:
+                while True:
+                    snap = collect_snapshot()
+                    wire_frame = NetdataProtocol.encode_snapshot(snap)
+                    sys.stdout.write(wire_frame)
+                    sys.stdout.flush()
+                    time.sleep(interval)
+            except KeyboardInterrupt:
+                print("\n[APEX-NETDATA] Stopped telemetry stream.")
+            return 0
+
+        # Mode D: Single Snapshot capture (Default / --once)
+        snap = collect_snapshot()
+        output_text = ""
+        export_mode = getattr(args, "export", "json")
+        if export_mode == "allmetrics":
+            url = getattr(args, "url", "http://127.0.0.1:19999")
+            client = NetdataClient(base_url=url)
+            allm = client.get_allmetrics()
+            output_text = json.dumps(allm, indent=2)
+        elif export_mode == "wire":
+            output_text = NetdataProtocol.encode_snapshot(snap)
+        else:
+            summary = snap.to_summary_dict()
+            output_text = json.dumps({
+                "summary": summary,
+                "snapshot": snap.to_dict(),
+            }, indent=2)
+
+        print("\n" + output_text + "\n")
+        out_file = getattr(args, "output", None)
+        if out_file:
+            out_file.parent.mkdir(parents=True, exist_ok=True)
+            out_file.write_text(output_text, encoding="utf-8")
+            print(f"[APEX-NETDATA] Telemetry exported to: {out_file}")
+        return 0
 
     # 26. Handle battle / default prompt
     prompt = getattr(args, "prompt", None) or args.direct_prompt or "Build an LRU cache with TTL support"

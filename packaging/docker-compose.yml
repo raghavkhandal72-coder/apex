@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  apex-sovereign:
+    build:
+      context: ..
+      dockerfile: packaging/Dockerfile
+    container_name: apex_sovereign_core
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+      - "19999:19999"
+    environment:
+      - APEX_ENV=production
+      - APEX_PORT=8000
+      - NETDATA_PORT=19999
+    volumes:
+      - apex_data:/app/.apex
+
+volumes:
+  apex_data:
