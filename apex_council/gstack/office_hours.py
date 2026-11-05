@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Apex-Sovereign: Garry Tan YC Office Hours & Strategic Founder Review
-Inspired by garrytan/gstack (office-hours / plan-ceo-review)
+Apex: Startup Founder Office Hours & Strategic Review
+Inspired by garrytan/gstack (office-hours / plan-ceo-review concepts)
 100% Pure Python Standard Library | Zero Dependencies
 """
 
@@ -66,7 +66,7 @@ class GarryTanOfficeHoursEngine:
 
         # 6. Synthesize Design Doc
         doc_md = f"""# Strategic Design Doc: {product_name}
-**Founder/CEO Review:** Garry Tan Office Hours (Apex Council)
+**Review Framework:** Startup Founder Office Hours (Apex Council, inspired by gstack)
 **Classification:** {painkiller}
 
 ## 1. Problem Statement

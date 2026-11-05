@@ -306,13 +306,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     trunk_parser.add_argument("--prune", help="Prune and delete worktree for agent")
     trunk_parser.add_argument("--cleanup-all", action="store_true", help="Clean up all active worktrees")
 
-    # Command 48: Garry Tan Executive C-Suite Review (garrytan/gstack style)
-    exec_parser = subparsers.add_parser("executive", help="Y Combinator Garry Tan Executive C-Suite Review (garrytan/gstack style)")
+    # Command 48: Startup Executive Review (inspired by gstack)
+    exec_parser = subparsers.add_parser("executive", help="Startup Executive Leadership Review (inspired by gstack)")
     exec_parser.add_argument("--title", required=True, help="Proposal or PR title")
     exec_parser.add_argument("--desc", required=True, help="Proposal description")
     exec_parser.add_argument("--diff", help="Path to diff or code file")
 
-    # Command 49: Worktrunk Interactive Git Worktree Matrix (max-sixty/worktrunk style - Image 1)
+    # Command 49: Worktrunk Interactive Git Worktree Matrix (inspired by max-sixty/worktrunk)
     wt_p = subparsers.add_parser("wt", help="Worktrunk interactive worktree matrix & branch manager (Image 1 style)")
     wt_p.add_argument("subaction", nargs="?", default="list", choices=["list", "switch", "add", "remove"], help="Action: list, switch, add, remove")
     wt_p.add_argument("branch", nargs="?", help="Target branch for switch/add/remove")
@@ -342,8 +342,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     dag_p = subparsers.add_parser("dag", help="Compile and display Task DAG graph with wave scheduling")
     dag_p.add_argument("spec", nargs="?", help="Task specification or flow")
 
-    # Command 55: Garry Tan gstack Virtual Engineering Team Suite
-    gstack_p = subparsers.add_parser("gstack", help="Garry Tan gstack virtual engineering team suite (office-hours, review, cso, ship)")
+    # Command 55: Startup Engineering Suite (inspired by gstack)
+    gstack_p = subparsers.add_parser("gstack", help="Startup engineering & review suite (inspired by gstack: office-hours, review, cso, ship)")
     gstack_p.add_argument("action", choices=["office-hours", "review", "cso", "ship", "autoplan"], help="Gstack command action")
     gstack_p.add_argument("target", nargs="?", default="", help="Target prompt, idea, or file path")
     gstack_p.add_argument("--diff", help="Path to diff or code file for review")
@@ -1487,7 +1487,7 @@ def main(argv: list[str] | None = None) -> int:
         print("==========================================================\n")
         return 0
 
-    # Command 48: Garry Tan Executive C-Suite Review (garrytan/gstack style)
+    # Command 48: Startup Executive Review (inspired by gstack)
     if args.command == "executive":
         from .swarm.executive_stack import ExecutiveStackOrchestrator
         diff_content = ""
@@ -1496,7 +1496,7 @@ def main(argv: list[str] | None = None) -> int:
             diff_content = diff_p.read_text(encoding="utf-8") if diff_p.exists() else args.diff
         consensus = ExecutiveStackOrchestrator.evaluate_proposal(args.title, args.desc, diff_content)
         print("==========================================================")
-        print("   👔 GARRY TAN EXECUTIVE C-SUITE LEADERSHIP REVIEW       ")
+        print("   👔 STARTUP EXECUTIVE LEADERSHIP REVIEW (GSTACK STYLE)   ")
         print("==========================================================")
         print(f"  Proposal:        {args.title}")
         print(f"  Suggested Bump:  {consensus.suggested_semver}")
@@ -1680,7 +1680,7 @@ def main(argv: list[str] | None = None) -> int:
                 status_tag="STRATEGIC FOUNDER REVIEW"
             ) + "\n")
             print("==========================================================")
-            print(f"   👔 YC GARRY TAN FOUNDER OFFICE HOURS DESIGN DOC         ")
+            print(f"   👔 STARTUP FOUNDER OFFICE HOURS DESIGN DOC             ")
             print("==========================================================")
             print(plan.design_doc_markdown)
             print("==========================================================\n")

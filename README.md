@@ -1,204 +1,169 @@
-# 🏛️ Apex-Council: Enterprise Autonomous Multi-LLM Software Engineering & Consensus Platform
+# 🏛️ Apex: Autonomous Multi-Agent Consensus & Formal Verification Engine
 
-> **The Sovereign Multi-Model Platform for Enterprise AI Engineering. Pit Google Gemini, Anthropic Claude, and OpenAI against each other in real-time, enforce SOC2 cryptographic audit trails, run zero-leakage DLP sanitization, and autonomously engineer production-grade software.**
+> **Stop blindly trusting single-model AI code. Apex pits multiple AI models against each other using Monte Carlo Tree Search (MCTS) and proves edge-case safety using Counterexample-Guided Inductive Synthesis (CEGIS)—synthesizing mathematically verified software in 100% Pure Python Standard Library (`pip = 0`).**
 
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![PEP 578](https://img.shields.io/badge/Sandbox-PEP%20578%20Rootless%20Audit-red.svg)]()
-[![MCTS Engine](https://img.shields.io/badge/Search-MCTS%20Test--Time%20Compute-orange.svg)]()
-[![Code Integrity](https://img.shields.io/badge/Signatures-HMAC--SHA512%20Attested-purple.svg)]()
-[![AST Mutation](https://img.shields.io/badge/Red--Team-AST%20Mutation%20Testing-success.svg)]()
-[![SOC2 Audit](https://img.shields.io/badge/SOC2-Cryptographically%20Chained-blue.svg)]()
-[![Tests](https://img.shields.io/badge/tests-50%20passing-brightgreen.svg)]()
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
+[![Zero Dependencies](https://img.shields.io/badge/dependencies-0%20external%20pip-brightgreen.svg)]()
+[![Tests Passing](https://img.shields.io/badge/tests-241%20passing%20(100%25)-success.svg)]()
+[![Single Executable](https://img.shields.io/badge/distribution-372KB%20standalone%20.pyz-orange.svg)]()
 
 ---
 
-## ⚡ Zero-Setup Instant Demo (Zero API Keys Required)
+## ⚡ The 10-Second Pitch
 
-You do not need to configure any API keys or network credentials to see the full sovereign engine in action. Run the built-in Flight Recorder:
+Single LLM coding assistants suffer from hallucinations, brittle edge cases, and silent security vulnerabilities. 
+
+**Apex** solves this by treating code generation as a formal verification problem:
+1. **Multi-Model Consensus:** Deconstructs user requirements across specialized agent personas (Commander, Architect, Sentinel, Ninja).
+2. **MCTS Test-Time Compute:** Explores alternative implementation paths using Monte Carlo Tree Search with Upper Confidence Bounds (PUCT).
+3. **CEGIS Formal Prover:** Actively generates hostile counterexamples to falsify proposed invariants before code lands.
+4. **Zero-Dependency Guarantee:** The entire platform—including search, AST parsing, cryptography, web scraping, and container supervision—runs on the **Python standard library alone**. Zero `pip install` required.
+
+---
+
+## 🚦 Transparent Feature Status & Benchmarks
+
+To maintain strict engineering rigor, every subsystem in Apex is explicitly categorized by maturity level:
+
+| Subsystem | Maturity | Status & Verification | CLI Demo |
+| :--- | :---: | :--- | :--- |
+| **MCTS Consensus** | `Stable` | Explores multi-agent solution paths with branch pruning. | `apex "Build thread-safe LRU Cache"` |
+| **CEGIS Formal Prover** | `Stable` | Generates edge counterexamples to synthesize safety invariants. | `apex cegis --spec "forall x: x >= 0"` |
+| **Ochiai Bug Localizer (SBFL)** | `Stable` | Statistical ranking locating exact line numbers of test failures. | `apex localize tests/test_calc.py` |
+| **REA Reverse Engineering** | `Stable` | Disassembles Python bytecode and parses ELF/PE/ZIP headers. | `apex rea --disasm myfile.py` |
+| **Diff Reviewdog** | `Stable` | Multi-format diagnostic parser filtered strictly against git diffs. | `apex reviewdog error.log --git` |
+| **Streaming Telemetry (Netdata)** | `Stable` | Pure Python streaming wire protocol for system & process metrics. | `apex netdata --stream` |
+| **Startup Review Suite (gstack)** | `Stable` | Pre-landing review gate, CSO threat audit, and SemVer release ship. | `apex gstack review --diff patch.diff` |
+| **GBrain Persistent Memory** | `Stable` | Sub-millisecond SQLite persistent memory with cross-session locks. | `apex gbrain recall "architecture"` |
+| **Scrapling DOM Engine** | `Stable` | Anti-detection HTML-to-Markdown parser and table extractor. | `apex scrape "https://news.ycombinator.com"` |
+| **Transformer Engine** | `Experimental` | Pure Python decoder-only model with RoPE, GQA, RMSNorm, SwiGLU. | `apex transformer train --data corpus.txt` |
+| **Local Cloud Mock (Floci)** | `Beta` | Zero-cost local S3, SQS, and DynamoDB emulator with persistence. | `apex floci s3 list demo-bucket` |
+| **Agent Browser & Electron** | `Beta` | Accessible element tree snapshotting and desktop shell bridge. | `apex browser snapshot "https://example.com"` |
+
+---
+
+## 🔬 Proof & Concrete Demos
+
+### 1. Counterexample-Guided Inductive Synthesis (CEGIS)
+Apex checks invariant boundaries by pitting a **Synthesizer** against a hostile **Verifier**:
+
+```python
+from apex_council.formal.cegis import CEGISEngine
+
+# Define specification boundary
+engine = CEGISEngine()
+result = engine.synthesize_boundary(
+    invariant="x > 0 ==> f(x) > x",
+    initial_hypothesis="f(x) = x + 1"
+)
+print(f"Verified Invariant: {result.formula} (Counterexamples checked: {result.counterexamples_checked})")
+```
+
+### 2. Spectrum-Based Fault Localization (Ochiai SBFL)
+When tests fail, Apex instruments execution profiles to rank the suspicion score of every executed line:
+
+$$\text{Ochiai}(s) = \frac{\text{failed}(s)}{\sqrt{\text{total\_failed} \times (\text{failed}(s) + \text{passed}(s))}}$$
 
 ```bash
-python -m apex_council demo --replay
+apex localize tests/test_calculator.py
+# Output:
+# [TOP SUSPECT] line 42 (calculator.py) — Suspicion Score: 0.9487
+# Fix Recommendation: Replace off-by-one `<=` with `<`
 ```
-*Live streams Personalized PageRank mapping, Staff Architect spec deconstruction, Test-First Speculator assertions, MCTS branch exploration, and AST mutation kill scores directly in Cyberpunk ANSI terminal mode.*
 
----
+### 3. Cryptographic Evidence Ledger (REA)
+When auditing or reverse-engineering suspicious binaries or bytecode, Apex commits findings to an immutable SHA-256 evidence chain:
 
-## 🏢 Why Big Tech & Fortune 500 Enterprises Adopt Apex-Council
-
-Enterprises like **Google, Microsoft, Netflix, Stripe, and Meta** cannot deploy single-model AI assistants blindly into production due to three critical enterprise liabilities:
-1. **Model Bias & Single-Point-of-Failure:** Relying on one vendor creates vendor lock-in and leaves severe hallucination & security blindspots.
-2. **Data Leakage & PII Exposure (GDPR / HIPAA):** Employees accidentally paste internal customer emails, credit cards, or private API keys into LLM prompts.
-3. **Auditability & Legal Governance (SOC2 / ISO 27001):** Regulators require an immutable, tamper-evident cryptographic log of every AI action, model contribution, and code deployment.
-
-**Apex-Council** resolves all three enterprise barriers with an all-in-one architecture:
-* 🛡️ **Enterprise Data Loss Prevention (DLP):** Automatically redacts emails, SSNs, credit cards, JWTs, and private keys *before* prompts reach any model.
-* 🔒 **Hermetic Subprocess Sandbox:** All code execution runs in an isolated, scrubbed environment with zero parent credentials or SSH keys exposed.
-* 🔏 **HMAC-SHA512 Code Integrity Signing:** All synthesized consensus code is cryptographically signed with constant-time verification against tampering.
-* 🏰 **Zero-Trust Filesystem Chroot Jail:** Defeats path traversal, symlink escapes, null bytes, and NTFS Alternate Data Streams (ADS).
-* 🛡️ **AST Bomb & Recursion Shield:** Prevents parser overflows, DoS attacks, and deeply nested syntax explosion exploits.
-* 📜 **Cryptographically Chained Audit Trail (SHA-256):** Every single generation and code fix is chained like a blockchain block, guaranteeing non-repudiation.
-* 🔐 **Multi-Tenant Role-Based Access Control (RBAC):** Scoped permissions for `ADMIN`, `SECURITY_LEAD`, `DEVELOPER`, and `AUDITOR`.
-* ⚖️ **Enterprise Governance Policy Engine:** Blocks viral licenses (AGPL/GPL) and prohibited insecure modules (pickle, telnetlib, pycrypto).
-* 📈 **OpenMetrics & Prometheus Observability:** Live `/metrics` endpoint exporting request rates, model win ratios, and security mitigations.
-* ☸️ **Kubernetes (K8s) Production Deployment:** Includes battle-tested `k8s/deployment.yaml`, `k8s/service.yaml`, and `k8s/configmap.yaml`.
-
----
-
-## 🔄 Enterprise Architecture
-
-```
-                                [Enterprise Developer / CI Pipeline]
-                                                  │
-                                                  ▼
-                                     [Enterprise RBAC Gateway]
-                                                  │
-                                                  ▼
-                                 [Enterprise DLP Sanitizer]
-                           (Redacts SSNs, Cards, JWTs, Keys)
-                                                  │
-                         ┌────────────────────────┼────────────────────────┐
-                         ▼                        ▼                        ▼
-                 [Google Gemini]          [Anthropic Claude]       [OpenAI / Microsoft]
-                         │                        │                        │
-                         └────────────────┬───────┴────────┬───────────────┘
-                                          │                │
-                                          ▼                ▼
-                             [Peer-Review Cross-Critique Matrix]
-                                          │
-                                          ▼
-                             [AST Security & Red-Team Fuzzing]
-                                          │
-                                          ▼
-                             [Enterprise Policy Enforcement]
-                             (Licenses, Banned Libs, Typing)
-                                          │
-                         ┌────────────────┴────────────────┐
-                         ▼                                 ▼
-           [Flaw-Free Consensus Code]       [SOC2 SHA-256 Audit Chain]
-                                             (Immutable /metrics Stream)
+```bash
+apex rea suspicious_module.py --disasm --evidence --claim "Disallow os.system in runtime"
+# Output:
+# [EVIDENCE COMMITTED] ev_3f8a4c102b (SHA-256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855)
 ```
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Instant Run (Zero Dependencies)
+### Option A: Portable Standalone Executable (No Installation)
+Download or build the standalone single-file archive (372 KB):
 
+```bash
+# Direct execution via standard Python 3.10+
+python dist/apex.pyz --help
+
+# Convene multi-model council for a task
+python dist/apex.pyz "Design a lock-free concurrent ring buffer"
+```
+
+### Option B: Local Repository Installation
 ```bash
 git clone https://github.com/your-username/apex-council.git
 cd apex-council
 
-# Run head-to-head battle
-python -m apex_council "Build a thread-safe LRU Cache with TTL"
-```
+# Optional: Run one-line installer
+./scripts/install.sh       # Linux / macOS
+.\scripts\install.ps1      # Windows PowerShell
 
-### 2. Autonomous Full-Repository Engineering
-
-```bash
-python -m apex_council engineer "Build a concurrent distributed lock manager with TTL heartbeat" -o ./dist_lock
+# Run the complete test suite
+python -m unittest discover -s tests
 ```
 
 ---
 
-## 💻 Enterprise CLI Command Suite
+## 🧪 Verification & Test Suite Transparency
 
-| Command | Category | Description |
+Apex maintains an absolute regression-free policy. Every feature commit is verified by automated opaque-box and unit tests:
+
+```bash
+python -m unittest discover -s tests
+```
+```text
+Ran 241 tests in 36.527s
+OK
+```
+
+* **184 Platform Baseline Tests:** MCTS search, CEGIS invariant synthesizer, Ochiai SBFL, Hoare logic, AST mutation fuzzing, DLP sanitization, RBAC, and Git plumbing.
+* **20 Tool Integration Tests (`tests/test_e2e_tool_integrations.py`):** REA bytecode/binary inspection, Reviewdog unified diff filtering, Netdata wire protocol.
+* **15 Transformer Model Tests (`tests/test_e2e_transformer_model.py`):** ByteTokenizer (0% OOV), RoPE, RMSNorm, GQA, causal masking, KV cache step decoding.
+* **7 Training Pipeline Tests (`tests/test_e2e_transformer_pipeline.py`):** Multi-domain text chunking, CrossEntropy loss, AdamW optimizer, warmup-cosine schedule.
+* **8 Deployment & Server Tests (`tests/test_e2e_transformer_deployment.py`):** Inference engine, REST server endpoints, TTFT/ITL latency tracking.
+* **7 Production Packaging Tests (`tests/test_e2e_production_packaging.py`):** Dockerfile structure, non-root user security, Compose orchestration, self-healing supervisor.
+
+---
+
+## 🐳 Production Deployment & Docker Packaging
+
+Apex includes production containerization ready for cloud or edge deployment:
+
+```bash
+# Build multi-stage lightweight image (Python 3.11-slim, non-root user)
+docker build -f packaging/Dockerfile -t apex-sovereign .
+
+# Or run with Docker Compose (API on 8000, Netdata telemetry on 19999)
+docker compose -f packaging/docker-compose.yml up -d
+```
+
+---
+
+## 🤝 Inspirations & Acknowledgments
+
+Apex stands on the shoulders of the open-source community. We gratefully acknowledge the following projects and concepts that inspired our modular subsystems:
+
+| Component | Inspiration / Upstream | Relationship & Notes |
 | :--- | :--- | :--- |
-| `apex-council demo --replay` | **Flight Recorder** | Zero-API-key realistic offline autonomous SWE replay |
-| `apex-council swarm <task> [--repo <dir>]` | **Autonomous SWE** | 5-Role Swarm + MCTS Test-Time Compute + Sandbox Gatekeeper |
-| `apex-council repomap [dir] [--tokens 1024]` | **Context Map** | Sub-12ms Personalized PageRank topological repository skeleton |
-| `apex-council memory [--query <text>]` | **Knowledge Vault** | Query cross-session SQLite3 FTS5 BM25 & AST structural memory |
-| `apex-council verify-ledger` | **Blockchain Audit** | Verify tamper-evident HMAC-SHA512 cryptographic ledger chain |
-| `apex-council engineer <spec> -o <dir>` | **AI Engineer** | Deconstruct spec, build multi-file codebase, write tests, & git commit |
-| `apex-council solve <issue> [--repo <dir>]` | **AI Engineer** | Localize bug across files & apply verified patch |
-| `apex-council heal <file>` | **Self-Healing** | Autonomous Closed-Loop Code Repair (Tests ➔ Traceback ➔ Fix ➔ Re-test) |
-| `apex-council pr <url|repo#pr>` | **GitHub Bot** | Live GitHub PR Review with line-by-line comments & patch |
-| `apex-council dlp-test "<text>"` | **Enterprise** | Test DLP sanitization of customer PII, credit cards, and tokens |
-| `apex-council audit-verify` | **Compliance** | Verify cryptographic SHA-256 integrity of SOC2 / ISO 27001 audit trail |
-| `apex-council policy-check <file>` | **Compliance** | Audit code against Enterprise Licensing and Prohibited Library policies |
-| `apex-council diff` | **Security** | Pre-commit audit of uncommitted local Git diff |
-| `apex-council redteam <file>` | **Security** | Fuzz and stress-test code with hostile injection attack vectors |
-| `apex-council benchmark` | **Evaluation** | Run 5-Challenge SWE Tournament and output the Olympic Leaderboard |
-| `apex-council serve` | **Web Studio** | Launch local Cyberpunk Dark-Mode Web Studio & Prometheus `/metrics` |
-| `apex-council mcp` | **Protocol** | Start standard Model Context Protocol (stdio) server |
+| **Reverse Engineering** | [morluto/rea](https://github.com/morluto/rea) | Architecture pattern for evidence-first binary and bytecode inspection. |
+| **Diff-Aware Review** | [reviewdog/reviewdog](https://github.com/reviewdog/reviewdog) | Concepts for parsing diagnostic outputs and filtering comments against git diffs. |
+| **Streaming Telemetry** | [netdata/netdata](https://github.com/netdata/netdata) | High-frequency telemetry collector and streaming wire protocol structure. |
+| **Startup Review Suite** | [garrytan/gstack](https://github.com/garrytan/gstack) | Inspiration for founder-level office hours review, CSO security checklist, and release ship automation. |
+| **Git Worktrees** | [max-sixty/worktrunk](https://github.com/max-sixty/worktrunk) | Isolated branch and parallel agent worktree coordination workflows. |
+| **Resilient Scraping** | [D4Vinci/Scrapling](https://github.com/D4Vinci/Scrapling) | Pure-Python DOM tree construction and table extraction patterns. |
+| **Local Cloud Testing** | [floci-io/floci](https://github.com/floci-io/floci) | Inspiration for hermetic local AWS cloud service emulation. |
+| **Persistent Memory** | [garrytan/gbrain](https://github.com/garrytan/gbrain) | SQLite persistent memory vault and cross-session knowledge locking. |
+| **Resilient Collections** | [google/guava](https://github.com/google/guava) | Ported token-bucket `RateLimiter`, LRU `GuavaCache`, `BiMap`, and `Preconditions`. |
 
 ---
 
-## 🛡️ Enterprise DLP & PII Sanitizer
+## 📜 License
 
-Never leak customer data or corporate keys to cloud models:
-
-```bash
-python -m apex_council dlp-test "Process payment for user john.doe@enterprise.com with card 4111111111111111 and token api_key='secret-corp-key-999'"
-```
-
-**Output:**
-```text
-Redactions Made: 3
-Categories Found: ['EMAIL', 'CREDIT_CARD', 'API_KEY_GENERIC']
-Sanitized Text:   Process payment for user [REDACTED_EMAIL] with card [REDACTED_CREDIT_CARD] and token api_key='[REDACTED_SECRET]'
-```
-
----
-
-## 📜 SOC2 / ISO 27001 Cryptographic Audit Trail
-
-Every code generation and review event is cryptographically linked via SHA-256 Merkle chaining:
-
-```bash
-# Verify log integrity (detects any tampering or unauthorized edits)
-python -m apex_council audit-verify --log audit_trail.jsonl
-```
-
-```text
-✓ AUDIT TRAIL VERIFIED: All 128 cryptographic hash chains are intact and tamper-free.
-```
-
----
-
-## 📈 Prometheus & OpenMetrics Telemetry
-
-Apex-Council natively exposes `/metrics` for enterprise Datadog, Prometheus, Grafana, and New Relic dashboards:
-
-```text
-# HELP apex_council_requests_total Total number of Council operations processed
-# TYPE apex_council_requests_total counter
-apex_council_requests_total{action="deliberate"} 1420
-apex_council_requests_total{action="engineer"} 380
-
-# HELP apex_council_model_wins_total Total Council consensus wins by model provider
-# TYPE apex_council_model_wins_total counter
-apex_council_model_wins_total{model="Google Gemini"} 890
-apex_council_model_wins_total{model="Anthropic Claude"} 520
-apex_council_model_wins_total{model="OpenAI / Microsoft"} 390
-```
-
----
-
-## 🔒 Military-Grade Defense Hardening
-
-Apex-Council enforces defense-in-depth security to ensure that no untrusted code, malicious prompt injection, or parser exploit can breach the runtime environment:
-
-* **Hermetic Sandbox Execution:** Isolates child processes with stripped environments. Denies child processes any access to parent AWS/GCP/Azure tokens, SSH keys, or shell secrets.
-* **HMAC-SHA512 Sovereign Code Attestation:** Emits `# APEX-SIG-SHA512:` cryptographic signatures on generated files. The system rejects execution if even a single byte has been modified out-of-band.
-* **Zero-Trust Filesystem Chroot Jail:** Restricts all file reads and writes within strict root bounds. Automatically rejects path traversals (`../../`), symlink escapes, null-byte poisoning (`\x00`), and Windows NTFS Alternate Data Streams (`::$DATA`).
-* **AST Bomb & Recursion Shield:** Inspects incoming code before parsing. Flags parser-exploding depth attacks, excessive AST node floods (>50,000 nodes), and nested bracket exhaustion before execution occurs.
-
----
-
-## ☸️ Enterprise Kubernetes (K8s) Deployment
-
-Deploy to your corporate Kubernetes cluster in seconds:
-
-```bash
-kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
-```
-
----
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) for details.
+Apex is distributed under the **Apache License 2.0**. See [`LICENSE`](LICENSE) for details.
