@@ -68,6 +68,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     battle_parser.add_argument("--format", choices=["table", "markdown", "json"], default="table", help="Output format")
     battle_parser.add_argument("-o", "--output", type=Path, help="Save report to file")
     battle_parser.add_argument("--offline", action="store_true", help="Force offline simulation mode")
+    battle_parser.add_argument("--strict", action="store_true", help="Fail immediately with non-zero exit code if any live API call fails")
     battle_parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose diagnostics (provider endpoints, token telemetry, latency)")
 
     # Command 2: Autonomous AI Software Engineer
@@ -438,6 +439,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--format", choices=["table", "markdown", "json"], default="table")
     parser.add_argument("-o", "--output", type=Path)
     parser.add_argument("--offline", action="store_true")
+    parser.add_argument("--strict", action="store_true", help="Fail immediately with non-zero exit code if any live API call fails")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose diagnostics (provider endpoints, token telemetry, latency)")
 
     return parser.parse_args(raw_args)
@@ -2321,9 +2323,20 @@ def main(argv: list[str] | None = None) -> int:
     # 26. Handle battle / default prompt
     prompt = getattr(args, "prompt", None) or args.direct_prompt or "Build an LRU cache with TTL support"
     offline = getattr(args, "offline", False)
+    strict = getattr(args, "strict", False)
     fmt = getattr(args, "format", "table")
     out = getattr(args, "output", None)
     verbose = getattr(args, "verbose", False)
+
+    def _safe_mask_key(key: str | None) -> str:
+        if not key:
+            return "[NOT SET -> Simulation]"
+        clean = key.strip()
+        if clean in ("...", "TODO", "your_gemini_api_key", "your_api_key_here"):
+            return f"[PLACEHOLDER: {clean}]"
+        if len(clean) <= 4:
+            return "[SET: ****]"
+        return f"[SET: {clean[:4]}**** ({len(clean)} chars)]"
 
     if verbose:
         print("=" * 70)
@@ -2332,16 +2345,15 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  Python Runtime:      {sys.version.split()[0]} on {sys.platform}")
         print(f"  Working Directory:   {Path('.').resolve()}")
         print(f"  Offline Flag:        {offline}")
-        gem_key = os.getenv("GEMINI_API_KEY")
-        claude_key = os.getenv("ANTHROPIC_API_KEY")
-        oa_key = os.getenv("OPENAI_API_KEY")
-        print(f"  GEMINI_API_KEY:      {'[DETECTED: ' + gem_key[:6] + '...]' if gem_key and len(gem_key) > 6 else ('[SET: ' + gem_key + ']' if gem_key else '[NOT SET -> Simulation]')}")
-        print(f"  ANTHROPIC_API_KEY:   {'[DETECTED: ' + claude_key[:6] + '...]' if claude_key and len(claude_key) > 6 else ('[SET: ' + claude_key + ']' if claude_key else '[NOT SET -> Simulation]')}")
-        print(f"  OPENAI_API_KEY:      {'[DETECTED: ' + oa_key[:6] + '...]' if oa_key and len(oa_key) > 6 else ('[SET: ' + oa_key + ']' if oa_key else '[NOT SET -> Simulation]')}")
+        print(f"  Strict Mode:         {strict}")
+        print(f"  GEMINI_API_KEY:      {_safe_mask_key(os.getenv('GEMINI_API_KEY'))}")
+        print(f"  ANTHROPIC_API_KEY:   {_safe_mask_key(os.getenv('ANTHROPIC_API_KEY'))}")
+        print(f"  OPENAI_API_KEY:      {_safe_mask_key(os.getenv('OPENAI_API_KEY'))}")
+        print(f"  OLLAMA_MODEL:        {os.getenv('OLLAMA_MODEL', '[Not set]')}")
         print("=" * 70 + "\n")
 
     print(f"\n[APEX-COUNCIL] Convening the Supreme Council for task: \"{prompt}\"...\n")
-    engine = CouncilEngine(force_offline=offline)
+    engine = CouncilEngine(force_offline=offline, strict=strict)
 
     if verbose:
         print("[APEX-VERBOSE] Active Provider Instances:")

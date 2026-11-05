@@ -5,7 +5,7 @@ from typing import Dict
 
 from ..models import ModelProvider
 from .base import BaseLLMProvider
-from .live_http import LiveClaudeProvider, LiveGeminiProvider, LiveOpenAIProvider
+from .live_http import LiveClaudeProvider, LiveGeminiProvider, LiveOllamaProvider, LiveOpenAIProvider
 from .simulator import SimulatedProvider
 
 
@@ -19,32 +19,37 @@ def _is_valid_key(key: str | None) -> bool:
     return bool(clean and clean not in PLACEHOLDER_KEYS and len(clean) >= 6)
 
 
-def get_providers(force_offline: bool = False) -> Dict[ModelProvider, BaseLLMProvider]:
-    """Returns active providers for Gemini, Claude, and OpenAI.
+def get_providers(force_offline: bool = False, strict: bool = False) -> Dict[ModelProvider, BaseLLMProvider]:
+    """Returns active providers for Gemini, Claude, and OpenAI (or local Ollama).
 
     Automatically uses live API adapters if API keys are found in environment variables,
     otherwise uses high-fidelity simulated models.
     """
     providers: Dict[ModelProvider, BaseLLMProvider] = {}
 
-    # Google Gemini
+    # 1. Google Gemini
     gemini_key = os.getenv("GEMINI_API_KEY")
     if _is_valid_key(gemini_key) and not force_offline:
-        providers[ModelProvider.GEMINI] = LiveGeminiProvider(gemini_key.strip())
+        providers[ModelProvider.GEMINI] = LiveGeminiProvider(gemini_key.strip(), strict=strict)
     else:
         providers[ModelProvider.GEMINI] = SimulatedProvider(ModelProvider.GEMINI, "Gemini 2.5 Pro (Simulated)")
 
-    # Anthropic Claude
+    # 2. Anthropic Claude
     claude_key = os.getenv("ANTHROPIC_API_KEY")
     if _is_valid_key(claude_key) and not force_offline:
-        providers[ModelProvider.CLAUDE] = LiveClaudeProvider(claude_key.strip())
+        providers[ModelProvider.CLAUDE] = LiveClaudeProvider(claude_key.strip(), strict=strict)
     else:
         providers[ModelProvider.CLAUDE] = SimulatedProvider(ModelProvider.CLAUDE, "Claude 3.5 Sonnet (Simulated)")
 
-    # OpenAI / Microsoft
+    # 3. OpenAI / Microsoft (or local Ollama as real 2nd/3rd provider)
     openai_key = os.getenv("OPENAI_API_KEY")
+    ollama_model = os.getenv("OLLAMA_MODEL")
+    use_ollama = os.getenv("APEX_USE_OLLAMA", "0") in ("1", "true", "True")
+
     if _is_valid_key(openai_key) and not force_offline:
-        providers[ModelProvider.OPENAI] = LiveOpenAIProvider(openai_key.strip())
+        providers[ModelProvider.OPENAI] = LiveOpenAIProvider(openai_key.strip(), strict=strict)
+    elif (ollama_model or use_ollama) and not force_offline:
+        providers[ModelProvider.OPENAI] = LiveOllamaProvider(model_name=ollama_model or "llama3", strict=strict)
     else:
         providers[ModelProvider.OPENAI] = SimulatedProvider(ModelProvider.OPENAI, "GPT-4o (Simulated)")
 

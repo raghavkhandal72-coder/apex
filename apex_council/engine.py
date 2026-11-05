@@ -13,9 +13,10 @@ from .providers.factory import get_providers
 
 
 class CouncilEngine:
-    def __init__(self, force_offline: bool = False):
+    def __init__(self, force_offline: bool = False, strict: bool = False):
         self.force_offline = force_offline
-        self.providers = get_providers(force_offline=force_offline)
+        self.strict = strict
+        self.providers = get_providers(force_offline=force_offline, strict=strict)
 
     def convene_council(self, task_prompt: str, test_harness: str = "") -> CouncilResult:
         """Runs the Competitive Head-to-Head Council deliberation."""
@@ -60,20 +61,45 @@ class CouncilEngine:
             score.compute_overall()
             evaluations[provider_enum] = score
 
-        # Step 4: Determine Verdict & Consensus Winner
-        winner = max(evaluations.keys(), key=lambda p: evaluations[p].overall_score)
+        # Step 4: Determine Verdict & Consensus Mode
+        live_subs = [p for p, s in submissions.items() if not getattr(s, "is_simulated", False)]
+        live_count = len(live_subs)
+
+        if live_count >= 2:
+            consensus_mode = "multi_live_consensus"
+            for p, ev in evaluations.items():
+                ev.is_ranked = (p in live_subs)
+            ranked_evals = {p: ev for p, ev in evaluations.items() if ev.is_ranked}
+            winner = max(ranked_evals.keys(), key=lambda p: ranked_evals[p].overall_score)
+            verdict_summary = (
+                f"{winner.value} [LIVE] earned the highest composite score ({evaluations[winner].overall_score}/100) "
+                f"in live multi-model cross-examination across {live_count} foundational models. "
+                f"Security audit: {evaluations[winner].security_score:.0f}%, "
+                f"Runtime: {evaluations[winner].execution_time_ms:.1f}ms."
+            )
+        elif live_count == 1:
+            consensus_mode = "single_live_fallback"
+            winner = live_subs[0]
+            for p, ev in evaluations.items():
+                ev.is_ranked = (p == winner)
+            verdict_summary = (
+                f"Synthesized from {winner.value} (Sole active live foundation model). "
+                f"Peer models were simulated fallbacks (UNRANKED); true multi-agent consensus requires >= 2 live providers."
+            )
+        else:
+            consensus_mode = "offline_simulation"
+            for p, ev in evaluations.items():
+                ev.is_ranked = True
+            winner = max(evaluations.keys(), key=lambda p: evaluations[p].overall_score)
+            verdict_summary = (
+                f"{winner.value} selected by offline benchmark heuristic ({evaluations[winner].overall_score}/100). "
+                f"Full offline simulation mode (zero API keys detected)."
+            )
 
         # Step 5: Synthesize Flaw-Free Consensus Code
         consensus_code = synthesize_consensus(task_prompt, submissions, evaluations, winner)
 
         total_time_ms = (time.perf_counter() - start_time) * 1000
-
-        verdict_summary = (
-            f"{winner.value} earned the highest composite score ({evaluations[winner].overall_score}/100) "
-            f"based on automated security auditing ({evaluations[winner].security_score}%), "
-            f"runtime verification ({evaluations[winner].execution_time_ms:.1f}ms), "
-            f"and peer consensus across all three foundational models."
-        )
 
         return CouncilResult(
             task_prompt=task_prompt,
@@ -84,6 +110,8 @@ class CouncilEngine:
             consensus_code=consensus_code,
             verdict_summary=verdict_summary,
             total_time_ms=total_time_ms,
+            live_providers_count=live_count,
+            consensus_mode=consensus_mode,
         )
 
     def audit_file(self, file_path: Path | str) -> Dict[str, Any]:

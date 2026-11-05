@@ -19,6 +19,7 @@ class CodeSubmission:
     code: str
     explanation: str
     latency_ms: float
+    is_simulated: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -27,6 +28,7 @@ class CodeSubmission:
             "code": self.code,
             "explanation": self.explanation,
             "latency_ms": round(self.latency_ms, 2),
+            "is_simulated": self.is_simulated,
         }
 
 
@@ -37,6 +39,7 @@ class Critique:
     score: float  # 0 to 10
     identified_flaws: List[str]
     feedback: str
+    is_simulated: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -45,6 +48,7 @@ class Critique:
             "score": round(self.score, 1),
             "identified_flaws": self.identified_flaws,
             "feedback": self.feedback,
+            "is_simulated": self.is_simulated,
         }
 
 
@@ -57,6 +61,7 @@ class EvaluationScore:
     execution_time_ms: float = 0.0
     peer_review_avg: float = 0.0
     overall_score: float = 0.0
+    is_ranked: bool = True
 
     def compute_overall(self) -> float:
         # Weighted score: 40% Security, 30% Peer Review (scaled to 100), 30% Runtime/Syntax
@@ -77,6 +82,7 @@ class EvaluationScore:
             "execution_time_ms": round(self.execution_time_ms, 2),
             "peer_review_avg": round(self.peer_review_avg, 1),
             "overall_score": round(self.overall_score, 1),
+            "is_ranked": self.is_ranked,
         }
 
 
@@ -90,6 +96,8 @@ class CouncilResult:
     consensus_code: str
     verdict_summary: str
     total_time_ms: float
+    live_providers_count: int = 0
+    consensus_mode: str = "offline_simulation"  # "multi_live_consensus" | "single_live_fallback" | "offline_simulation"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -97,6 +105,8 @@ class CouncilResult:
             "winner": self.winner.value,
             "verdict_summary": self.verdict_summary,
             "total_time_ms": round(self.total_time_ms, 2),
+            "live_providers_count": self.live_providers_count,
+            "consensus_mode": self.consensus_mode,
             "submissions": {k.value: v.to_dict() for k, v in self.submissions.items()},
             "critiques": [c.to_dict() for c in self.critiques],
             "evaluations": {k.value: v.to_dict() for k, v in self.evaluations.items()},

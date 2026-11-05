@@ -38,6 +38,7 @@ class SimulatedProvider(BaseLLMProvider):
             code=code,
             explanation=explanation,
             latency_ms=latency_ms,
+            is_simulated=True,
         )
 
     def critique(self, target_provider: ModelProvider, target_code: str, prompt: str) -> Critique:
@@ -69,7 +70,8 @@ class SimulatedProvider(BaseLLMProvider):
             target=target_provider,
             score=max(1.0, score),
             identified_flaws=flaws,
-            feedback=feedback,
+            feedback=f"[Simulated Heuristic] {feedback}",
+            is_simulated=True,
         )
 
     def _gemini_implementation(self, prompt: str) -> str:

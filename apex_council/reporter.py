@@ -40,28 +40,51 @@ class CouncilReporter:
 
         lines.append(f"{BOLD}🎯 Task Prompt:{RESET} {YELLOW}\"{result.task_prompt}\"{RESET}\n")
 
+        # Consensus Mode Banner
+        if getattr(result, "consensus_mode", "") == "single_live_fallback":
+            lines.append(f"{BOLD}{YELLOW}╔══════════════════════════════════════════════════════════════════════════╗{RESET}")
+            lines.append(f"{BOLD}{YELLOW}║ ⚠️  CONSENSUS DEGRADED: ONLY 1 LIVE MODEL ACTIVE ({result.winner.value:<21}) ║{RESET}")
+            lines.append(f"{BOLD}{YELLOW}║     True peer consensus requires >= 2 live foundation models.            ║{RESET}")
+            lines.append(f"{BOLD}{YELLOW}║     Simulated models are unranked and excluded from competition.         ║{RESET}")
+            lines.append(f"{BOLD}{YELLOW}╚══════════════════════════════════════════════════════════════════════════╝{RESET}\n")
+        elif getattr(result, "consensus_mode", "") == "offline_simulation":
+            lines.append(f"{DIM}[MODE: FULL OFFLINE SIMULATION — Zero API keys detected. Heuristic preview only.]{RESET}\n")
+        elif getattr(result, "consensus_mode", "") == "multi_live_consensus":
+            lines.append(f"{BOLD}{GREEN}✓ MULTI-MODEL LIVE CONSENSUS ACTIVE ({getattr(result, 'live_providers_count', 0)} Live Foundation Models){RESET}\n")
+
         # Head-to-Head Scoreboard Table
         lines.append(f"{BOLD}📊 HEAD-TO-HEAD SCOREBOARD{RESET}")
-        lines.append("-" * 75)
+        lines.append("-" * 85)
         lines.append(
-            f"{'Model Provider':<22} | {'Security':<10} | {'Peer Review':<12} | {'Runtime':<10} | {'Overall Score'}"
+            f"{'Model Provider':<20} | {'Status':<11} | {'Security':<10} | {'Peer Review':<12} | {'Runtime':<10} | {'Overall Score'}"
         )
-        lines.append("-" * 75)
+        lines.append("-" * 85)
 
         for provider, score in result.evaluations.items():
             color = PROVIDER_COLORS.get(provider, WHITE)
             sub = result.submissions[provider]
-            name_display = f"{color}{provider.value[:20]}{RESET}"
-            sec_display = f"{GREEN}{score.security_score:.0f}%{RESET}" if score.security_score >= 80 else f"{RED}{score.security_score:.0f}%{RESET}"
-            peer_display = f"{YELLOW}{score.peer_review_avg:.1f} / 10{RESET}"
-            runtime_display = f"{score.execution_time_ms:.1f} ms"
-            overall_display = f"{BOLD}{score.overall_score:.1f} / 100{RESET}"
+            is_sim = getattr(sub, "is_simulated", False)
+            is_ranked = getattr(score, "is_ranked", True)
+
+            name_display = f"{color}{provider.value[:18]}{RESET}"
+            status_display = f"{GREEN}LIVE{RESET}" if not is_sim else f"{YELLOW}SIMULATED{RESET}"
+
+            if is_ranked:
+                sec_display = f"{GREEN}{score.security_score:.0f}%{RESET}" if score.security_score >= 80 else f"{RED}{score.security_score:.0f}%{RESET}"
+                peer_display = f"{YELLOW}{score.peer_review_avg:.1f} / 10{RESET}"
+                runtime_display = f"{score.execution_time_ms:.1f} ms"
+                overall_display = f"{BOLD}{score.overall_score:.1f} / 100{RESET}"
+            else:
+                sec_display = f"{DIM}[UNRANKED]{RESET}"
+                peer_display = f"{DIM}[UNRANKED]{RESET}"
+                runtime_display = f"{score.execution_time_ms:.1f} ms"
+                overall_display = f"{DIM}(SIMULATED, not scored){RESET}"
 
             lines.append(
-                f"{name_display:<31} | {sec_display:<19} | {peer_display:<21} | {runtime_display:<10} | {overall_display}"
+                f"{name_display:<29} | {status_display:<20} | {sec_display:<19} | {peer_display:<21} | {runtime_display:<10} | {overall_display}"
             )
 
-        lines.append("-" * 75)
+        lines.append("-" * 85)
         lines.append("")
 
         # Peer Critique Highlights
