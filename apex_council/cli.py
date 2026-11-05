@@ -40,6 +40,7 @@ KNOWN_COMMANDS = {
     "oracle", "ast-nav", "memo-sync", "mini-swe",
     "ontology", "sdd", "worktrunk", "executive",
     "wt", "console", "mlflow-trace", "mlflow-eval",
+    "omo", "dag",
     "-h", "--help"
 }
 
@@ -315,8 +316,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     wt_p.add_argument("branch", nargs="?", help="Target branch for switch/add/remove")
     wt_p.add_argument("--full", action="store_true", help="Display full table with triple-dot diff and commit summary")
 
-    # Command 50: Interactive Claude Code Style Terminal Console (Image 2)
-    console_p = subparsers.add_parser("console", help="Claude Code style interactive terminal console with pixel mascot (Image 2)")
+    # Command 50: Interactive Claude Code Style Terminal Console (Image 3)
+    console_p = subparsers.add_parser("console", help="Claude Code style interactive terminal console with pixel mascot (Image 3)")
+    console_p.add_argument("--mascot", choices=["falcon", "guardian", "aegis", "retro"], default="falcon", help="Apex mascot style")
+    console_p.add_argument("--theme", choices=["gold", "amber", "cyan", "emerald", "violet"], default="gold", help="Aesthetic color palette")
 
     # Command 51: MLflow Agent Tracing & OpenTelemetry
     mlflow_p = subparsers.add_parser("mlflow-trace", help="MLflow-compatible Agent Tracing & OpenTelemetry exporter")
@@ -327,6 +330,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ml_eval_p = subparsers.add_parser("mlflow-eval", help="MLflow LLM Judge automated evaluation on code")
     ml_eval_p.add_argument("file", type=Path, help="Target Python source code to evaluate")
     ml_eval_p.add_argument("--prompt", default="Audit code quality and safety", help="Evaluation prompt")
+
+    # Command 53: OmO Dual-Pane Live DAG & Task Visualizer (Image 1)
+    omo_p = subparsers.add_parser("omo", help="OmO dual-pane live DAG & Task visualizer (Image 1)")
+    omo_p.add_argument("--task", default="Linear gates integration evidence 1/1", help="Task title")
+    omo_p.add_argument("--run-id", default="01a97526", help="DAG Run ID")
+
+    # Command 54: Task DAG Compilation & Scheduling Analysis
+    dag_p = subparsers.add_parser("dag", help="Compile and display Task DAG graph with wave scheduling")
+    dag_p.add_argument("spec", nargs="?", help="Task specification or flow")
 
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
@@ -1441,10 +1453,12 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Failed to remove worktree {target or 'active'}")
                 return 1
 
-    # Command 50: Interactive Claude Code Style Terminal Console (Image 2)
+    # Command 50: Interactive Claude Code Style Terminal Console (Image 3)
     if args.command == "console":
         from .ui.apex_console import ApexInteractiveConsole
-        console = ApexInteractiveConsole(workspace_root=".")
+        console = ApexInteractiveConsole(workspace_dir=".")
+        console.mascot_style = getattr(args, "mascot", "falcon")
+        console.mascot_theme = getattr(args, "theme", "gold")
         console.launch()
         return 0
 
@@ -1493,6 +1507,57 @@ def main(argv: list[str] | None = None) -> int:
             print(f"         {m.rationale}")
         print("==========================================================\n")
         return 0 if result.passed else 1
+
+    # Command 53: OmO Dual-Pane Live DAG & Task Visualizer (Image 1)
+    if args.command == "omo":
+        from .omo.dag_compiler import DagCompiler, DagNodeInput
+        from .omo.dag_executor import DagExecutor
+        from .omo.dag_tui import DagTuiRenderer
+        nodes = [
+            DagNodeInput(id="navigation", prompt="Map shell navigation", category="quick", label="navigation"),
+            DagNodeInput(id="gate-wiring", prompt="Wire linear gate verification", category="quick", label="gate-wiring"),
+            DagNodeInput(id="test-coverage", prompt="Run unit and integration coverage", category="quick", label="test-coverage"),
+            DagNodeInput(id="verify-evidence", prompt="Verify attestation signatures and evidence", category="quick", label="verify-evidence", depends_on=["navigation", "gate-wiring", "test-coverage"]),
+        ]
+        res = DagCompiler.compile(nodes)
+        executor = DagExecutor(res)
+        telemetry = executor.execute_all()
+        tui = DagTuiRenderer.render_full_screen(
+            dag_result=res,
+            telemetry=telemetry,
+            task_title=getattr(args, "task", "Linear gates integration evidence 1/1"),
+            run_id=getattr(args, "run_id", "01a97526"),
+        )
+        print("\n" + tui + "\n")
+        return 0
+
+    # Command 54: Task DAG Compilation & Scheduling Analysis
+    if args.command == "dag":
+        from .omo.dag_compiler import DagCompiler, DagNodeInput
+        nodes = [
+            DagNodeInput(id="arch-spec", prompt="Specify architectural boundaries", category="planning"),
+            DagNodeInput(id="tdd-tests", prompt="Synthesize property test harnesses", category="testing", depends_on=["arch-spec"]),
+            DagNodeInput(id="impl-core", prompt="Implement sovereign core logic", category="coding", depends_on=["arch-spec"]),
+            DagNodeInput(id="gatekeeper", prompt="Verify Merkle attestation & PEP-578 hooks", category="security", depends_on=["tdd-tests", "impl-core"]),
+        ]
+        res = DagCompiler.compile(nodes)
+        print("==========================================================")
+        print("   🕸️ APEX-SOVEREIGN: OMO TASK DAG WAVE GRAPH             ")
+        print("==========================================================")
+        print(f"  Valid DAG:       {'YES (Topologically Sorted)' if res.ok else 'NO'}")
+        print(f"  Total Nodes:     {len(res.nodes)}")
+        print(f"  Total Waves:     {len(res.waves)}")
+        print(f"  Critical Path:   {' -> '.join(res.critical_path)}")
+        print(f"  Bottlenecks:     {', '.join(res.bottlenecks) if res.bottlenecks else 'None'}")
+        print("----------------------------------------------------------")
+        for wave in res.waves:
+            print(f"  Wave {wave.index} (Parallel Barrier Execution):")
+            for nid in wave.node_ids:
+                node = next(n for n in res.nodes if n.id == nid)
+                deps_str = f"(depends on: {', '.join(node.depends_on)})" if node.depends_on else "(root node)"
+                print(f"    • [{node.route.value}] {node.id:<16} {deps_str}")
+        print("==========================================================\n")
+        return 0 if res.ok else 1
 
     # 26. Handle battle / default prompt
     prompt = getattr(args, "prompt", None) or args.direct_prompt or "Build an LRU cache with TTL support"

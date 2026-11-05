@@ -182,14 +182,15 @@ def divide(a, b):
     def test_worktrunk_allocate_and_prune(self) -> None:
         import subprocess
         # Initialize a test git repo
-        subprocess.run(["git", "init", "-b", "main"], cwd=str(self.workspace), capture_output=True, check=True)
-        subprocess.run(["git", "config", "user.name", "Test"], cwd=str(self.workspace), capture_output=True, check=True)
-        subprocess.run(["git", "config", "user.email", "test@apex.local"], cwd=str(self.workspace), capture_output=True, check=True)
+        subprocess.run(["git", "init"], cwd=str(self.workspace), capture_output=True, check=True)
+        subprocess.run(["git", "config", "safe.directory", "*"], cwd=str(self.workspace), capture_output=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=str(self.workspace), capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@apex.local"], cwd=str(self.workspace), capture_output=True)
         # Create initial commit
         init_file = self.workspace / "README.md"
         init_file.write_text("# Test Repo\n", encoding="utf-8")
-        subprocess.run(["git", "add", "."], cwd=str(self.workspace), capture_output=True, check=True)
-        subprocess.run(["git", "commit", "-m", "init"], cwd=str(self.workspace), capture_output=True, check=True)
+        subprocess.run(["git", "add", "README.md"], cwd=str(self.workspace), capture_output=True)
+        subprocess.run(["git", "commit", "-m", "init"], cwd=str(self.workspace), capture_output=True)
 
         trunk = WorktrunkEngine(self.workspace)
         session = trunk.allocate_worktree("agent_architect")

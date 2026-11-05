@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-Apex-Sovereign: Pixel Mascot & Retro-Cyberpunk Terminal Aesthetics
-Inspired by Claude Code (Image 2) & Worktrunk (Image 1)
+Apex-Sovereign: Iconic Re-Designed Pixel Mascot & Sovereign Aesthetics
+Inspired by Claude Code (Image 3) & Worktrunk (Image 2) & OmO (Image 1)
 100% Pure Python Standard Library | Zero Dependencies
 """
 
 from __future__ import annotations
 
 import os
+import re
 import shutil
 from typing import Dict, List, Optional, Tuple
 
@@ -17,21 +18,70 @@ class MascotTheme:
     BOLD = "\033[1m"
     DIM = "\033[2m"
 
-    # Claude Code warm terracotta / amber palette
+    # Claude Code classic warm terracotta / amber palette
     AMBER = "\033[38;5;208m"
     PEACH = "\033[38;5;215m"
+
+    # Apex Imperial Sovereign Gold
+    APEX_GOLD = "\033[38;5;220m"
+    APEX_OBSIDIAN = "\033[38;5;236m"
+
+    # Cyberpunk Neon
+    NEON_CYAN = "\033[38;5;45m"
+    ELECTRIC_BLUE = "\033[38;5;39m"
+    VIOLET = "\033[38;5;141m"
+
+    # Sovereign Emerald
+    EMERALD = "\033[38;5;48m"
+
     WHITE = "\033[38;5;255m"
     GRAY = "\033[38;5;244m"
     DARK_GRAY = "\033[38;5;238m"
     GREEN = "\033[38;5;114m"
     CYAN = "\033[38;5;75m"
     RED = "\033[38;5;203m"
-    BG_CREAM = "\033[48;5;230m"
-    BG_DARK = "\033[48;5;235m"
 
 
-# 6-line pixel robot / mascot (Claude Code style)
-APEX_PIXEL_MASCOT = [
+# ============================================================================
+# 1. Flagship Apex Sovereign Cyber-Falcon Mascot (Signature Emblem)
+# ============================================================================
+APEX_SOVEREIGN_FALCON = [
+    "   ▄██████▄   ",
+    " ▟███▀▀██▀▀███▙ ",
+    " ▐███ █▗▖█ ▐███▌",
+    "  ████▄▄▄▄████  ",
+    "  ▜██████████▛  ",
+    "    ▀██  ██▀    ",
+]
+
+# ============================================================================
+# 2. Sovereign Crowned Mech-Guardian Mascot (Royal Apex Mech)
+# ============================================================================
+APEX_CROWNED_GUARDIAN = [
+    "  █ █  ██  █ █  ",
+    "  ▀█▀██████▀█▀  ",
+    "  ████████████  ",
+    "  ███▗▖██▗▖███  ",
+    "  ██▀▀▀▀▀▀▀▀██  ",
+    "   ██      ██   ",
+]
+
+# ============================================================================
+# 3. Sovereign Aegis Citadel Diamond Mascot
+# ============================================================================
+APEX_CITADEL_AEGIS = [
+    "      ▟██▙      ",
+    "    ▟██████▙    ",
+    "  ▟███▀██▀███▙  ",
+    "  ███ █▗▖█ ███  ",
+    "  ▜███▄██▄███▛  ",
+    "    ▜██████▛    ",
+]
+
+# ============================================================================
+# 4. Classic Claude Code Terracotta Sprite (Image 3)
+# ============================================================================
+APEX_RETRO_SPRITE = [
     "  ▟█▙   ▟█▙  ",
     "  █████████  ",
     "  █▗▖█ █▗▖█  ",
@@ -40,50 +90,65 @@ APEX_PIXEL_MASCOT = [
     "   █     █   ",
 ]
 
-# Alternate Sovereign Cyber-Falcon mascot
-APEX_FALCON_MASCOT = [
-    "   ▄█▀▀█▄   ",
-    " ▄█▀ █  ▀█▄ ",
-    " █  ▄▄▄▄  █ ",
-    " █ █▗▖  █ █ ",
-    "  ▀█▄▄▄▄█▀  ",
-    "    ▀  ▀    ",
-]
+# Aliases for backward compatibility
+APEX_PIXEL_MASCOT = APEX_RETRO_SPRITE
+APEX_FALCON_MASCOT = APEX_SOVEREIGN_FALCON
 
 
 class MascotRenderer:
-    """Renders the iconic pixel mascot header, prompt boxes, and status bars."""
+    """Renders the iconic re-designed Apex pixel mascot header, prompt boxes, and status bars."""
+
+    MASCOT_STYLES = {
+        "falcon": APEX_SOVEREIGN_FALCON,
+        "guardian": APEX_CROWNED_GUARDIAN,
+        "aegis": APEX_CITADEL_AEGIS,
+        "retro": APEX_RETRO_SPRITE,
+    }
+
+    THEME_COLORS = {
+        "gold": MascotTheme.APEX_GOLD,
+        "amber": MascotTheme.AMBER,
+        "cyan": MascotTheme.NEON_CYAN,
+        "emerald": MascotTheme.EMERALD,
+        "violet": MascotTheme.VIOLET,
+    }
 
     @classmethod
     def render_header(
         cls,
-        version: str = "v2.5.0",
-        model: str = "Claude 3.7 Sonnet · Gemini 2.5 · GPT-4o",
+        version: str = "v3.0.0-SOVEREIGN",
+        model: str = "Claude 3.7 Sonnet · Gemini 2.5 Pro · GPT-4o",
         workspace_path: Optional[str] = None,
         tip: Optional[str] = None,
-        falcon: bool = False,
+        style: str = "falcon",
+        theme_name: str = "gold",
     ) -> str:
-        """Renders Claude Code style header with pixel mascot avatar."""
+        """
+        Renders the iconic pixel mascot header matching Image 3 with Apex re-branding.
+        """
         t = MascotTheme
         cwd = workspace_path or os.getcwd()
-        if len(cwd) > 40:
-            cwd = "..." + cwd[-37:]
+        if len(cwd) > 42:
+            cwd = "..." + cwd[-39:]
 
-        mascot_lines = APEX_FALCON_MASCOT if falcon else APEX_PIXEL_MASCOT
+        mascot_lines = cls.MASCOT_STYLES.get(style, APEX_SOVEREIGN_FALCON)
+        accent_color = cls.THEME_COLORS.get(theme_name, t.APEX_GOLD)
+
         info_lines = [
             f"{t.BOLD}{t.WHITE}Apex-Sovereign {version}{t.RESET}",
-            f"{t.AMBER}{model}{t.RESET}",
+            f"{accent_color}{model}{t.RESET}",
             f"{t.GRAY}{cwd}{t.RESET}",
-            f"{t.CYAN}★ MCTS PUCT × CEGIS Inductive Synthesis × SBFL Triad{t.RESET}",
-            f"{t.GREEN}✓ Worktree Trunk: Clean & Isolated{t.RESET}  {t.DARK_GRAY}Type /help for command palette{t.RESET}",
-            f"{t.DARK_GRAY}─────────────────────────────────────────────────────────────────{t.RESET}",
+            f"{t.CYAN}★ MCTS PUCT × CEGIS Inductive Synthesis × OmO DAG Waves{t.RESET}",
+            f"{t.GREEN}✓ Worktrunk: Isolated & Clean{t.RESET}  {t.DARK_GRAY}Type /help or /omo for interactive TUI{t.RESET}",
+            f"{t.DARK_GRAY}──────────────────────────────────────────────────────────────────{t.RESET}",
         ]
 
         rendered_header = []
-        for i in range(max(len(mascot_lines), len(info_lines))):
-            m_part = mascot_lines[i] if i < len(mascot_lines) else " " * 13
+        max_rows = max(len(mascot_lines), len(info_lines))
+        for i in range(max_rows):
+            m_part = mascot_lines[i] if i < len(mascot_lines) else " " * 16
             i_part = info_lines[i] if i < len(info_lines) else ""
-            rendered_header.append(f"{t.AMBER}{m_part}{t.RESET}   {i_part}")
+            rendered_header.append(f"{accent_color}{m_part}{t.RESET}   {i_part}")
 
         if tip:
             rendered_header.append(f"\n{t.DIM}{tip}{t.RESET}")
@@ -96,18 +161,16 @@ class MascotRenderer:
         worktree_path: str = "~/w/apex.main",
         pr_num: str = "#6",
         port: str = ":16156",
-        model_name: str = "Claude 3.7 Sonnet",
+        model_name: str = "Claude 3.7 Sonnet (Apex Supreme)",
         effort: str = "high /effort",
     ) -> str:
-        """Renders bottom status bar matching Image 2."""
+        """Renders bottom status bar matching Image 3 & Image 2."""
         t = MascotTheme
         term_width = min(shutil.get_terminal_size((80, 24)).columns, 100)
-        
+
         left = f"{t.GRAY}{worktree_path} _ {pr_num} {port} {model_name}{t.RESET}"
         right = f"{t.DARK_GRAY}Ctrl + <n> New Pane{t.RESET}"
 
-        # Clean lengths for spacing
-        import re
         raw_left = re.sub(r"\033\[[0-9;]*m", "", left)
         raw_right = re.sub(r"\033\[[0-9;]*m", "", right)
         spaces = max(2, term_width - len(raw_left) - len(raw_right))

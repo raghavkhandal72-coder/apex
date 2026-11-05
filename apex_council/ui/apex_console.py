@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Apex-Sovereign: Claude Code Style Interactive Terminal Console
-Matches Claude Code (Image 2) & Worktrunk (Image 1)
+Matches Claude Code (Image 3) & Worktrunk (Image 2) & OmO (Image 1)
 100% Pure Python Standard Library | Zero Dependencies
 """
 
@@ -16,12 +16,15 @@ from ..git_engine.worktrunk_advanced import WorktrunkAdvancedEngine
 from ..mlflow_engine.tracer import AgentTracer
 from ..mlflow_engine.tracker import MLflowExperimentTracker
 from ..mlflow_engine.evaluator import LLMJudgeEvaluator
+from ..omo.dag_compiler import DagCompiler, DagNodeInput
+from ..omo.dag_executor import DagExecutor
+from ..omo.dag_tui import DagTuiRenderer
 
 
 class ApexInteractiveConsole:
     """
     Interactive Terminal Shell providing Claude Code's UI aesthetics
-    with Worktrunk worktree matrix and MLflow observability.
+    with Worktrunk worktree matrix, OmO task DAG graph, and MLflow observability.
     """
 
     def __init__(self, workspace_dir: str = ".") -> None:
@@ -29,25 +32,29 @@ class ApexInteractiveConsole:
         self.wt_engine = WorktrunkAdvancedEngine(self.workspace_dir)
         self.tracer = AgentTracer("apex_interactive_console")
         self.tracker = MLflowExperimentTracker()
+        self.mascot_style = "falcon"
+        self.mascot_theme = "gold"
 
     def launch(self) -> None:
         """Launches the interactive terminal session."""
         t = MascotTheme
-        # Print Mascot & Header (Matching Image 2)
+        # Print Mascot & Header (Matching Image 3)
         print("\n" + MascotRenderer.render_header(
-            version="v2.5.0",
-            model="Claude 3.7 Sonnet · Gemini 2.5 Flash · GPT-4o",
+            version="v3.0.0-SOVEREIGN",
+            model="Claude 3.7 Sonnet · Gemini 2.5 Pro · GPT-4o",
             workspace_path=self.workspace_dir,
-            tip="Apex v2.5 writes verified code and certifies proofs. Switch anytime with /model or /wt.",
+            tip="Apex v3.0 writes verified code and certifies proofs. Switch anytime with /mascot, /omo, or /wt.",
+            style=self.mascot_style,
+            theme_name=self.mascot_theme,
         ))
 
         curr_branch = self.wt_engine.get_current_branch()
-        print(f"\n{t.DIM}Type /help for command list or enter natural language instruction.{t.RESET}\n")
+        print(f"\n{t.DIM}Type /help for command list or /omo for dual-pane DAG visualizer.{t.RESET}\n")
 
         # Interactive loop
         while True:
             try:
-                prompt_line = input(f"{t.AMBER}apex ({curr_branch}) > {t.RESET}").strip()
+                prompt_line = input(f"{t.APEX_GOLD}apex ({curr_branch}) > {t.RESET}").strip()
                 if not prompt_line:
                     continue
 
@@ -57,6 +64,12 @@ class ApexInteractiveConsole:
 
                 elif prompt_line.startswith("/wt") or prompt_line == "wt":
                     self._handle_wt_command(prompt_line)
+
+                elif prompt_line.startswith("/omo") or prompt_line.startswith("/ulw"):
+                    self._handle_omo_command(prompt_line)
+
+                elif prompt_line.startswith("/mascot"):
+                    self._handle_mascot_command(prompt_line)
 
                 elif prompt_line.startswith("/mlflow") or prompt_line == "mlflow":
                     self._handle_mlflow_command(prompt_line)
@@ -97,6 +110,39 @@ class ApexInteractiveConsole:
         else:
             print("  Usage: /wt [list|switch <branch>|add <branch>|remove <branch>]")
 
+    def _handle_omo_command(self, cmd: str) -> None:
+        """Launches the OmO dual-pane DAG viewer (Matching Image 1)."""
+        nodes = [
+            DagNodeInput(id="navigation", prompt="Map shell navigation", category="quick", label="navigation"),
+            DagNodeInput(id="gate-wiring", prompt="Wire linear gate verification", category="quick", label="gate-wiring"),
+            DagNodeInput(id="test-coverage", prompt="Run unit and integration coverage", category="quick", label="test-coverage"),
+            DagNodeInput(id="verify-evidence", prompt="Verify attestation signatures and evidence", category="quick", label="verify-evidence", depends_on=["navigation", "gate-wiring", "test-coverage"]),
+        ]
+        res = DagCompiler.compile(nodes)
+        executor = DagExecutor(res)
+        telemetry = executor.execute_all()
+        tui_output = DagTuiRenderer.render_full_screen(
+            dag_result=res,
+            telemetry=telemetry,
+            task_title="Linear gates integration evidence 1/1",
+            run_id="01a97526",
+        )
+        print("\n" + tui_output + "\n")
+
+    def _handle_mascot_command(self, cmd: str) -> None:
+        parts = cmd.split()
+        if len(parts) > 1 and parts[1] in MascotRenderer.MASCOT_STYLES:
+            self.mascot_style = parts[1]
+        if len(parts) > 2 and parts[2] in MascotRenderer.THEME_COLORS:
+            self.mascot_theme = parts[2]
+
+        print("\n" + MascotRenderer.render_header(
+            version="v3.0.0-SOVEREIGN",
+            workspace_path=self.workspace_dir,
+            style=self.mascot_style,
+            theme_name=self.mascot_theme,
+        ) + "\n")
+
     def _handle_mlflow_command(self, cmd: str) -> None:
         t = MascotTheme
         print(f"\n{t.CYAN}=== MLflow Agent Observability & Tracking ==={t.RESET}")
@@ -128,15 +174,13 @@ class ApexInteractiveConsole:
         t = MascotTheme
         print(f"""
 {t.BOLD}Apex-Sovereign Interactive Command Palette:{t.RESET}
-  /wt [list|switch|add|remove]   Worktree matrix & branch manager (Worktrunk style)
+  /omo                           Launch dual-pane OmO DAG & Task visualizer (Image 1)
+  /wt [list|switch|add|remove]   Worktree matrix & branch manager (Worktrunk style - Image 2)
+  /mascot [style] [color]        Change mascot: falcon, guardian, aegis, retro | gold, amber, cyan, emerald
   /mlflow                        Inspect active traces, spans, and MLflow run directory
   /eval <file>                   Run MLflow LLM Judge evaluation on source code
   /help                          Show this command guide
   /exit                          Exit the console
-
-Or enter any natural language request:
-  e.g. "Fix off-by-one error in binary search"
-  e.g. "Audit security taint in api_router.py"
 """)
 
     def _execute_agent_task(self, prompt: str) -> None:
