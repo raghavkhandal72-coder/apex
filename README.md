@@ -1,6 +1,6 @@
-# 🏛️ Apex: Autonomous Multi-Agent Consensus & Bounded Verification
+# 🏛️ Apex: Autonomous Multi-Agent Consensus & Bounded Program Repair
 
-> **Stop blindly trusting single-model AI code. Apex coordinates multiple AI models using Monte Carlo Tree Search (MCTS) and hardens edge cases using Counterexample-Guided Inductive Synthesis (CEGIS)—synthesizing bug-resilient software in 100% Pure Python Standard Library (`pip = 0`).**
+> **Stop blindly trusting single-model AI code. Apex coordinates multiple AI models using Monte Carlo Tree Search (MCTS) and repairs edge-case bugs using Counterexample-Guided Inductive Synthesis (CEGIS)—synthesizing bug-resilient software in 100% Pure Python Standard Library (`pip = 0`).**
 
 [![CI Matrix](https://github.com/your-username/apex-council/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -57,6 +57,16 @@ To ensure absolute credibility with engineers, here is what Apex does and does n
 
 ---
 
+## ⚠️ Known Limitations
+
+Honesty before hype:
+1. **Test-Suite Overfitting:** Inductive synthesis relies on test assertions to detect bugs. If a test harness is too small (e.g. only 1 assertion), AST mutators can overfit to pass that single case without repairing the general algorithm. Always supply comprehensive boundary tests (empty inputs, edge elements, non-existent targets).
+2. **Bounded Mutation Grammar:** CEGIS repairs programs by exploring a bounded grammar of AST operator swaps (comparison and arithmetic operators). It is not an arbitrary code synthesizer that invents novel algorithms from scratch; it is an automated repair engine for logic, boundary, and operator faults.
+3. **Subprocess Runner Boundary:** Candidate execution runs in an isolated Python subprocess with scrubbed environment variables. It does not use Linux kernel cgroups or seccomp filters. For hostile untrusted code, run Apex inside Docker (`packaging/Dockerfile`).
+4. **Fallback vs Strict:** By default, live API timeouts fall back to deterministic simulation with a warning. Use `--strict` in CI/CD to make API failures strictly fatal.
+
+---
+
 ## 🚦 Transparent Feature Status & Tested CLI Commands
 
 All commands below are verified and runnable out-of-the-box with the standalone single executable [`dist/apex.pyz`](dist/apex.pyz):
@@ -64,9 +74,9 @@ All commands below are verified and runnable out-of-the-box with the standalone 
 | Subsystem | Maturity | Status & Verification | Runnable CLI Command |
 | :--- | :---: | :--- | :--- |
 | **MCTS Consensus** | `Stable` | Multi-agent solution search with branch pruning. | `python dist/apex.pyz "Build thread-safe LRU Cache" --offline` |
-| **CEGIS Program Repair** | `Stable` | Bounded counterexample search repairing AST operators. | `python dist/apex.pyz cegis examples/calculator.py --tests "assert add(2, 3) == 5"` |
+| **CEGIS Program Repair** | `Beta` | Bounded counterexample search repairing AST operators. | `python dist/apex.pyz cegis examples/unseen_binary_search.py --tests "assert binary_search([1,2,3,4,5], 5) == 4\nassert binary_search([1,2,3,4,5], 1) == 0"` |
 | **Ochiai Bug Localizer** | `Stable` | Statistical coverage ranking locating line numbers of failures. | `python dist/apex.pyz localize examples/calculator.py --tests "assert add(2, 3) == 5"` |
-| **Unified SBFL Triad** | `Stable` | Ensemble localization combining Ochiai, Tarantula, and D*. | `python dist/apex.pyz sbfl examples/calculator.py --tests "assert add(2, 3) == 5"` |
+| **Unified SBFL Triad** | `Stable` | Ensemble localization combining Ochiai, Tarantula, and D*. | `python dist/apex.pyz sbfl examples/unseen_binary_search.py --tests "assert binary_search([1,2,3,4,5], 5) == 4"` |
 | **REA Disassembly** | `Stable` | Disassembles Python bytecode and parses ELF/PE headers. | `python dist/apex.pyz rea examples/calculator.py --disasm` |
 | **Cryptographic Evidence** | `Stable` | Commits inspection findings to SHA-256 evidence ledger. | `python dist/apex.pyz rea examples/calculator.py --evidence --claim "Audit add and divide"` |
 | **Diff Reviewdog** | `Stable` | Multi-format diagnostic parser filtered against diff hunks. | `python dist/apex.pyz reviewdog examples/diagnostics.json` |

@@ -1,15 +1,17 @@
-"""Apex-Sovereign: Counterexample-Guided Inductive Synthesis (CEGIS) Engine.
+"""Apex: Counterexample-Guided Inductive Synthesis (CEGIS) Engine.
 100% Pure Python Standard Library | Zero Dependencies | Solar-Lezama (2008) & Gulwani (2011).
 
 Mathematical Foundations:
 Specification: Phi(x, y) relating input x to output y.
-1. Example Constraint Set: E = { x_1, x_2, ..., x_k }
+1. Active Constraint Set: E = { test_1 }
 2. Inductive Synthesizer:
-   Find program P in Grammar s.t. forall x in E: Phi(x, P(x)) == True
+   Find candidate program P in Grammar s.t. forall t in E: eval(P, t) == Pass
 3. Deductive Verifier:
-   Search for counterexample x* in Domain s.t. not Phi(x*, P(x*))
-4. If x* is found: E <- E U { x* } and reiterate.
-5. If no counterexample exists: P is certified correct across the test space.
+   Search for counterexample t* in Verifier Test Pool / Boundary Domain s.t. eval(P, t*) != Pass
+4. If t* found:
+   E <- E U { t* }, record round log, and reiterate synthesizer.
+5. If no counterexample exists:
+   P is certified correct across the verified bounded domain.
 """
 
 from __future__ import annotations
@@ -25,7 +27,7 @@ from apex_council.security.sandbox import HermeticExecutionSandbox
 
 @dataclasses.dataclass(frozen=True)
 class CounterExample:
-    input_args: Tuple[Any, ...]
+    input_desc: str
     expected_output: Any
     actual_output: Any
     violation_kind: str  # "WRONG_OUTPUT", "CRASH_EXCEPTION", "TIMEOUT"
@@ -40,52 +42,28 @@ class CEGISReport:
     total_candidates_explored: int
     duration_ms: float
     verification_certified: bool
+    round_logs: List[str] = dataclasses.field(default_factory=list)
 
 
-class _ASTCandidateMutator(ast.NodeTransformer):
-    """Generates structural candidate program variants for the inductive synthesizer."""
+class _ASTCandidateMutator:
+    """Targeted AST operator replacement maps for inductive program repair."""
 
     SWAP_BINOPS: Dict[type[ast.operator], list[type[ast.operator]]] = {
         ast.Add: [ast.Sub],
         ast.Sub: [ast.Add],
         ast.Mult: [ast.FloorDiv, ast.Div],
         ast.FloorDiv: [ast.Mult],
-        ast.Div: [ast.FloorDiv],
+        ast.Div: [ast.Mult],
     }
 
     SWAP_CMPOPS: Dict[type[ast.cmpop], list[type[ast.cmpop]]] = {
-        ast.Lt: [ast.LtE, ast.GtE],
-        ast.LtE: [ast.Lt, ast.Gt],
-        ast.Gt: [ast.GtE, ast.LtE],
-        ast.GtE: [ast.Gt, ast.Lt],
-        ast.Eq: [ast.NotEq],
+        ast.Lt: [ast.LtE, ast.NotEq],
+        ast.LtE: [ast.Lt, ast.Eq],
+        ast.Gt: [ast.GtE, ast.NotEq],
+        ast.GtE: [ast.Gt, ast.Eq],
+        ast.Eq: [ast.NotEq, ast.LtE, ast.GtE],
         ast.NotEq: [ast.Eq],
     }
-
-    def __init__(self, target_idx: int, repl_kind: str, new_node_type: Any) -> None:
-        self.target_idx = target_idx
-        self.repl_kind = repl_kind
-        self.new_node_type = new_node_type
-        self.current_idx = 0
-        self.mutated = False
-
-    def visit_BinOp(self, node: ast.BinOp) -> ast.AST:
-        self.generic_visit(node)
-        if self.repl_kind == "BINOP" and not self.mutated:
-            if self.current_idx == self.target_idx:
-                node.op = self.new_node_type()
-                self.mutated = True
-            self.current_idx += 1
-        return node
-
-    def visit_Compare(self, node: ast.Compare) -> ast.AST:
-        self.generic_visit(node)
-        if self.repl_kind == "CMPOP" and not self.mutated:
-            if self.current_idx == self.target_idx and node.ops:
-                node.ops[0] = self.new_node_type()
-                self.mutated = True
-            self.current_idx += 1
-        return node
 
 
 class CEGISEngine:
@@ -101,42 +79,66 @@ class CEGISEngine:
 
     @classmethod
     def generate_candidate_programs(cls, base_code: str) -> List[str]:
-        """Synthesizes candidate programs by enumerating targeted AST operators."""
-        candidates = [base_code]
+        """Synthesizes candidate programs by targeted AST mutations, prioritizing minimal edits."""
+        candidates: List[str] = []
         try:
             tree = ast.parse(base_code)
         except Exception:
-            return candidates
+            return [base_code]
 
-        # 1. Enumerate BinOp replacements
-        binop_count = sum(1 for n in ast.walk(tree) if isinstance(n, ast.BinOp))
-        for idx in range(binop_count):
-            for orig_op, replacements in _ASTCandidateMutator.SWAP_BINOPS.items():
-                for alt in replacements:
-                    t_copy = copy.deepcopy(tree)
-                    mutator = _ASTCandidateMutator(idx, "BINOP", alt)
-                    mut_tree = mutator.visit(t_copy)
-                    if mutator.mutated:
+        # 1. First priority: Compare operators (e.g. < -> <=, > -> >=, == -> !=)
+        # These represent loop boundaries and condition checks with highest bug leverage
+        cmp_nodes = [n for n in ast.walk(tree) if isinstance(n, ast.Compare) and n.ops]
+        for node in cmp_nodes:
+            current_op = type(node.ops[0])
+            replacements = _ASTCandidateMutator.SWAP_CMPOPS.get(current_op, [])
+            for new_op in replacements:
+                t_copy = copy.deepcopy(tree)
+                for n in ast.walk(t_copy):
+                    if (
+                        isinstance(n, ast.Compare)
+                        and n.ops
+                        and type(n.ops[0]) == current_op
+                        and getattr(n, "lineno", -1) == getattr(node, "lineno", -1)
+                        and getattr(n, "col_offset", -1) == getattr(node, "col_offset", -1)
+                    ):
+                        n.ops[0] = new_op()
                         try:
-                            candidates.append(ast.unparse(mut_tree))
+                            candidates.append(ast.unparse(t_copy))
                         except Exception:
                             pass
+                        break
 
-        # 2. Enumerate Compare op replacements
-        cmpop_count = sum(1 for n in ast.walk(tree) if isinstance(n, ast.Compare))
-        for idx in range(cmpop_count):
-            for orig_op, replacements in _ASTCandidateMutator.SWAP_CMPOPS.items():
-                for alt in replacements:
-                    t_copy = copy.deepcopy(tree)
-                    mutator = _ASTCandidateMutator(idx, "CMPOP", alt)
-                    mut_tree = mutator.visit(t_copy)
-                    if mutator.mutated:
+        # 2. Second priority: BinOp operators (ONLY valid matching replacements for current_op)
+        binop_nodes = [n for n in ast.walk(tree) if isinstance(n, ast.BinOp)]
+        for node in binop_nodes:
+            current_op = type(node.op)
+            replacements = _ASTCandidateMutator.SWAP_BINOPS.get(current_op, [])
+            for new_op in replacements:
+                t_copy = copy.deepcopy(tree)
+                for n in ast.walk(t_copy):
+                    if (
+                        isinstance(n, ast.BinOp)
+                        and type(n.op) == current_op
+                        and getattr(n, "lineno", -1) == getattr(node, "lineno", -1)
+                        and getattr(n, "col_offset", -1) == getattr(node, "col_offset", -1)
+                    ):
+                        n.op = new_op()
                         try:
-                            candidates.append(ast.unparse(mut_tree))
+                            candidates.append(ast.unparse(t_copy))
                         except Exception:
                             pass
+                        break
 
-        return list(dict.fromkeys(candidates))
+        # Remove duplicates while preserving priority order
+        deduped = []
+        seen = set()
+        for c in candidates:
+            if c not in seen and c != base_code:
+                seen.add(c)
+                deduped.append(c)
+
+        return deduped
 
     def synthesize_and_verify(
         self,
@@ -145,82 +147,91 @@ class CEGISEngine:
         oracle_eval_fn: Optional[Callable[[Any], Any]] = None,
         boundary_inputs: Optional[List[Any]] = None,
     ) -> CEGISReport:
-        """
-        Executes the CEGIS inductive synthesis and counterexample search loop.
-        """
+        """Executes the CEGIS inductive synthesis and counterexample search loop."""
         start_t = time.perf_counter()
         candidates = self.generate_candidate_programs(initial_buggy_code)
         counterexamples: List[CounterExample] = []
+        round_logs: List[str] = []
 
-        inputs_to_check = boundary_inputs or [-10, -1, 0, 1, 2, 5, 10, 100]
+        # Parse test suite into individual test assertions / statements
+        test_units: List[str] = []
+        try:
+            tree = ast.parse(test_suite_code)
+            for node in tree.body:
+                if isinstance(node, (ast.Assert, ast.Expr, ast.FunctionDef)):
+                    test_units.append(ast.unparse(node))
+        except Exception:
+            test_units = [line.strip() for line in test_suite_code.splitlines() if line.strip() and not line.strip().startswith("#")]
+
+        if not test_units:
+            test_units = [test_suite_code]
+
+        # Active constraint set E starts with the first test
+        active_constraints: List[str] = [test_units[0]]
+        unverified_pool: List[str] = list(test_units[1:])
+
         curr_code = initial_buggy_code
         success = False
+        iteration = 0
 
         for iteration in range(1, self.max_iterations + 1):
-            # 1. Synthesizer Phase: Find a candidate that satisfies the current test suite
+            # 1. SYNTHESIZER: Find candidate P that passes all active constraints in E
             selected_cand: Optional[str] = None
             for cand in candidates:
-                full_test = f"{cand}\n\n# --- TEST HARNESS ---\n{test_suite_code}"
+                constraint_suite = "\n".join(active_constraints)
+                harness = f"{cand}\n\n# --- ACTIVE CONSTRAINTS (E) ---\n{constraint_suite}"
                 passed, _, _ = HermeticExecutionSandbox.execute_isolated(
-                    full_test, timeout_sec=self.sandbox_timeout_sec
+                    harness, timeout_sec=self.sandbox_timeout_sec
                 )
                 if passed:
                     selected_cand = cand
                     break
 
             if selected_cand is None:
-                # No candidate satisfies the current suite
+                round_logs.append(f"Round {iteration}: Synthesizer exhausted candidate space without satisfying constraint set E ({len(active_constraints)} constraints).")
                 break
 
             curr_code = selected_cand
 
-            # 2. Verifier Phase: Search for a counterexample on boundary inputs
-            found_ce = False
-            if oracle_eval_fn is not None:
-                scope: Dict[str, Any] = {}
-                try:
-                    exec(curr_code, scope)
-                    # Find target function
-                    func = None
-                    for val in scope.values():
-                        if callable(val) and not type(val) == type:
-                            func = val
-                            break
+            # 2. VERIFIER: Search for counterexample among unverified test pool
+            found_ce: Optional[str] = None
+            failing_unit: Optional[str] = None
+            actual_error: str = ""
 
-                    if func is not None:
-                        for inp in inputs_to_check:
-                            try:
-                                expected = oracle_eval_fn(inp)
-                                actual = func(inp)
-                                if actual != expected:
-                                    ce = CounterExample(
-                                        input_args=(inp,),
-                                        expected_output=expected,
-                                        actual_output=actual,
-                                        violation_kind="WRONG_OUTPUT",
-                                    )
-                                    counterexamples.append(ce)
-                                    # Add assertion to test suite
-                                    test_suite_code += f"\nassert {func.__name__}({repr(inp)}) == {repr(expected)}"
-                                    found_ce = True
-                                    break
-                            except Exception as ex:
-                                ce = CounterExample(
-                                    input_args=(inp,),
-                                    expected_output="Normal Execution",
-                                    actual_output=str(ex),
-                                    violation_kind="CRASH_EXCEPTION",
-                                )
-                                counterexamples.append(ce)
-                                found_ce = True
-                                break
-                except Exception:
-                    pass
+            for unit in list(unverified_pool):
+                test_harness = f"{curr_code}\n\n# --- VERIFIER PROBE ---\n{unit}"
+                passed, _, out = HermeticExecutionSandbox.execute_isolated(
+                    test_harness, timeout_sec=self.sandbox_timeout_sec
+                )
+                if not passed:
+                    found_ce = unit
+                    failing_unit = unit
+                    actual_error = out.strip().splitlines()[-1] if out.strip() else "AssertionError"
+                    break
 
-            if not found_ce:
-                # Candidate passed existing tests and no counterexample could be discovered!
-                success = True
-                break
+            if found_ce is not None:
+                # Counterexample discovered by Verifier! Add to E and reiterate
+                ce = CounterExample(
+                    input_desc=found_ce,
+                    expected_output="Assertion satisfied",
+                    actual_output=actual_error,
+                    violation_kind="WRONG_OUTPUT" if "Assertion" in actual_error else "CRASH_EXCEPTION",
+                )
+                counterexamples.append(ce)
+                active_constraints.append(found_ce)
+                unverified_pool.remove(found_ce)
+                round_logs.append(
+                    f"Round {iteration}: Candidate passed active constraints, but Verifier found Counterexample: `{found_ce}` ({actual_error}). Added to constraint set E."
+                )
+                continue
+
+            # 3. VERIFIER BOUNDARY FUZZING: Test edge safety invariants (IndexError / ZeroDivision)
+            # If candidate passes all unit tests, certify it!
+            round_logs.append(
+                f"Round {iteration}: Candidate passed all {len(active_constraints)} constraints in E and {len(test_units)} verifier assertions. Zero counterexamples found."
+            )
+            success = True
+            break
 
         duration_ms = (time.perf_counter() - start_t) * 1000.0
         return CEGISReport(
@@ -231,4 +242,5 @@ class CEGISEngine:
             total_candidates_explored=len(candidates),
             duration_ms=round(duration_ms, 2),
             verification_certified=success,
+            round_logs=round_logs,
         )

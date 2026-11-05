@@ -1235,11 +1235,15 @@ def main(argv: list[str] | None = None) -> int:
         print("   ⚙️ COUNTEREXAMPLE-GUIDED INDUCTIVE SYNTHESIZER (CEGIS)   ")
         print("==========================================================")
         print(f"  Target File:     {args.file}")
-        print(f"  Certified:       {'✓ PROVABLY CORRECT' if rep.verification_certified else '✗ INCOMPLETE'}")
+        print(f"  Certified:       {'✓ BOUNDED REPAIR CERTIFIED' if rep.verification_certified else '✗ INCOMPLETE'}")
         print(f"  Iterations:      {rep.iterations_run}")
         print(f"  Candidates:      {rep.total_candidates_explored}")
         print(f"  Duration:        {rep.duration_ms:.1f}ms")
         print(f"  Counterexamples: {len(rep.counterexamples_found)}")
+        if rep.round_logs:
+            print("\n  Round-by-Round Counterexample Loop:")
+            for r_log in rep.round_logs:
+                print(f"    • {r_log}")
         if rep.success:
             print("\n--- SYNTHESIZED REPAIRED CODE ---")
             print(rep.synthesized_code)
