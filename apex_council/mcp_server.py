@@ -548,6 +548,87 @@ class ApexCouncilMCPServer:
                                 "required": ["issue_text"],
                             },
                         },
+                        {
+                            "name": "apex_ontology_analyze",
+                            "description": "Analyzes codebase semantic ontology, detects architectural layer boundary violations, and computes impact blast radius (NVIDIA auto-ontology style).",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "source_code": {
+                                        "type": "string",
+                                        "description": "Python source code to analyze.",
+                                    },
+                                    "file_path": {
+                                        "type": "string",
+                                        "description": "Relative file path of the source code.",
+                                    },
+                                    "check_invariants": {
+                                        "type": "boolean",
+                                        "description": "Whether to check layer boundary violations.",
+                                    },
+                                },
+                                "required": ["source_code"],
+                            },
+                        },
+                        {
+                            "name": "apex_sdd_validate",
+                            "description": "Validates code against formal Spec-Driven Development (SDD) contracts and requirements (github/spec-kit style).",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "spec_text": {
+                                        "type": "string",
+                                        "description": "Specification Markdown or JSON.",
+                                    },
+                                    "target_file": {
+                                        "type": "string",
+                                        "description": "Implementation file path to validate.",
+                                    },
+                                },
+                                "required": ["spec_text"],
+                            },
+                        },
+                        {
+                            "name": "apex_worktrunk_manage",
+                            "description": "Manages isolated Git worktrees for parallel agent swarms (max-sixty/worktrunk style).",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "action": {
+                                        "type": "string",
+                                        "enum": ["allocate", "list", "prune", "cleanup_all"],
+                                        "description": "Worktree action to perform.",
+                                    },
+                                    "agent_id": {
+                                        "type": "string",
+                                        "description": "Agent identifier for allocate or prune.",
+                                    },
+                                },
+                                "required": ["action"],
+                            },
+                        },
+                        {
+                            "name": "apex_executive_review",
+                            "description": "Executes Y Combinator Garry Tan Executive C-Suite review (CEO, Eng Manager, Architect, Release Captain) on a proposal (garrytan/gstack style).",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "description": "Proposal or PR title.",
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Proposal description.",
+                                    },
+                                    "diff_or_code": {
+                                        "type": "string",
+                                        "description": "Diff or code content to review.",
+                                    },
+                                },
+                                "required": ["title", "description"],
+                            },
+                        },
                     ]
                 },
             }
@@ -1336,6 +1417,133 @@ class ApexCouncilMCPServer:
                             {
                                 "type": "text",
                                 "text": json.dumps(res, indent=2),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_ontology_analyze":
+                from .ontology.code_ontology import CodeOntologyEngine
+                src = arguments.get("source_code", "")
+                file_path = arguments.get("file_path", "module.py")
+                check_inv = arguments.get("check_invariants", True)
+                engine = CodeOntologyEngine()
+                engine.index_source(file_path, src)
+                violations = engine.check_invariants() if check_inv else []
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(
+                                    {
+                                        "entities_count": len(engine.entities),
+                                        "relations_count": len(engine.relations),
+                                        "violations": [
+                                            {
+                                                "rule_id": v.rule_id,
+                                                "severity": v.severity,
+                                                "message": v.message,
+                                                "recommendation": v.recommendation,
+                                            }
+                                            for v in violations
+                                        ],
+                                    },
+                                    indent=2,
+                                ),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_sdd_validate":
+                from .spec.sdd_engine import SDDEngine
+                spec_text = arguments.get("spec_text", "")
+                target_file = arguments.get("target_file")
+                spec = SDDEngine.parse_spec_text(spec_text)
+                rep_dict = None
+                if target_file:
+                    rep = SDDEngine.validate_spec_compliance(spec, target_file)
+                    rep_dict = {
+                        "compliance_score": rep.compliance_score,
+                        "passed_requirements": rep.passed_requirements,
+                        "failed_requirements": rep.failed_requirements,
+                    }
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(
+                                    {
+                                        "spec_name": spec.name,
+                                        "requirements_count": len(spec.requirements),
+                                        "validation": rep_dict,
+                                    },
+                                    indent=2,
+                                ),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_worktrunk_manage":
+                from .git_engine.worktrunk import WorktrunkEngine
+                action = arguments.get("action", "list")
+                agent_id = arguments.get("agent_id", "agent-default")
+                trunk = WorktrunkEngine()
+                res_data = {}
+                if action == "allocate":
+                    sess = trunk.allocate_worktree(agent_id)
+                    res_data = {"allocated": True, "path": str(sess.worktree_path), "branch": sess.branch_name}
+                elif action == "prune":
+                    ok = trunk.prune_worktree(agent_id)
+                    res_data = {"pruned": ok}
+                elif action == "cleanup_all":
+                    cnt = trunk.cleanup_all()
+                    res_data = {"cleaned_worktrees": cnt}
+                else:
+                    active = trunk.list_active_worktrees()
+                    res_data = {"active_worktrees": [dataclasses.asdict(a) for a in active]}
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(res_data, indent=2),
+                            }
+                        ]
+                    },
+                }
+
+            elif tool_name == "apex_executive_review":
+                from .swarm.executive_stack import ExecutiveStackOrchestrator
+                title = arguments.get("title", "")
+                desc = arguments.get("description", "")
+                diff = arguments.get("diff_or_code", "")
+                consensus = ExecutiveStackOrchestrator.evaluate_proposal(title, desc, diff)
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(
+                                    {
+                                        "unanimous_approval": consensus.unanimous_approval,
+                                        "aggregate_score": consensus.aggregate_score,
+                                        "suggested_semver": consensus.suggested_semver,
+                                        "verdicts": [dataclasses.asdict(v) for v in consensus.verdicts],
+                                    },
+                                    indent=2,
+                                ),
                             }
                         ]
                     },

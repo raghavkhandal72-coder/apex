@@ -38,6 +38,7 @@ KNOWN_COMMANDS = {
     "perf", "chaos", "appsec", "db-tune", "modernize", "release", "sbfl", "hoare",
     "cfg", "abstract-interp", "cegis", "solomonoff",
     "oracle", "ast-nav", "memo-sync", "mini-swe",
+    "ontology", "sdd", "worktrunk", "executive",
     "-h", "--help"
 }
 
@@ -279,6 +280,31 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     mini_parser = subparsers.add_parser("mini-swe", help="Mini-SWE-Agent ACI with Linter-in-the-Loop (mini-swe-agent style)")
     mini_parser.add_argument("issue", help="Path to issue text or bug description")
     mini_parser.add_argument("--workspace", type=Path, default=Path("."), help="Target workspace directory")
+
+    # Command 45: Semantic Code Ontology (NVIDIA auto-ontology style)
+    ont_parser = subparsers.add_parser("ontology", help="Semantic Code Ontology & Layer Boundary Checker (NVIDIA auto-ontology style)")
+    ont_parser.add_argument("path", type=Path, help="Target file or directory to construct semantic ontology for")
+    ont_parser.add_argument("--check-invariants", action="store_true", help="Validate architectural layer boundary invariants")
+    ont_parser.add_argument("--impact", help="Explain blast radius and transitive callers of a symbol")
+
+    # Command 46: Spec-Driven Development Engine (github/spec-kit style)
+    sdd_parser = subparsers.add_parser("sdd", help="Spec-Driven Development (SDD) Contract Compiler (github/spec-kit style)")
+    sdd_parser.add_argument("spec", type=Path, help="Path to specification Markdown or JSON file")
+    sdd_parser.add_argument("--validate", type=Path, help="Validate implementation module against spec contracts")
+    sdd_parser.add_argument("--gen-tests", help="Generate standalone unittest suite for target module name")
+
+    # Command 47: Git Worktree Trunk (max-sixty/worktrunk style)
+    trunk_parser = subparsers.add_parser("worktrunk", help="Parallel Agent Git Worktree Manager (max-sixty/worktrunk style)")
+    trunk_parser.add_argument("--allocate", help="Allocate an isolated worktree for an agent")
+    trunk_parser.add_argument("--list", action="store_true", help="List active agent worktrees")
+    trunk_parser.add_argument("--prune", help="Prune and delete worktree for agent")
+    trunk_parser.add_argument("--cleanup-all", action="store_true", help="Clean up all active worktrees")
+
+    # Command 48: Garry Tan Executive C-Suite Review (garrytan/gstack style)
+    exec_parser = subparsers.add_parser("executive", help="Y Combinator Garry Tan Executive C-Suite Review (garrytan/gstack style)")
+    exec_parser.add_argument("--title", required=True, help="Proposal or PR title")
+    exec_parser.add_argument("--desc", required=True, help="Proposal description")
+    exec_parser.add_argument("--diff", help="Path to diff or code file")
 
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
@@ -1203,6 +1229,112 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  Target Symbol:                 {res['target_symbol']}")
         if res.get('symbol_context'):
             print(f"  Symbol Context:\n{res['symbol_context']}")
+        print("==========================================================\n")
+        return 0
+
+    # Command 45: Semantic Code Ontology (NVIDIA auto-ontology style)
+    if args.command == "ontology":
+        from .ontology.code_ontology import CodeOntologyEngine
+        engine = CodeOntologyEngine()
+        target_p = Path(args.path)
+        if target_p.is_file():
+            engine.index_source(str(target_p), target_p.read_text(encoding="utf-8"))
+        elif target_p.is_dir():
+            for root, _, files in os.walk(target_p):
+                for f in files:
+                    if f.endswith(".py"):
+                        fp = Path(root) / f
+                        engine.index_source(str(fp), fp.read_text(encoding="utf-8", errors="replace"))
+        print("==========================================================")
+        print("   🕸️  SEMANTIC CODE ONTOLOGY & REASONING LAYER          ")
+        print("==========================================================")
+        print(f"  Target:          {args.path}")
+        print(f"  Total Entities:  {len(engine.entities)}")
+        print(f"  Total Relations: {len(engine.relations)}")
+        if args.check_invariants:
+            violations = engine.check_invariants()
+            print(f"  Violations:      {len(violations)}")
+            for v in violations:
+                print(f"    [{v.severity}] {v.rule_id}: {v.message}")
+                print(f"      Recommendation: {v.recommendation}")
+        if args.impact:
+            impact = engine.explain_impact(args.impact)
+            print(f"  Impact Analysis for '{args.impact}':")
+            print(f"    Blast Radius Count: {impact['transitive_impact_count']}")
+            print(f"    Impacted Layers:    {', '.join(impact['impacted_layers'])}")
+            print(f"    High Blast Radius:  {impact['is_high_blast_radius']}")
+        print("==========================================================\n")
+        return 0
+
+    # Command 46: Spec-Driven Development Engine (github/spec-kit style)
+    if args.command == "sdd":
+        from .spec.sdd_engine import SDDEngine
+        spec_text = Path(args.spec).read_text(encoding="utf-8")
+        spec = SDDEngine.parse_spec_text(spec_text)
+        print("==========================================================")
+        print("   📐 SPEC-DRIVEN DEVELOPMENT (SDD) CONTRACT ENGINE       ")
+        print("==========================================================")
+        print(f"  Spec Name:       {spec.name} (v{spec.version})")
+        print(f"  Requirements:    {len(spec.requirements)}")
+        for r in spec.requirements:
+            print(f"    - {r.req_id}: {r.title} -> {r.target_function}()")
+        if args.gen_tests:
+            suite = SDDEngine.generate_contract_test_suite(spec, args.gen_tests)
+            out_file = f"test_{spec.name.lower()}_contracts.py"
+            Path(out_file).write_text(suite, encoding="utf-8")
+            print(f"  [OK] Generated contract test suite: {out_file}")
+        if args.validate:
+            rep = SDDEngine.validate_spec_compliance(spec, args.validate)
+            print(f"  Compliance Score: {rep.compliance_score * 100:.1f}% ({rep.passed_requirements}/{rep.total_requirements} Pass)")
+        print("==========================================================\n")
+        return 0
+
+    # Command 47: Worktree Trunk (max-sixty/worktrunk style)
+    if args.command == "worktrunk":
+        from .git_engine.worktrunk import WorktrunkEngine
+        trunk = WorktrunkEngine()
+        print("==========================================================")
+        print("   🌿 PARALLEL AGENT GIT WORKTREE TRUNK                   ")
+        print("==========================================================")
+        if args.allocate:
+            sess = trunk.allocate_worktree(args.allocate)
+            print(f"  [OK] Allocated worktree for '{args.allocate}' at: {sess.worktree_path}")
+            print(f"  Branch: {sess.branch_name}")
+        elif args.prune:
+            trunk.prune_worktree(args.prune)
+            print(f"  [OK] Pruned worktree for agent: {args.prune}")
+        elif args.cleanup_all:
+            cnt = trunk.cleanup_all()
+            print(f"  [OK] Cleaned up {cnt} active agent worktrees.")
+        else:
+            active = trunk.list_active_worktrees()
+            print(f"  Active Worktrees: {len(active)}")
+            for a in active:
+                print(f"    - Agent '{a.agent_id}': {a.worktree_path} ({a.branch_name})")
+        print("==========================================================\n")
+        return 0
+
+    # Command 48: Garry Tan Executive C-Suite Review (garrytan/gstack style)
+    if args.command == "executive":
+        from .swarm.executive_stack import ExecutiveStackOrchestrator
+        diff_content = ""
+        if args.diff:
+            diff_p = Path(args.diff)
+            diff_content = diff_p.read_text(encoding="utf-8") if diff_p.exists() else args.diff
+        consensus = ExecutiveStackOrchestrator.evaluate_proposal(args.title, args.desc, diff_content)
+        print("==========================================================")
+        print("   👔 GARRY TAN EXECUTIVE C-SUITE LEADERSHIP REVIEW       ")
+        print("==========================================================")
+        print(f"  Proposal:        {args.title}")
+        print(f"  Suggested Bump:  {consensus.suggested_semver}")
+        print(f"  Aggregate Score: {consensus.aggregate_score:.1f}/10.0")
+        print(f"  Unanimous:       {'YES (APPROVED FOR MERGE)' if consensus.unanimous_approval else 'NO (CHANGES REQUESTED)'}")
+        print("----------------------------------------------------------")
+        for v in consensus.verdicts:
+            mark = "✅" if v.approved else "❌"
+            print(f"  {mark} {v.role} ({v.score:.1f}/10): {v.summary}")
+            for act in v.action_items:
+                print(f"     Action Item: {act}")
         print("==========================================================\n")
         return 0
 
