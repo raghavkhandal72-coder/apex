@@ -41,6 +41,7 @@ KNOWN_COMMANDS = {
     "ontology", "sdd", "worktrunk", "executive",
     "wt", "console", "mlflow-trace", "mlflow-eval",
     "omo", "dag", "gstack",
+    "gbrain", "scrape", "floci", "voice", "skills", "browser", "electron",
     "-h", "--help"
 }
 
@@ -346,6 +347,47 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     gstack_p.add_argument("target", nargs="?", default="", help="Target prompt, idea, or file path")
     gstack_p.add_argument("--diff", help="Path to diff or code file for review")
     gstack_p.add_argument("--bump", choices=["auto", "major", "minor", "patch"], default="auto", help="SemVer release bump")
+
+    # Command 56: GBrain Multi-Session Context Engine (garrytan/gbrain)
+    gbrain_p = subparsers.add_parser("gbrain", help="GBrain persistent memory & knowledge engine (garrytan/gbrain)")
+    gbrain_p.add_argument("action", choices=["store", "recall", "correct", "withdraw", "lock"], help="GBrain action")
+    gbrain_p.add_argument("params", nargs="*", help="Action parameters")
+    gbrain_p.add_argument("--source", default="user_session", help="Fact source")
+    gbrain_p.add_argument("--tags", default="general", help="Comma-separated tags")
+
+    # Command 57: Scrapling Resilient Web Scraping Engine (D4Vinci/Scrapling)
+    scrape_p = subparsers.add_parser("scrape", help="Scrapling resilient web scraping and DOM extraction engine (D4Vinci/Scrapling)")
+    scrape_p.add_argument("target", help="URL or local HTML file path to scrape")
+    scrape_p.add_argument("--tables", action="store_true", help="Extract tabular structures")
+
+    # Command 58: Floci AWS Local Cloud Emulator (floci-io/floci)
+    floci_p = subparsers.add_parser("floci", help="Floci local zero-cost AWS cloud emulator (floci-io/floci)")
+    floci_p.add_argument("service", choices=["s3", "sqs", "dynamo", "stats"], help="Cloud service to interact with")
+    floci_p.add_argument("action", nargs="?", default="list", help="Operation")
+    floci_p.add_argument("params", nargs="*", help="Parameters for operation")
+
+    # Command 59: VibeVoice Frontier Acoustic Synthesizer (microsoft/VibeVoice)
+    voice_p = subparsers.add_parser("voice", help="VibeVoice frontier acoustic voice synthesizer (microsoft/VibeVoice)")
+    voice_p.add_argument("persona", choices=["falcon", "guardian", "aegis", "ninja"], help="Council agent voice persona")
+    voice_p.add_argument("text", help="Text to synthesize into speech")
+    voice_p.add_argument("-o", "--output", help="Output .wav path")
+
+    # Command 60: Garden Skills Registry & Execution (google/skills & ConardLi/garden-skills)
+    skills_p = subparsers.add_parser("skills", help="Garden Skills agent skills registry & executor (ConardLi/garden-skills)")
+    skills_p.add_argument("action", choices=["list", "run"], help="Skills action")
+    skills_p.add_argument("name", nargs="?", help="Skill name to run")
+    skills_p.add_argument("--tag", help="Filter skills by tag")
+
+    # Command 61: Agent Browser Automation Engine (vercel-labs/agent-browser)
+    browser_p = subparsers.add_parser("browser", help="Autonomous Agent Browser CLI & DOM snapshot engine (vercel-labs/agent-browser)")
+    browser_p.add_argument("action", choices=["goto", "snapshot", "extract", "viewport"], help="Browser action")
+    browser_p.add_argument("url", help="Target URL or HTML content")
+
+    # Command 62: Electron Desktop Shell Bridge (electron/electron)
+    electron_p = subparsers.add_parser("electron", help="Electron native desktop shell IPC bridge & scaffold (electron/electron)")
+    electron_p.add_argument("action", choices=["scaffold", "bridge"], help="Scaffold desktop app or start bridge")
+    electron_p.add_argument("--dir", default="electron", help="Target scaffold directory")
+    electron_p.add_argument("--port", type=int, default=4242, help="Bridge port")
 
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
@@ -1701,6 +1743,286 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  Shipment Bump:   {res.ship_receipt.new_version} ({res.ship_receipt.version_bump})")
             print("==========================================================\n")
             return 0 if res.passed else 1
+
+    # Command 56: GBrain Persistent Memory (garrytan/gbrain)
+    if args.command == "gbrain":
+        from .gbrain.brain import GBrainEngine
+        from .ui.mascot import MascotRenderer, ApexAgentPersona
+
+        engine = GBrainEngine()
+        action = args.action
+        params = args.params
+
+        if action == "store":
+            if len(params) < 2:
+                print("Usage: apex gbrain store <key> <fact_text>")
+                return 1
+            key, text = params[0], " ".join(params[1:])
+            fact_id = engine.store_fact(key, text, source=args.source, tags=args.tags)
+            print(f"\n[GBRAIN] Fact #{fact_id} stored successfully: '{key}' -> '{text}'\n")
+            return 0
+
+        elif action == "recall":
+            query = " ".join(params) if params else ""
+            facts = engine.recall_facts(query)
+            print(f"\n==========================================================")
+            print(f"   🧠 GBRAIN PERSISTENT MEMORY RECALL: '{query}'          ")
+            print(f"==========================================================")
+            if not facts:
+                print("  No relevant facts found.")
+            for f in facts:
+                print(f"  [#{f.fact_id}] ({f.key}) {f.text}")
+                print(f"       Tags: {f.tags} | Confidence: {f.confidence} | Source: {f.source}")
+            print("==========================================================\n")
+            return 0
+
+        elif action == "correct":
+            if len(params) < 2:
+                print("Usage: apex gbrain correct <fact_id> <new_text>")
+                return 1
+            fact_id = int(params[0])
+            new_text = " ".join(params[1:])
+            ok = engine.correct_fact(fact_id, new_text)
+            print(f"\n[GBRAIN] Fact #{fact_id} correction: {'Success' if ok else 'Not Found'}\n")
+            return 0 if ok else 1
+
+        elif action == "withdraw":
+            if not params:
+                print("Usage: apex gbrain withdraw <fact_id>")
+                return 1
+            fact_id = int(params[0])
+            ok = engine.withdraw_fact(fact_id)
+            print(f"\n[GBRAIN] Fact #{fact_id} withdrawn: {'Success' if ok else 'Not Found'}\n")
+            return 0 if ok else 1
+
+        elif action == "lock":
+            if len(params) < 2:
+                print("Usage: apex gbrain lock <lock_name> <session_id>")
+                return 1
+            lock_name, session_id = params[0], params[1]
+            ok = engine.acquire_lock(lock_name, session_id)
+            print(f"\n[GBRAIN] Lock '{lock_name}' for session '{session_id}': {'ACQUIRED' if ok else 'LOCKED BY OTHER'}\n")
+            return 0 if ok else 1
+
+    # Command 57: Scrapling Resilient Web Scraper (D4Vinci/Scrapling)
+    if args.command == "scrape":
+        from .scrapling.scraper import ScraplingEngine
+        engine = ScraplingEngine()
+        target = args.target
+
+        print(f"\n[SCRAPLING] Scraping target: {target}...")
+        res = engine.scrape(target)
+
+        print("\n==========================================================")
+        print(f"   🕷️  SCRAPLING EXTRACTION REPORT                        ")
+        print("==========================================================")
+        print(f"  Status:       {res.status_code}")
+        print(f"  Title:        {res.title}")
+        print(f"  Text Length:  {len(res.text)} characters")
+        print("----------------------------------------------------------")
+        if args.tables:
+            tables = res.extract_tables()
+            print(f"  Extracted Tables: {len(tables)}")
+            for idx, tbl in enumerate(tables, 1):
+                print(f"  --- Table #{idx} ({len(tbl)} rows) ---")
+                for row in tbl[:5]:
+                    print(f"    {row}")
+        else:
+            print(res.html_to_markdown()[:1200])
+        print("==========================================================\n")
+        return 0
+
+    # Command 58: Floci AWS Local Cloud Emulator (floci-io/floci)
+    if args.command == "floci":
+        from .cloud.floci_emulator import FlociCloudEmulator
+        floci = FlociCloudEmulator()
+        service = args.service
+        action = args.action
+        params = args.params
+
+        if service == "stats":
+            stats = floci.get_cloud_stats()
+            print("\n==========================================================")
+            print("   ☁️  FLOCI LOCAL AWS CLOUD EMULATOR STATS               ")
+            print("==========================================================")
+            for k, v in stats.items():
+                print(f"  {k:28}: {v}")
+            print("==========================================================\n")
+            return 0
+
+        elif service == "s3":
+            if action == "put":
+                if len(params) < 3:
+                    print("Usage: apex floci s3 put <bucket> <key> <data>")
+                    return 1
+                b, k, d = params[0], params[1], " ".join(params[2:])
+                obj = floci.s3_put_object(b, k, d)
+                print(f"[FLOCI-S3] Object put: s3://{b}/{k} (Size: {obj.size} bytes, ETag: {obj.etag})")
+                return 0
+            elif action == "list":
+                b = params[0] if params else "apex-bucket"
+                objs = floci.s3_list_objects(b)
+                print(f"\n[FLOCI-S3] Bucket s3://{b} objects ({len(objs)} total):")
+                for o in objs:
+                    print(f"  - {o['Key']} ({o['Size']} bytes)")
+                return 0
+
+        elif service == "sqs":
+            if action == "send":
+                if len(params) < 2:
+                    print("Usage: apex floci sqs send <queue> <message>")
+                    return 1
+                q, m = params[0], " ".join(params[1:])
+                msg_id = floci.sqs_send_message(q, m)
+                print(f"[FLOCI-SQS] Message sent to '{q}': {msg_id}")
+                return 0
+            elif action == "receive":
+                q = params[0] if params else "apex-queue"
+                msgs = floci.sqs_receive_messages(q)
+                print(f"\n[FLOCI-SQS] Received {len(msgs)} messages from '{q}':")
+                for m in msgs:
+                    print(f"  [{m.message_id}] {m.body}")
+                return 0
+
+        elif service == "dynamo":
+            if action == "put":
+                if len(params) < 2:
+                    print("Usage: apex floci dynamo put <table> <id> [field=val...]")
+                    return 1
+                tbl, item_id = params[0], params[1]
+                item_dict = {"id": item_id}
+                for f in params[2:]:
+                    if "=" in f:
+                        k, v = f.split("=", 1)
+                        item_dict[k] = v
+                floci.dynamo_put_item(tbl, item_dict)
+                print(f"[FLOCI-DYNAMO] PutItem into '{tbl}': {item_dict}")
+                return 0
+            elif action == "get":
+                if len(params) < 2:
+                    print("Usage: apex floci dynamo get <table> <id>")
+                    return 1
+                tbl, item_id = params[0], params[1]
+                item = floci.dynamo_get_item(tbl, item_id)
+                print(f"[FLOCI-DYNAMO] GetItem from '{tbl}': {item}")
+                return 0
+
+        print(f"Service/Action combination '{service} {action}' executed.")
+        return 0
+
+    # Command 59: VibeVoice Frontier Acoustic Synthesizer (microsoft/VibeVoice)
+    if args.command == "voice":
+        from .voice.vibe_voice import VibeVoiceSynthesizer, COUNCIL_VOICE_PROFILES
+        from .ui.mascot import MascotRenderer, ApexAgentPersona
+
+        synth = VibeVoiceSynthesizer()
+        persona = args.persona
+        text = args.text
+        out_wav = args.output
+
+        raw_bytes, path = synth.synthesize_speech(text, profile_name=persona, output_wav_path=out_wav)
+        profile = COUNCIL_VOICE_PROFILES[persona]
+
+        persona_map = {
+            "falcon": ApexAgentPersona.COMMANDER,
+            "guardian": ApexAgentPersona.ARCHITECT,
+            "aegis": ApexAgentPersona.SENTINEL,
+            "ninja": ApexAgentPersona.NINJA,
+        }
+
+        print("\n" + MascotRenderer.render_agent_speech(
+            persona=persona_map[persona],
+            speech_lines=[
+                f'"{text}"',
+                f'Synthesized Broadcast WAV: {path}',
+                f'Profile: {profile.description} ({profile.base_freq}Hz)',
+            ],
+            status_tag="VIBEVOICE ACOUSTIC CADENCE"
+        ) + "\n")
+        return 0
+
+    # Command 60: Garden Skills Registry (ConardLi/garden-skills & google/skills)
+    if args.command == "skills":
+        from .skills.garden_registry import GardenSkillsRegistry
+        reg = GardenSkillsRegistry()
+        action = args.action
+
+        if action == "list":
+            skills = reg.list_skills(tag=args.tag)
+            print("\n==========================================================")
+            print(f"   🌱 APEX GARDEN SKILLS REGISTRY ({len(skills)} Available)      ")
+            print("==========================================================")
+            for s in skills:
+                print(f"  • {s['name']:22} (v{s['version']}) by {s['author']}")
+                print(f"    {s['description']}")
+                print(f"    Tags: {', '.join(s['tags'])}")
+            print("==========================================================\n")
+            return 0
+
+        elif action == "run":
+            if not args.name:
+                print("Usage: apex skills run <skill_name>")
+                return 1
+            res = reg.execute_skill(args.name)
+            print(f"\n[GARDEN-SKILLS] Execution result for '{args.name}':")
+            if res.get("success"):
+                print(res.get("compiled_prompt", res.get("result")))
+            else:
+                print(f"Error: {res.get('error')}")
+            return 0 if res.get("success") else 1
+
+    # Command 61: Agent Browser Automation (vercel-labs/agent-browser)
+    if args.command == "browser":
+        from .browser.agent_browser import AgentBrowserSession
+        sess = AgentBrowserSession()
+        action = args.action
+        target = args.url
+
+        sess.goto(target)
+
+        if action == "goto":
+            print(f"[BROWSER] Navigated to {target}. Total accessible elements: {len(sess.nodes_by_ref)}")
+            return 0
+        elif action == "snapshot":
+            print("\n" + sess.snapshot() + "\n")
+            return 0
+        elif action == "extract":
+            print("\n" + sess.extract_text() + "\n")
+            return 0
+        elif action == "viewport":
+            print("\n" + sess.render_ascii_viewport() + "\n")
+            return 0
+
+    # Command 62: Electron Desktop Shell Bridge (electron/electron)
+    if args.command == "electron":
+        from .ui.electron_bridge import generate_electron_scaffold, ElectronBridgeServer
+        action = args.action
+
+        if action == "scaffold":
+            files = generate_electron_scaffold(args.dir)
+            print(f"\n==========================================================")
+            print(f"   ⚡ APEX ELECTRON DESKTOP SHELL GENERATED               ")
+            print("==========================================================")
+            print(f"  Target Directory: {args.dir}")
+            for f in files:
+                print(f"  ✓ {f}")
+            print("\n  Launch via: cd electron && npm install && npm start\n")
+            print("==========================================================\n")
+            return 0
+
+        elif action == "bridge":
+            bridge = ElectronBridgeServer(port=args.port)
+            bound_port = bridge.start_background()
+            print(f"\n[ELECTRON-BRIDGE] Apex IPC Bridge listening on http://127.0.0.1:{bound_port}")
+            print("[ELECTRON-BRIDGE] Press Ctrl+C to terminate bridge session.\n")
+            try:
+                import time
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                bridge.stop()
+                print("[ELECTRON-BRIDGE] Stopped bridge.")
+            return 0
 
     # 26. Handle battle / default prompt
     prompt = getattr(args, "prompt", None) or args.direct_prompt or "Build an LRU cache with TTL support"
