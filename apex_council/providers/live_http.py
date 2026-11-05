@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import time
 import urllib.request
 import urllib.error
@@ -9,11 +10,13 @@ from typing import Optional, Tuple
 
 from ..models import CodeSubmission, Critique, ModelProvider
 from .base import BaseLLMProvider
+from .simulator import SimulatedProvider
 
 
 class LiveGeminiProvider(BaseLLMProvider):
-    def __init__(self, api_key: str, model_name: str = "gemini-2.5-pro"):
-        super().__init__(ModelProvider.GEMINI, model_name)
+    def __init__(self, api_key: str, model_name: str | None = None):
+        selected_model = model_name or os.getenv("GEMINI_MODEL", "gemini-1.5-pro")
+        super().__init__(ModelProvider.GEMINI, selected_model)
         self.api_key = api_key
 
     def generate(self, prompt: str) -> CodeSubmission:
@@ -48,17 +51,16 @@ class LiveGeminiProvider(BaseLLMProvider):
                     provider=self.provider,
                     model_name=self.model_name,
                     code=code,
-                    explanation="Generated live via Google Gemini API.",
+                    explanation=f"Generated live via Google Gemini API ({self.model_name}).",
                     latency_ms=latency_ms,
                 )
         except Exception as e:
-            return CodeSubmission(
-                provider=self.provider,
-                model_name=f"{self.model_name} (Fallback)",
-                code=f"# Error reaching Gemini API: {e}\n# Check GEMINI_API_KEY or network connection.",
-                explanation=f"API error: {e}",
-                latency_ms=(time.perf_counter() - start_time) * 1000,
-            )
+            sys.stderr.write(f"[APEX] Live Gemini API error: {e}. Falling back to high-fidelity offline simulation.\n")
+            sim = SimulatedProvider(self.provider, f"{self.model_name} (Simulated Fallback)")
+            sub = sim.generate(prompt)
+            sub.latency_ms = (time.perf_counter() - start_time) * 1000
+            sub.explanation = f"Live API unavailable ({e}) -> Fell back to offline simulation."
+            return sub
 
     def critique(self, target_provider: ModelProvider, target_code: str, prompt: str) -> Critique:
         # Standard fast evaluation
@@ -80,8 +82,9 @@ class LiveGeminiProvider(BaseLLMProvider):
 
 
 class LiveClaudeProvider(BaseLLMProvider):
-    def __init__(self, api_key: str, model_name: str = "claude-3-5-sonnet-20241022"):
-        super().__init__(ModelProvider.CLAUDE, model_name)
+    def __init__(self, api_key: str, model_name: str | None = None):
+        selected_model = model_name or os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022")
+        super().__init__(ModelProvider.CLAUDE, selected_model)
         self.api_key = api_key
 
     def generate(self, prompt: str) -> CodeSubmission:
@@ -119,17 +122,16 @@ class LiveClaudeProvider(BaseLLMProvider):
                     provider=self.provider,
                     model_name=self.model_name,
                     code=code,
-                    explanation="Generated live via Anthropic Claude Messages API.",
+                    explanation=f"Generated live via Anthropic Claude Messages API ({self.model_name}).",
                     latency_ms=latency_ms,
                 )
         except Exception as e:
-            return CodeSubmission(
-                provider=self.provider,
-                model_name=f"{self.model_name} (Fallback)",
-                code=f"# Error reaching Anthropic API: {e}\n# Check ANTHROPIC_API_KEY or network connection.",
-                explanation=f"API error: {e}",
-                latency_ms=(time.perf_counter() - start_time) * 1000,
-            )
+            sys.stderr.write(f"[APEX] Live Claude API error: {e}. Falling back to high-fidelity offline simulation.\n")
+            sim = SimulatedProvider(self.provider, f"{self.model_name} (Simulated Fallback)")
+            sub = sim.generate(prompt)
+            sub.latency_ms = (time.perf_counter() - start_time) * 1000
+            sub.explanation = f"Live API unavailable ({e}) -> Fell back to offline simulation."
+            return sub
 
     def critique(self, target_provider: ModelProvider, target_code: str, prompt: str) -> Critique:
         return Critique(
@@ -150,8 +152,9 @@ class LiveClaudeProvider(BaseLLMProvider):
 
 
 class LiveOpenAIProvider(BaseLLMProvider):
-    def __init__(self, api_key: str, model_name: str = "gpt-4o"):
-        super().__init__(ModelProvider.OPENAI, model_name)
+    def __init__(self, api_key: str, model_name: str | None = None):
+        selected_model = model_name or os.getenv("OPENAI_MODEL", "gpt-4o")
+        super().__init__(ModelProvider.OPENAI, selected_model)
         self.api_key = api_key
 
     def generate(self, prompt: str) -> CodeSubmission:
@@ -184,17 +187,16 @@ class LiveOpenAIProvider(BaseLLMProvider):
                     provider=self.provider,
                     model_name=self.model_name,
                     code=code,
-                    explanation="Generated live via OpenAI Chat Completions API.",
+                    explanation=f"Generated live via OpenAI Chat Completions API ({self.model_name}).",
                     latency_ms=latency_ms,
                 )
         except Exception as e:
-            return CodeSubmission(
-                provider=self.provider,
-                model_name=f"{self.model_name} (Fallback)",
-                code=f"# Error reaching OpenAI API: {e}\n# Check OPENAI_API_KEY or network connection.",
-                explanation=f"API error: {e}",
-                latency_ms=(time.perf_counter() - start_time) * 1000,
-            )
+            sys.stderr.write(f"[APEX] Live OpenAI API error: {e}. Falling back to high-fidelity offline simulation.\n")
+            sim = SimulatedProvider(self.provider, f"{self.model_name} (Simulated Fallback)")
+            sub = sim.generate(prompt)
+            sub.latency_ms = (time.perf_counter() - start_time) * 1000
+            sub.explanation = f"Live API unavailable ({e}) -> Fell back to offline simulation."
+            return sub
 
     def critique(self, target_provider: ModelProvider, target_code: str, prompt: str) -> Critique:
         return Critique(

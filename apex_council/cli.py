@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -67,6 +68,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     battle_parser.add_argument("--format", choices=["table", "markdown", "json"], default="table", help="Output format")
     battle_parser.add_argument("-o", "--output", type=Path, help="Save report to file")
     battle_parser.add_argument("--offline", action="store_true", help="Force offline simulation mode")
+    battle_parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose diagnostics (provider endpoints, token telemetry, latency)")
 
     # Command 2: Autonomous AI Software Engineer
     eng_parser = subparsers.add_parser("engineer", help="Autonomous AI Engineer: Deconstruct spec, build multi-file codebase, write tests, & git commit")
@@ -436,6 +438,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--format", choices=["table", "markdown", "json"], default="table")
     parser.add_argument("-o", "--output", type=Path)
     parser.add_argument("--offline", action="store_true")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose diagnostics (provider endpoints, token telemetry, latency)")
 
     return parser.parse_args(raw_args)
 
@@ -2320,10 +2323,42 @@ def main(argv: list[str] | None = None) -> int:
     offline = getattr(args, "offline", False)
     fmt = getattr(args, "format", "table")
     out = getattr(args, "output", None)
+    verbose = getattr(args, "verbose", False)
+
+    if verbose:
+        print("=" * 70)
+        print("  [APEX-VERBOSE] Diagnostic Trace & Runtime Telemetry")
+        print("=" * 70)
+        print(f"  Python Runtime:      {sys.version.split()[0]} on {sys.platform}")
+        print(f"  Working Directory:   {Path('.').resolve()}")
+        print(f"  Offline Flag:        {offline}")
+        gem_key = os.getenv("GEMINI_API_KEY")
+        claude_key = os.getenv("ANTHROPIC_API_KEY")
+        oa_key = os.getenv("OPENAI_API_KEY")
+        print(f"  GEMINI_API_KEY:      {'[DETECTED: ' + gem_key[:6] + '...]' if gem_key and len(gem_key) > 6 else ('[SET: ' + gem_key + ']' if gem_key else '[NOT SET -> Simulation]')}")
+        print(f"  ANTHROPIC_API_KEY:   {'[DETECTED: ' + claude_key[:6] + '...]' if claude_key and len(claude_key) > 6 else ('[SET: ' + claude_key + ']' if claude_key else '[NOT SET -> Simulation]')}")
+        print(f"  OPENAI_API_KEY:      {'[DETECTED: ' + oa_key[:6] + '...]' if oa_key and len(oa_key) > 6 else ('[SET: ' + oa_key + ']' if oa_key else '[NOT SET -> Simulation]')}")
+        print("=" * 70 + "\n")
 
     print(f"\n[APEX-COUNCIL] Convening the Supreme Council for task: \"{prompt}\"...\n")
     engine = CouncilEngine(force_offline=offline)
+
+    if verbose:
+        print("[APEX-VERBOSE] Active Provider Instances:")
+        for p_enum, p_impl in engine.providers.items():
+            print(f"  • {p_enum.value}: {p_impl.__class__.__name__} (Model: {p_impl.model_name})")
+        print()
+
     result = engine.convene_council(prompt)
+
+    if verbose:
+        print("\n" + "=" * 70)
+        print("  [APEX-VERBOSE] Latency & Evaluation Telemetry Breakdown")
+        print("=" * 70)
+        for p_enum, sub in result.submissions.items():
+            print(f"  • {p_enum.value:<18} | Latency: {sub.latency_ms:6.1f}ms | Length: {len(sub.code):4d} chars | Model: {sub.model_name}")
+            print(f"    Source/Explanation: {sub.explanation}")
+        print("=" * 70 + "\n")
 
     if fmt == "json":
         output = result.to_json()
