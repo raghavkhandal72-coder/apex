@@ -40,7 +40,7 @@ KNOWN_COMMANDS = {
     "oracle", "ast-nav", "memo-sync", "mini-swe",
     "ontology", "sdd", "worktrunk", "executive",
     "wt", "console", "mlflow-trace", "mlflow-eval",
-    "omo", "dag",
+    "omo", "dag", "gstack",
     "-h", "--help"
 }
 
@@ -339,6 +339,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     # Command 54: Task DAG Compilation & Scheduling Analysis
     dag_p = subparsers.add_parser("dag", help="Compile and display Task DAG graph with wave scheduling")
     dag_p.add_argument("spec", nargs="?", help="Task specification or flow")
+
+    # Command 55: Garry Tan gstack Virtual Engineering Team Suite
+    gstack_p = subparsers.add_parser("gstack", help="Garry Tan gstack virtual engineering team suite (office-hours, review, cso, ship)")
+    gstack_p.add_argument("action", choices=["office-hours", "review", "cso", "ship", "autoplan"], help="Gstack command action")
+    gstack_p.add_argument("target", nargs="?", default="", help="Target prompt, idea, or file path")
+    gstack_p.add_argument("--diff", help="Path to diff or code file for review")
+    gstack_p.add_argument("--bump", choices=["auto", "major", "minor", "patch"], default="auto", help="SemVer release bump")
 
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
@@ -1558,6 +1565,142 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"    • [{node.route.value}] {node.id:<16} {deps_str}")
         print("==========================================================\n")
         return 0 if res.ok else 1
+
+    # Command 55: Garry Tan gstack Virtual Engineering Team Suite
+    if args.command == "gstack":
+        from .gstack.office_hours import GarryTanOfficeHoursEngine
+        from .gstack.cso_audit import ChiefSecurityOfficerEngine
+        from .gstack.pre_landing_review import PreLandingReviewEngine
+        from .gstack.ship_engine import ReleaseShippingEngine
+        from .gstack.gstack_orchestrator import GStackOrchestrator
+        from .ui.mascot import MascotRenderer, ApexAgentPersona
+
+        action = args.action
+        target_code = ""
+        target_path = getattr(args, "diff", None) or args.target
+        if target_path and Path(target_path).exists():
+            target_code = Path(target_path).read_text(encoding="utf-8", errors="replace")
+        elif getattr(args, "diff", None):
+            target_code = args.diff
+
+        if action == "office-hours":
+            idea = args.target or "Build an autonomous AI developer agent that out-thinks existing coding tools"
+            plan = GarryTanOfficeHoursEngine.conduct_session(idea)
+            print("\n" + MascotRenderer.render_agent_speech(
+                persona=ApexAgentPersona.COMMANDER,
+                speech_lines=[
+                    f'"{plan.painkiller_verdict}: Ruthlessly targeting high customer pain."',
+                    f'"Moat: {plan.defensible_moat[:65]}..."',
+                    f'"Trimmed {len(plan.scope_cuts)} non-essential distraction features for v1."',
+                ],
+                status_tag="STRATEGIC FOUNDER REVIEW"
+            ) + "\n")
+            print("==========================================================")
+            print(f"   👔 YC GARRY TAN FOUNDER OFFICE HOURS DESIGN DOC         ")
+            print("==========================================================")
+            print(plan.design_doc_markdown)
+            print("==========================================================\n")
+            return 0
+
+        elif action == "cso":
+            source = target_code or "import os\nos.system('echo test')\n"
+            report = ChiefSecurityOfficerEngine.audit_code(source, target_name=args.target or "workspace")
+            print("\n" + MascotRenderer.render_agent_speech(
+                persona=ApexAgentPersona.SENTINEL,
+                speech_lines=[
+                    f'"OWASP Top 10 & STRIDE Threat Audit: Score {report.security_score:.1f}/10.0"',
+                    f'"Status: {"PASSED" if report.passed else "BLOCKED - THREATS FOUND"}"',
+                    f'"Detected {len(report.findings)} security threat vectors."',
+                ],
+                status_tag="CSO SECURITY DEFENSE"
+            ) + "\n")
+            print("==========================================================")
+            print("   🛡️ CHIEF SECURITY OFFICER (CSO) STRIDE AUDIT REPORT     ")
+            print("==========================================================")
+            print(f"  Target:          {report.target_name}")
+            print(f"  Security Score:  {report.security_score:.1f}/10.0")
+            print(f"  Verdict:         {'PASSED' if report.passed else 'BLOCKED'}")
+            print("----------------------------------------------------------")
+            for f in report.findings:
+                print(f"  [{f.severity}] {f.stride_category} ({f.owasp_top10}) line {f.line_number or '?'}:")
+                print(f"       {f.description}")
+                print(f"       Remediation: {f.remediation}")
+            print("==========================================================\n")
+            return 0 if report.passed else 1
+
+        elif action == "review":
+            source = target_code or "def solve():\n    # TODO: implement later\n    pass\n"
+            files = [args.target] if args.target and not Path(args.target).exists() else ([args.target] if args.target else ["app.py"])
+            rev = PreLandingReviewEngine.review_diff(files, source)
+            print("\n" + MascotRenderer.render_agent_speech(
+                persona=ApexAgentPersona.NINJA,
+                speech_lines=[
+                    f'"Pre-Landing Gate [{rev.pr_type.upper()}]: Score {rev.score:.1f}/10.0"',
+                    f'"Found {len(rev.issues)} items across checklists."',
+                    f'"Verdict: {"CLEARED FOR LANDING" if rev.passed else "CHANGES REQUIRED"}"',
+                ],
+                status_tag="PRE-LANDING GATEKEEPER"
+            ) + "\n")
+            print("==========================================================")
+            print(f"   🔍 GSTACK PRE-LANDING REVIEW: [{rev.pr_type.upper()}]      ")
+            print("==========================================================")
+            print(f"  Score:           {rev.score:.1f}/10.0")
+            print(f"  Status:          {'PASSED' if rev.passed else 'BLOCKED'}")
+            print("  Checklist:")
+            for chk, ok in rev.checklist_status.items():
+                mark = "✓" if ok else "✗"
+                print(f"    {mark} {chk}")
+            if rev.issues:
+                print("----------------------------------------------------------")
+                for iss in rev.issues:
+                    print(f"  [{iss.severity}] {iss.category} at line {iss.line_number or '?'}: {iss.message}")
+                    print(f"       Fix: {iss.suggested_fix}")
+            print("==========================================================\n")
+            return 0 if rev.passed else 1
+
+        elif action == "ship":
+            bump_choice = None if args.bump == "auto" else args.bump
+            commits = [args.target] if args.target else ["feat: implement sovereign gstack virtual engineering team"]
+            ship = ReleaseShippingEngine.prepare_shipment(
+                current_version="v3.0.0",
+                commit_messages=commits,
+                diff_summary=target_code,
+                force_bump=bump_choice,
+            )
+            print("\n" + MascotRenderer.render_agent_speech(
+                persona=ApexAgentPersona.NINJA,
+                speech_lines=[
+                    f'"Ship clearance approved: Bump {ship.version_bump} -> {ship.new_version}"',
+                    f'"Generated Keep-a-Changelog release entry."',
+                    f'"PR Title: {ship.pr_title[:60]}"',
+                ],
+                status_tag="RELEASE SHIPPING"
+            ) + "\n")
+            print("==========================================================")
+            print("   🚀 AUTONOMOUS RELEASE ENGINEERING SHIP RECEIPT         ")
+            print("==========================================================")
+            print(f"  PR Title:        {ship.pr_title}")
+            print(f"  Version:         {ship.new_version} ({ship.version_bump})")
+            print("----------------------------------------------------------")
+            print(ship.pr_body_markdown)
+            print("==========================================================\n")
+            return 0
+
+        elif action == "autoplan":
+            prompt = args.target or "Build autonomous distributed key-value store"
+            source = target_code or "class DistributedKV:\n    pass\n"
+            res = GStackOrchestrator.run_full_pipeline(prompt, ["store.py"], source)
+            print("\n" + "\n\n".join(res.transcript_speeches) + "\n")
+            print("==========================================================")
+            print(f"   🌟 GSTACK AUTOPLAN SPRINT REPORT                       ")
+            print("==========================================================")
+            print(f"  Overall Status:  {'PASSED & READY TO SHIP' if res.passed else 'BLOCKED'}")
+            print(f"  CSO Security:    {res.cso_report.security_score:.1f}/10.0")
+            print(f"  Pre-Landing:     {res.pre_landing.score:.1f}/10.0")
+            if res.ship_receipt:
+                print(f"  Shipment Bump:   {res.ship_receipt.new_version} ({res.ship_receipt.version_bump})")
+            print("==========================================================\n")
+            return 0 if res.passed else 1
 
     # 26. Handle battle / default prompt
     prompt = getattr(args, "prompt", None) or args.direct_prompt or "Build an LRU cache with TTL support"
