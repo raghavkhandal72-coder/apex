@@ -810,9 +810,13 @@ def main(argv: list[str] | None = None) -> int:
             sys.stderr.write(f"Error: Target file not found: {args.file}\n")
             return 2
         code = args.file.read_text(encoding="utf-8")
+        tests = args.tests
+        test_path = Path(args.tests)
+        if test_path.exists():
+            tests = test_path.read_text(encoding="utf-8")
         print(f"\n[APEX-COUNCIL] Running Ochiai Fault Localization on: {args.file}...")
         localizer = OchiaiFaultLocalizer()
-        localizer.trace_execution(code, args.tests, args.file.name)
+        localizer.trace_execution(code, tests, args.file.name)
         ranked = localizer.rank_suspicious_statements()
         print("==========================================================")
         print("   🔍 OCHIAI SPECTRUM-BASED FAULT LOCALIZATION   ")

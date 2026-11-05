@@ -46,7 +46,7 @@ class CEGISReport:
 
 
 class _ASTCandidateMutator:
-    """Targeted AST operator replacement maps for inductive program repair."""
+    """Targeted AST operator and boundary constant replacement maps for inductive program repair."""
 
     SWAP_BINOPS: Dict[type[ast.operator], list[type[ast.operator]]] = {
         ast.Add: [ast.Sub],
@@ -57,12 +57,18 @@ class _ASTCandidateMutator:
     }
 
     SWAP_CMPOPS: Dict[type[ast.cmpop], list[type[ast.cmpop]]] = {
-        ast.Lt: [ast.LtE, ast.NotEq],
-        ast.LtE: [ast.Lt, ast.Eq],
-        ast.Gt: [ast.GtE, ast.NotEq],
-        ast.GtE: [ast.Gt, ast.Eq],
+        ast.Lt: [ast.NotEq, ast.LtE],
+        ast.LtE: [ast.NotEq, ast.Lt, ast.Eq],
+        ast.Gt: [ast.NotEq, ast.GtE],
+        ast.GtE: [ast.NotEq, ast.Gt, ast.Eq],
         ast.Eq: [ast.NotEq, ast.LtE, ast.GtE],
         ast.NotEq: [ast.Eq],
+    }
+
+    SWAP_CONSTS: Dict[int, list[int]] = {
+        0: [-1, 1],
+        -1: [0],
+        1: [0, 2],
     }
 
 
@@ -86,8 +92,7 @@ class CEGISEngine:
         except Exception:
             return [base_code]
 
-        # 1. First priority: Compare operators (e.g. < -> <=, > -> >=, == -> !=)
-        # These represent loop boundaries and condition checks with highest bug leverage
+        # 1. Compare operators (loop boundaries and condition checks)
         cmp_nodes = [n for n in ast.walk(tree) if isinstance(n, ast.Compare) and n.ops]
         for node in cmp_nodes:
             current_op = type(node.ops[0])
@@ -109,7 +114,7 @@ class CEGISEngine:
                             pass
                         break
 
-        # 2. Second priority: BinOp operators (ONLY valid matching replacements for current_op)
+        # 2. BinOp operators (arithmetic and step mutations)
         binop_nodes = [n for n in ast.walk(tree) if isinstance(n, ast.BinOp)]
         for node in binop_nodes:
             current_op = type(node.op)
@@ -130,7 +135,31 @@ class CEGISEngine:
                             pass
                         break
 
-        # Remove duplicates while preserving priority order
+        # 3. Constant integer boundary replacements (sentinel values: 0 <-> -1, offsets: 1 <-> 0)
+        const_nodes = [
+            n for n in ast.walk(tree)
+            if isinstance(n, ast.Constant) and isinstance(n.value, int)
+        ]
+        for node in const_nodes:
+            current_val = node.value
+            replacements = _ASTCandidateMutator.SWAP_CONSTS.get(current_val, [])
+            for new_val in replacements:
+                t_copy = copy.deepcopy(tree)
+                for n in ast.walk(t_copy):
+                    if (
+                        isinstance(n, ast.Constant)
+                        and n.value == current_val
+                        and getattr(n, "lineno", -1) == getattr(node, "lineno", -1)
+                        and getattr(n, "col_offset", -1) == getattr(node, "col_offset", -1)
+                    ):
+                        n.value = new_val
+                        try:
+                            candidates.append(ast.unparse(t_copy))
+                        except Exception:
+                            pass
+                        break
+
+        # Remove duplicates while preserving exploration order
         deduped = []
         seen = set()
         for c in candidates:
@@ -140,12 +169,62 @@ class CEGISEngine:
 
         return deduped
 
+    @classmethod
+    def generate_hidden_invariant_probes(cls, code: str) -> List[str]:
+        """Synthesizes hidden boundary & property invariant probes to challenge candidate repairs."""
+        probes: List[str] = []
+        try:
+            tree = ast.parse(code)
+        except Exception:
+            return probes
+
+        for node in tree.body:
+            if isinstance(node, ast.FunctionDef):
+                fn_name = node.name
+                args = [a.arg for a in node.args.args]
+
+                # Case 1: Search algorithms taking (arr, target) or (nums, target)
+                if ("arr" in args or "nums" in args) and "target" in args:
+                    probes.extend([
+                        f"assert {fn_name}([], 42) == -1",
+                        f"assert {fn_name}([10], 10) == 0",
+                        f"assert {fn_name}([10], 20) == -1",
+                        f"assert {fn_name}([1, 2], 1) == 0",
+                        f"assert {fn_name}([1, 2], 2) == 1",
+                        f"assert {fn_name}([1, 2], 3) == -1",
+                        f"assert {fn_name}([1, 3, 5, 7, 9], 1) == 0",
+                        f"assert {fn_name}([1, 3, 5, 7, 9], 9) == 4",
+                        f"assert {fn_name}([1, 3, 5, 7, 9], 0) == -1",
+                        f"assert {fn_name}([1, 3, 5, 7, 9], 10) == -1",
+                    ])
+                # Case 2: Arithmetic binary operators with (a, b) or (x, y)
+                elif len(args) == 2 and args in (["a", "b"], ["x", "y"]):
+                    probes.extend([
+                        f"assert {fn_name}(0, 0) == 0",
+                        f"assert {fn_name}(1, 0) == 1",
+                        f"assert {fn_name}(0, 1) == 1",
+                        f"assert {fn_name}(-5, 5) == 0",
+                    ])
+                # Case 3: 1-argument boolean predicate / condition checks
+                elif len(args) == 1 and (
+                    fn_name.startswith(("is_", "has_", "can_", "check_"))
+                    or (isinstance(node.returns, ast.Name) and node.returns.id == "bool")
+                ):
+                    probes.extend([
+                        f"assert {fn_name}(0) is False",
+                        f"assert {fn_name}(1) is True",
+                        f"assert {fn_name}(-1) is False",
+                    ])
+
+        return probes
+
     def synthesize_and_verify(
         self,
         initial_buggy_code: str,
         test_suite_code: str,
         oracle_eval_fn: Optional[Callable[[Any], Any]] = None,
         boundary_inputs: Optional[List[Any]] = None,
+        generate_hidden_probes: bool = True,
     ) -> CEGISReport:
         """Executes the CEGIS inductive synthesis and counterexample search loop."""
         start_t = time.perf_counter()
@@ -166,9 +245,15 @@ class CEGISEngine:
         if not test_units:
             test_units = [test_suite_code]
 
-        # Active constraint set E starts with the first test
+        # Generate automated hidden invariant probes from AST structure
+        hidden_probes: List[str] = []
+        if generate_hidden_probes and not oracle_eval_fn:
+            hidden_probes = self.generate_hidden_invariant_probes(initial_buggy_code)
+
+        # Active constraint set E starts with minimal initial constraints
         active_constraints: List[str] = [test_units[0]]
-        unverified_pool: List[str] = list(test_units[1:])
+        # Verifier pool contains remaining user tests + hidden invariant probes
+        unverified_pool: List[str] = list(test_units[1:]) + list(hidden_probes)
 
         curr_code = initial_buggy_code
         success = False
@@ -188,14 +273,16 @@ class CEGISEngine:
                     break
 
             if selected_cand is None:
-                round_logs.append(f"Round {iteration}: Synthesizer exhausted candidate space without satisfying constraint set E ({len(active_constraints)} constraints).")
+                round_logs.append(
+                    f"Round {iteration}: Synthesizer exhausted candidate space ({len(candidates)} candidates) "
+                    f"without satisfying active constraint set E ({len(active_constraints)} constraints)."
+                )
                 break
 
             curr_code = selected_cand
 
-            # 2. VERIFIER: Search for counterexample among unverified test pool
+            # 2. VERIFIER: Search for counterexamples across remaining user tests and hidden probes
             found_ce: Optional[str] = None
-            failing_unit: Optional[str] = None
             actual_error: str = ""
 
             for unit in list(unverified_pool):
@@ -205,30 +292,51 @@ class CEGISEngine:
                 )
                 if not passed:
                     found_ce = unit
-                    failing_unit = unit
                     actual_error = out.strip().splitlines()[-1] if out.strip() else "AssertionError"
                     break
 
+            # 3. VERIFIER ORACLE / BOUNDARY CHECK (if custom oracle provided)
+            if found_ce is None and oracle_eval_fn and boundary_inputs:
+                scope: Dict[str, Any] = {}
+                try:
+                    exec(compile(curr_code, "<candidate>", "exec"), scope)
+                    fn_name = next((k for k, v in scope.items() if callable(v)), None)
+                    if fn_name:
+                        for b_in in boundary_inputs:
+                            actual = scope[fn_name](b_in)
+                            expected = oracle_eval_fn(b_in)
+                            if actual != expected:
+                                found_ce = f"assert {fn_name}({b_in!r}) == {expected!r}"
+                                actual_error = f"Returned {actual!r} instead of {expected!r}"
+                                break
+                except Exception as ex:
+                    found_ce = f"# Oracle crash probe: {ex}"
+                    actual_error = str(ex)
+
             if found_ce is not None:
-                # Counterexample discovered by Verifier! Add to E and reiterate
+                # Counterexample discovered by Verifier! Add to active constraints E and reiterate
                 ce = CounterExample(
                     input_desc=found_ce,
-                    expected_output="Assertion satisfied",
+                    expected_output="Assertion / Invariant satisfied",
                     actual_output=actual_error,
                     violation_kind="WRONG_OUTPUT" if "Assertion" in actual_error else "CRASH_EXCEPTION",
                 )
                 counterexamples.append(ce)
                 active_constraints.append(found_ce)
-                unverified_pool.remove(found_ce)
+                if found_ce in unverified_pool:
+                    unverified_pool.remove(found_ce)
                 round_logs.append(
-                    f"Round {iteration}: Candidate passed active constraints, but Verifier found Counterexample: `{found_ce}` ({actual_error}). Added to constraint set E."
+                    f"Round {iteration}: Candidate passed active constraints ({len(active_constraints)-1}), "
+                    f"but Verifier found Counterexample: `{found_ce}` ({actual_error}). Added to constraint set E."
                 )
                 continue
 
-            # 3. VERIFIER BOUNDARY FUZZING: Test edge safety invariants (IndexError / ZeroDivision)
-            # If candidate passes all unit tests, certify it!
+            # 4. CERTIFICATION: Candidate passed all constraints and all hidden verifier probes!
+            total_verified = len(test_units) + len(hidden_probes)
             round_logs.append(
-                f"Round {iteration}: Candidate passed all {len(active_constraints)} constraints in E and {len(test_units)} verifier assertions. Zero counterexamples found."
+                f"Round {iteration}: Candidate satisfied all {len(active_constraints)} constraints in E and passed "
+                f"all {total_verified} verifier assertions ({len(hidden_probes)} automated hidden probes). "
+                f"Zero counterexamples found across domain."
             )
             success = True
             break

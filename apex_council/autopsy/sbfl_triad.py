@@ -17,6 +17,7 @@ from __future__ import annotations
 import ast
 import dataclasses
 import math
+import os
 import sys
 import types
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
@@ -156,9 +157,25 @@ class SBFLTriadEngine:
         test_units: List[str] = []
         try:
             test_tree = ast.parse(test_code, filename="<tests>")
+            setup_stmts: List[ast.stmt] = []
+            test_funcs: List[ast.FunctionDef] = []
+            top_asserts: List[ast.Assert] = []
             for node in test_tree.body:
-                if isinstance(node, (ast.Assert, ast.Expr, ast.FunctionDef)):
-                    test_units.append(ast.unparse(node))
+                if isinstance(node, ast.FunctionDef) and node.name.startswith("test_"):
+                    test_funcs.append(node)
+                elif isinstance(node, ast.Assert):
+                    top_asserts.append(node)
+                else:
+                    setup_stmts.append(node)
+            setup_src = "\n".join(ast.unparse(n) for n in setup_stmts)
+            if test_funcs:
+                for fn in test_funcs:
+                    test_units.append(f"{setup_src}\n{ast.unparse(fn)}\n{fn.name}()\n")
+            elif top_asserts:
+                for a in top_asserts:
+                    test_units.append(f"{setup_src}\n{ast.unparse(a)}\n")
+            else:
+                test_units = [test_code]
         except Exception:
             test_units = [line.strip() for line in test_code.splitlines() if line.strip() and not line.strip().startswith("#")]
 
@@ -186,7 +203,14 @@ class SBFLTriadEngine:
         raw_metrics: List[Dict[str, Any]] = []
         max_dstar = 1e-7
 
-        for ln in all_executed_lines:
+        for ln in sorted(all_executed_lines):
+            if ln < 1 or ln > len(source_lines):
+                continue
+            src = source_lines[ln - 1]
+            raw_line = src.strip()
+            if not raw_line or raw_line.startswith("#"):
+                continue
+
             ef = sum(1 for s in failing_spectra if ln in s)
             nf = total_f - ef
             ep = sum(1 for s in passing_spectra if ln in s)
@@ -200,7 +224,6 @@ class SBFLTriadEngine:
 
             scope = visitor.line_to_scope.get(ln, "<module>")
             node_type = visitor.line_to_node_type.get(ln, "Statement")
-            src = source_lines[ln - 1] if 1 <= ln <= len(source_lines) else ""
 
             raw_metrics.append({
                 "lineno": ln,
@@ -269,11 +292,17 @@ class SBFLTriadEngine:
     ) -> Tuple[Set[int], bool]:
         """Traces execution of a single unit test against source code."""
         covered: Set[int] = set()
+        target_abs = os.path.abspath(target_filename)
+        target_base = os.path.basename(target_filename)
 
         def tracer(frame: types.FrameType, event: str, arg: Any) -> Any:
             if event == "line":
                 fname = frame.f_code.co_filename
-                if fname == target_filename:
+                if (
+                    fname == target_filename
+                    or os.path.abspath(fname) == target_abs
+                    or os.path.normcase(os.path.basename(fname)) == os.path.normcase(target_base)
+                ):
                     covered.add(frame.f_lineno)
             return tracer
 

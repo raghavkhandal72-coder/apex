@@ -50,7 +50,11 @@ def build_standalone_pyz(output_path: str = "dist/apex.pyz") -> Path:
         main_py = staging_path / "__main__.py"
         main_py.write_text(
             '"""Apex-Sovereign Standalone Executable Entrypoint."""\n'
+            "import os\n"
             "import sys\n"
+            "# Ensure current working directory is on sys.path for user module imports\n"
+            "if os.getcwd() not in sys.path:\n"
+            "    sys.path.insert(0, os.getcwd())\n"
             "from apex_council.cli import main\n\n"
             'if __name__ == "__main__":\n'
             "    sys.exit(main())\n",

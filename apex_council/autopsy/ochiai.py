@@ -145,6 +145,7 @@ class OchiaiFaultLocalizer:
         source_code: str,
         test_code: str,
         top_k: int = 10,
+        target_filename: str = "<apex_ochiai_target>",
     ) -> FaultLocalizationReport:
         source_lines = source_code.splitlines()
         max_source_line = len(source_lines)
@@ -163,7 +164,7 @@ class OchiaiFaultLocalizer:
 
         for test_name, single_test_src in granular_tests:
             executed_lines, passed, err_msg = self._run_single_test_spectrum(
-                source_code, single_test_src, max_source_line
+                source_code, single_test_src, max_source_line, target_filename=target_filename
             )
             if passed:
                 passed_count += 1
@@ -239,15 +240,26 @@ class OchiaiFaultLocalizer:
         source_code: str,
         single_test_src: str,
         max_source_line: int,
+        target_filename: str = "<apex_ochiai_target>",
     ) -> Tuple[Set[int], bool, str]:
+        import os
         full_script = f"{source_code}\n\n{single_test_src}\n"
-        compiled = compile(full_script, "<apex_ochiai_target>", "exec")
+        compiled = compile(full_script, target_filename, "exec")
         covered_lines: Set[int] = set()
+        target_base = os.path.basename(target_filename)
+        target_abs = os.path.abspath(target_filename)
 
         def line_tracer(frame: types.FrameType, event: str, arg: Any) -> Callable[..., Any]:
-            if event == "line" and frame.f_code.co_filename == "<apex_ochiai_target>":
-                if 1 <= frame.f_lineno <= max_source_line:
-                    covered_lines.add(frame.f_lineno)
+            if event == "line":
+                fname = frame.f_code.co_filename
+                if (
+                    fname == target_filename
+                    or fname == "<apex_ochiai_target>"
+                    or os.path.abspath(fname) == target_abs
+                    or os.path.normcase(os.path.basename(fname)) == os.path.normcase(target_base)
+                ):
+                    if 1 <= frame.f_lineno <= max_source_line:
+                        covered_lines.add(frame.f_lineno)
             return line_tracer
 
         env: Dict[str, Any] = {"__name__": "__apex_ochiai__"}
@@ -262,7 +274,7 @@ class OchiaiFaultLocalizer:
 
     def trace_execution(self, source_code: str, test_code: str, module_name: str = "solution") -> bool:
         """Compatibility method for legacy callers."""
-        report = self.localize(source_code, test_code)
+        report = self.localize(source_code, test_code, target_filename=module_name)
         self.source_cache[module_name] = source_code.splitlines()
         failing_lines = set()
         passing_lines = set()

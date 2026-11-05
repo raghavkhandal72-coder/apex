@@ -96,6 +96,36 @@ class TestDoctoralResearchEngines(unittest.TestCase):
         self.assertIn("+", report.synthesized_code)
         self.assertTrue(report.verification_certified)
 
+    def test_cegis_automated_hidden_probes_and_multi_round_counterexamples(self) -> None:
+        buggy_code = (
+            "def binary_search(arr, target):\n"
+            "    left = 0\n"
+            "    right = len(arr) - 1\n"
+            "    while left < right:\n"
+            "        mid = (left + right) // 2\n"
+            "        if arr[mid] == target:\n"
+            "            return mid\n"
+            "        elif arr[mid] < target:\n"
+            "            left = mid + 1\n"
+            "        else:\n"
+            "            right = mid - 1\n"
+            "    return -1\n"
+        )
+        # Give only 1 assertion that passes on an overfitting candidate
+        minimal_test = "assert binary_search([1, 2, 3, 4, 5], 1) == 0\n"
+        engine = CEGISEngine(max_iterations=5)
+        report = engine.synthesize_and_verify(
+            initial_buggy_code=buggy_code,
+            test_suite_code=minimal_test,
+            generate_hidden_probes=True,
+        )
+
+        self.assertTrue(report.success)
+        self.assertIn("<=", report.synthesized_code)
+        self.assertGreaterEqual(report.iterations_run, 2)
+        self.assertGreaterEqual(len(report.counterexamples_found), 1)
+        self.assertTrue(report.verification_certified)
+
     def test_solomonoff_prior_and_ncd_compression(self) -> None:
         engine = SolomonoffPriorEngine()
 
