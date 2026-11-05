@@ -56,9 +56,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         raw_args = ["battle"] + raw_args
 
     parser = argparse.ArgumentParser(
-        prog="apex-council",
+        prog="apex",
         description="🏛️ The Multi-LLM Code Supreme Court: Enterprise AI Engineering & Consensus Platform.",
     )
+    parser.add_argument("--version", action="version", version="Apex v0.9.0")
 
     subparsers = parser.add_subparsers(dest="command", help="Sub-commands")
 
@@ -627,7 +628,7 @@ def main(argv: list[str] | None = None) -> int:
     # 2. Autonomous Issue Solver / Bug Hunter
     if args.command == "solve":
         if getattr(args, "file", None):
-            print(f"\n[APEX-COUNCIL] Sovereign Issue Solver investigating: \"{args.issue}\" in {args.file}...\n")
+            print(f"\n[APEX] Issue Solver investigating: \"{args.issue}\" in {args.file}...\n")
             solver = AutonomousIssueSolver(repo_dir=args.repo)
             report = solver.solve_issue(
                 target_file_rel=args.file,
@@ -635,7 +636,7 @@ def main(argv: list[str] | None = None) -> int:
                 test_harness=getattr(args, "tests", ""),
             )
             print("==========================================================")
-            print("   🔍 APEX-SOVEREIGN ISSUE RESOLUTION REPORT   ")
+            print("         🔍 APEX ISSUE RESOLUTION REPORT                  ")
             print("==========================================================")
             print(f"  Target File:    {report.target_file}")
             print(f"  Status:         {'✓ PASSED & SIGNED' if report.success else '✗ FAILED'}")
@@ -647,7 +648,7 @@ def main(argv: list[str] | None = None) -> int:
             if getattr(args, "html", None):
                 diff_text = CyberpunkTUI.render_diff(report.original_code, report.patched_code)
                 HTMLReportGenerator.generate_report(
-                    title="Apex-Sovereign Issue Resolution",
+                    title="Apex Issue Resolution",
                     task_prompt=args.issue,
                     target_file=report.target_file,
                     diff_text=diff_text,
@@ -831,14 +832,16 @@ def main(argv: list[str] | None = None) -> int:
 
     # 14. Build Standalone Executable (zipapp)
     if args.command == "build-pyz":
-        from scripts.build_pyz import build_standalone_pyz
-        out_path = build_standalone_pyz(output_path=args.output)
+        import importlib
+        build_mod = importlib.import_module("scripts.build_pyz")
+        out_path = build_mod.build_standalone_pyz(output_path=args.output)
         return 0
 
     # 15. Micro-SWE-Bench Tournament
     if args.command == "swe-bench":
-        from benchmarks.micro_swebench import run_benchmark
-        run_benchmark()
+        import importlib
+        bench_mod = importlib.import_module("benchmarks.micro_swebench")
+        bench_mod.run_benchmark()
         return 0
 
     # 16. CPython Bytecode Autopsy
@@ -900,7 +903,7 @@ def main(argv: list[str] | None = None) -> int:
         engine = GitProofNotesEngine(args.repo)
         valid, msg, proof = engine.verify_proof(args.commit)
         print("==========================================================")
-        print("   🛡️ APEX-SOVEREIGN CRYPTOGRAPHIC PROOF VERIFICATION   ")
+        print("      🛡️ APEX CRYPTOGRAPHIC PROOF VERIFICATION           ")
         print("==========================================================")
         print(f"  Status: {'[VALID]' if valid else '[INVALID]'}")
         print(f"  Message: {msg}")
@@ -952,7 +955,7 @@ def main(argv: list[str] | None = None) -> int:
         code = args.file.read_text(encoding="utf-8")
         res = runner.solve(code, args.tests)
         print("==========================================================")
-        print("   ⚡ APEX-SOVEREIGN EDGE RUNNER REPORT   ")
+        print("               ⚡ APEX EDGE RUNNER REPORT                 ")
         print("==========================================================")
         print(f"  Repaired:        {res.repaired}")
         print(f"  Strategy:        {res.strategy}")
@@ -1646,7 +1649,7 @@ def main(argv: list[str] | None = None) -> int:
         ]
         res = DagCompiler.compile(nodes)
         print("==========================================================")
-        print("   🕸️ APEX-SOVEREIGN: OMO TASK DAG WAVE GRAPH             ")
+        print("          🕸️ APEX: OMO TASK DAG WAVE GRAPH                ")
         print("==========================================================")
         print(f"  Valid DAG:       {'YES (Topologically Sorted)' if res.ok else 'NO'}")
         print(f"  Total Nodes:     {len(res.nodes)}")
@@ -1759,7 +1762,7 @@ def main(argv: list[str] | None = None) -> int:
             bump_choice = None if args.bump == "auto" else args.bump
             commits = [args.target] if args.target else ["feat: implement sovereign gstack virtual engineering team"]
             ship = ReleaseShippingEngine.prepare_shipment(
-                current_version="v3.0.0",
+                current_version="v0.9.0",
                 commit_messages=commits,
                 diff_summary=target_code,
                 force_bump=bump_choice,

@@ -34,7 +34,7 @@ class CouncilReporter:
   / /| | / /_/ / __/  |   /    / /    / / / / / / /  |/ / /    / /  / /  
  / ___ |/ ____/ /___ /   |    / /___ / /_/ / /_/ / /|  / /____/ /  / /___
 /_/  |_/_/   /_____//_/|_|    \____/ \____/\____/_/ |_/\____/___/ /_____/
-{RESET}{BOLD}{GREEN}   Sovereign Consensus Core × Isolated Subprocess Runner  [v1.0.0]{RESET}"""
+{RESET}{BOLD}{GREEN}   Apex Consensus Core × Isolated Subprocess Runner  [v0.9.0]{RESET}"""
         lines.append(banner)
         lines.append(f"{BOLD}{CYAN}========================================================================{RESET}\n")
 

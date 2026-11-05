@@ -71,7 +71,7 @@ class ElectronBridgeServer:
         self._register_default_methods()
 
     def _register_default_methods(self) -> None:
-        self.register_method("ping", lambda p: {"pong": True, "version": "3.0.0-SOVEREIGN"})
+        self.register_method("ping", lambda p: {"pong": True, "version": "0.9.0"})
         self.register_method("get_mascot", lambda p: {
             "mascot": "Apex Sovereign Cyber-Falcon",
             "colors": {"primary": "#E5A93C", "secondary": "#101216"},
@@ -120,9 +120,9 @@ def generate_electron_scaffold(target_dir: str = "electron") -> List[str]:
 
     # 1. package.json
     pkg_json = {
-        "name": "apex-sovereign-desktop",
-        "version": "3.0.0",
-        "description": "Apex-Sovereign Multi-Agent Desktop Shell",
+        "name": "apex-desktop",
+        "version": "0.9.0",
+        "description": "Apex Multi-Agent Desktop Shell",
         "main": "main.js",
         "scripts": {
             "start": "electron ."
@@ -255,12 +255,12 @@ contextBridge.exposeInMainWorld('apexBridge', {
     ▀██  ██▀   
     </div>
     <div>
-      <div class="title">Apex Sovereign v3.0.0-SOVEREIGN</div>
+      <div class="title">Apex v0.9.0</div>
       <div class="status-badge">Council Operational · Electron Native Desktop</div>
     </div>
   </div>
   <div class="terminal" id="term">
-    [System] Initializing Apex-Sovereign Multi-Agent Council...<br/>
+    [System] Initializing Apex Multi-Agent Council...<br/>
     [Consensus] MCTS PUCT Search Engine Active.<br/>
     [Formal] CEGIS Invariant Prover Online.<br/>
     [Enterprise] Zero-Trust DLP & Cryptographic Merkle Tree Engaged.<br/>

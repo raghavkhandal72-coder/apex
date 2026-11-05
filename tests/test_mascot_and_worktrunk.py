@@ -17,7 +17,7 @@ class TestMascotAndWorktrunkSuite(unittest.TestCase):
             workspace_path="/workspace/test",
             tip="Switch models with /model",
         )
-        self.assertIn("Apex-Sovereign v2.5.0", header)
+        self.assertIn("Apex v2.5.0", header)
         self.assertIn("Claude 3.7 Sonnet", header)
         self.assertIn("MCTS PUCT", header)
         self.assertIn("Switch models with /model", header)

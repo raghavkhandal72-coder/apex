@@ -1,5 +1,5 @@
 """Pure Python Standalone Executable Compiler using standard library zipapp.
-Bundles the entire Apex-Sovereign codebase into an airtight zero-dependency apex.pyz executable.
+Bundles the entire Apex codebase into an airtight zero-dependency apex.pyz executable.
 """
 
 from __future__ import annotations

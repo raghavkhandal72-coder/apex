@@ -7,7 +7,7 @@ from .engine import CouncilEngine
 from .models import CodeSubmission, CouncilResult, Critique, EvaluationScore, ModelProvider
 from .reporter import CouncilReporter
 
-__version__ = "1.0.0"
+__version__ = "0.9.0"
 
 __all__ = [
     "CouncilEngine",

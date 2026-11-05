@@ -1,8 +1,9 @@
-"""Apex-Sovereign: CEGIS Inductive Program Repair Benchmark Suite.
+"""Apex: CEGIS Inductive Program Repair Regression Suite.
 100% Pure Python Standard Library | Zero Dependencies | Solar-Lezama (2008)
 
-Empirical evaluation of Bounded Counterexample-Guided Inductive Synthesis (CEGIS)
-across 8 distinct algorithmic bugs spanning relational, arithmetic, step, and structural faults.
+This 8-case suite serves as an internal regression test for bounded AST repair operators.
+For generality and independent evaluation, see the external QuixBugs benchmark
+in `benchmarks/quixbugs_runner.py`.
 """
 
 from __future__ import annotations
@@ -151,10 +152,10 @@ assert safe_divide(5, 0) == 0.0""",
 def run_cegis_benchmark_suite() -> int:
     """Runs all 8 CEGIS benchmark cases and outputs empirical results."""
     sys.stdout.reconfigure(encoding="utf-8")
-    engine = CEGISEngine(max_iterations=8, sandbox_timeout_sec=2.0)
+    engine = CEGISEngine(max_iterations=8, sandbox_timeout_sec=0.6)
 
     print("=========================================================================================")
-    print("      🏛️ APEX-SOVEREIGN: CEGIS PROGRAM REPAIR BENCHMARK SUITE (8 EMPIRICAL CASES)      ")
+    print("           🏛️ APEX: CEGIS PROGRAM REPAIR REGRESSION SUITE (8 EMPIRICAL CASES)            ")
     print("=========================================================================================")
     print(f"  {'ID':<8} {'Benchmark Name':<32} {'Fault Class':<28} {'Status':<10} {'Rounds':<8} {'Time'}")
     print("-----------------------------------------------------------------------------------------")
@@ -183,12 +184,12 @@ def run_cegis_benchmark_suite() -> int:
     repair_rate = (repaired_count / total_count) * 100.0
 
     print("=========================================================================================")
-    print(f"  EMPIRICAL BENCHMARK SUMMARY:")
+    print(f"  INTERNAL REGRESSION SUITE SUMMARY:")
     print(f"  • Total Benchmarks Evaluated:  {total_count}")
     print(f"  • Successfully Repaired:       {repaired_count} of {total_count} ({repair_rate:.1f}%)")
     print(f"  • Expected Unrepaired:         {total_count - repaired_count} of {total_count} (Structural AST Insertion)")
-    print(f"  • Single-Operator/Boundaries:  7 of 7 Repaired (100.0% within bounded grammar)")
     print(f"  • Total Suite Duration:        {total_duration:.2f}s")
+    print("  (Note: This internal suite is a regression test; see QuixBugs for external evaluation)")
     print("=========================================================================================\n")
 
     return 0

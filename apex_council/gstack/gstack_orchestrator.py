@@ -104,7 +104,7 @@ class GStackOrchestrator:
         if overall_passed:
             commits = commit_messages or [f"feat: {task_concept}"]
             ship_receipt = ReleaseShippingEngine.prepare_shipment(
-                current_version="v3.0.0",
+                current_version="v0.9.0",
                 commit_messages=commits,
                 diff_summary=source_code,
             )

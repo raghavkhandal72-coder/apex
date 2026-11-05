@@ -40,10 +40,10 @@ class ApexInteractiveConsole:
         t = MascotTheme
         # Print Mascot & Header (Matching Image 3)
         print("\n" + MascotRenderer.render_header(
-            version="v3.0.0-SOVEREIGN",
+            version="v0.9.0",
             model="Claude 3.7 Sonnet · Gemini 2.5 Pro · GPT-4o",
             workspace_path=self.workspace_dir,
-            tip="Apex v3.0 writes verified code and certifies proofs. Switch anytime with /mascot, /omo, or /wt.",
+            tip="Apex v0.9 writes verified code and certifies proofs. Switch anytime with /mascot, /omo, or /wt.",
             style=self.mascot_style,
             theme_name=self.mascot_theme,
         ))
@@ -137,7 +137,7 @@ class ApexInteractiveConsole:
             self.mascot_theme = parts[2]
 
         print("\n" + MascotRenderer.render_header(
-            version="v3.0.0-SOVEREIGN",
+            version="v0.9.0",
             workspace_path=self.workspace_dir,
             style=self.mascot_style,
             theme_name=self.mascot_theme,

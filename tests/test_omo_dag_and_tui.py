@@ -102,7 +102,7 @@ class TestOmODagAndMascotSuite(unittest.TestCase):
         for style in ["falcon", "guardian", "aegis", "retro"]:
             for color in ["gold", "amber", "cyan", "emerald"]:
                 hdr = MascotRenderer.render_header(style=style, theme_name=color)
-                self.assertIn("Apex-Sovereign", hdr)
+                self.assertIn("Apex", hdr)
                 self.assertIn("MCTS PUCT", hdr)
 
         status_bar = MascotRenderer.render_status_bar("~/w/acme.billing", "#6", ":16156", "Opus 4.6")

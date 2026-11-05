@@ -31,7 +31,7 @@ def render_ascii_bar(label: str, value: float, max_val: float = 100.0, bar_width
 def run_ablation_benchmarks() -> None:
     c = TerminalColors
     print(f"\n{c.GOLD}{c.BOLD}========================================================================={c.RESET}")
-    print(f"{c.CYAN}{c.BOLD}   🏛️  APEX-SOVEREIGN: SCIENTIFIC ABLATION BENCHMARK SUITE   {c.RESET}")
+    print(f"{c.CYAN}{c.BOLD}             🏛️  APEX: SCIENTIFIC ABLATION BENCHMARK SUITE             {c.RESET}")
     print(f"{c.GOLD}{c.BOLD}========================================================================={c.RESET}\n")
 
     # Experiment 1: Context Token Compression (PageRank vs Raw Dump)

@@ -6,8 +6,8 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-0%20external%20pip-brightgreen.svg)]()
-[![Tests Passing](https://img.shields.io/badge/tests-242%20passing%20(100%25)-success.svg)]()
-[![Single Executable](https://img.shields.io/badge/distribution-372KB%20standalone%20.pyz-orange.svg)]()
+[![Tests Passing](https://img.shields.io/badge/tests-246%20passing%20(100%25)-success.svg)]()
+[![Single Executable](https://img.shields.io/badge/distribution-388KB%20standalone%20.pyz-orange.svg)]()
 
 ---
 
@@ -20,6 +20,20 @@ Single LLM coding assistants suffer from hallucinations, brittle edge cases, and
 2. **MCTS Test-Time Compute:** Explores alternative implementation paths with Monte Carlo Tree Search and branch pruning.
 3. **CEGIS Bounded Verification:** Actively searches for counterexamples across edge domains (`[-10, 0, 1, 100]`) to falsify and inductively repair proposed code before it lands.
 4. **Zero-Dependency Guarantee:** The entire runtime—including HTTP API clients, AST parsing, cryptography, web scraping, and container supervision—runs on the **Python standard library alone**. Zero `pip install` required.
+
+---
+
+## Quickstart
+
+```bash
+python apex.pyz --version
+export GEMINI_API_KEY=...            # Windows: set GEMINI_API_KEY=...
+python apex.pyz "Build a thread-safe LRU Cache" --verbose --strict
+```
+
+Without API keys Apex runs in a clearly labeled **offline simulation**. Simulated
+providers are never ranked and never count toward consensus. Use `--strict` in CI
+and benchmarks so a failed live call aborts instead of falling back.
 
 ---
 
@@ -49,9 +63,9 @@ Apex supports both real live foundation models and an instant offline simulator:
 To ensure absolute credibility with engineers, here is what Apex does and does not do:
 
 * **What CEGIS is:** Counterexample-Guided Inductive Synthesis (Solar-Lezama 2008 & Gulwani 2011). Given an initial buggy AST and active constraints $E$, the synthesizer explores candidate mutations and tests them in isolated subprocesses. When a candidate satisfies $E$, the deductive verifier challenges it with unverified tests and **automated hidden invariant probes** (empty sequence boundaries, single-element boundaries, out-of-bounds queries, missing targets). When an invariant is violated, the verifier extracts a minimal counterexample $t^*$, appends $t^*$ to $E$, and reiterates synthesis. This is **bounded inductive program repair**, not an arbitrary SMT/Z3 solver or Coq proof assistant.
-* **What Ochiai SBFL is:** Spectrum-Based Fault Localization (Abreu et al., 2007). It instruments code execution using Python's tracing subsystem (`sys.settrace`), computes passing vs. failing test coverage spectra, and mathematically ranks suspicious lines using the formula:
+* **What Ochiai SBFL is:** Spectrum-Based Fault Localization (Abreu et al., 2007). It instruments code execution using Python's tracing subsystem (`sys.settrace`), computes passing vs. failing test coverage spectra, and ranks suspicious lines using the formula:
   $$\text{Ochiai}(s) = \frac{e_f(s)}{\sqrt{(e_f(s) + n_f(s)) \cdot (e_f(s) + e_p(s))}}$$
-  *Note on Test Suite Balance:* If a test suite only contains positive queries that search for elements present in a data structure, the default return fallback (`return -1`) is executed *only* by failing tests ($e_p = 0$), yielding an Ochiai score of $1.000$. Providing a balanced test suite with negative queries (e.g. searching for missing elements) exercises the fallback legitimately ($e_p > 0$), dropping its score to $0.707$ and accurately isolating the faulty loop boundary condition (`while left < right`).
+  *Omission Fault Behavior:* For omission-style faults (e.g. an off-by-one loop condition `while left < right` that exits one iteration too early), no erroneous line executes during the loop—the correct action is omitted. Consequently, failures manifest downstream at the fallback (`return -1`), which SBFL flags as suspicious because its execution correlates with failures. SBFL highlights symptom sites; use it as a ranking hint rather than a definitive causal verdict.
 * **What Static CWE Checks are:** Apex inspects candidate ASTs against 5 specific CWE classes (CWE-78, CWE-95, CWE-798, CWE-22, CWE-391). A score of "5/5 pass" verifies compliance against this specific rule set—it is NOT a mathematical guarantee of total software security.
 * **Subprocess Runner Notice (Not an OS Security Sandbox):** Candidate code execution runs in an isolated user-space Python subprocess (`python -E -s`) with environment variables scrubbed of credentials and secrets. This is an execution runner, NOT a kernel-level security boundary (seccomp/cgroups). To run completely untrusted third-party code safely, deploy Apex inside Docker or a VM container (see `packaging/Dockerfile`).
 * **Runtime Workload Benchmark:** Runtime measurements reflect the duration of isolated Python process execution (including compilation and module import overhead). When a test harness is supplied, the exact same benchmark harness is executed against every candidate.
@@ -59,13 +73,28 @@ To ensure absolute credibility with engineers, here is what Apex does and does n
 
 ---
 
-## ⚠️ Known Limitations
+## Known Limitations
 
-Honesty before hype:
-1. **Test-Suite Overfitting:** Inductive synthesis relies on test assertions to detect bugs. If a test harness is too small (e.g. only 1 assertion), AST mutators can overfit to pass that single case without repairing the general algorithm. Always supply comprehensive boundary tests (empty inputs, edge elements, non-existent targets).
-2. **Bounded Mutation Grammar:** CEGIS repairs programs by exploring a bounded grammar of AST operator swaps (comparison and arithmetic operators). It is not an arbitrary code synthesizer that invents novel algorithms from scratch; it is an automated repair engine for logic, boundary, and operator faults.
-3. **Subprocess Runner Boundary:** Candidate execution runs in an isolated Python subprocess with scrubbed environment variables. It does not use Linux kernel cgroups or seccomp filters. For hostile untrusted code, run Apex inside Docker (`packaging/Dockerfile`).
-4. **Fallback vs Strict:** By default, live API timeouts fall back to deterministic simulation with a warning. Use `--strict` in CI/CD to make API failures strictly fatal.
+- **Bounded repair, not formal verification.** CEGIS here is test-guided search over a
+  small AST mutation grammar (operator swaps, boundary changes, constants). It cannot
+  invent new statements or algorithms. Passing tests does not prove correctness.
+- **Test-suite overfitting.** With few tests a candidate can pass them without being right.
+  Differential probes (`apex_council/synthesis/differential_oracle.py`) compare against a
+  reference implementation when one is provided; without a reference, probes only detect
+  crashes and invariant violations, not wrong answers.
+- **SBFL (Ochiai) limitations.** Spectrum-based localization ranks lines by execution
+  correlation with failures. For omission-style faults (e.g. a loop exiting one iteration
+  early) it often points at the symptom (`return -1`) rather than the cause
+  (`while left < right`). Use it as a hint, not a verdict.
+- **Not a security sandbox.** Candidate code runs in an isolated subprocess (`python -E -s`,
+  scrubbed environment). This is not seccomp/cgroups. Run Apex inside Docker or a VM for
+  untrusted code.
+- **Consensus needs 2+ live models.** With fewer, the scoreboard shows a degraded-consensus
+  banner and simulated rows are unranked.
+- **Static checks only.** "CWE checks: N/5" are AST/regex rules for CWE-78/95/798/22/391,
+  not a security audit.
+- **Runtime numbers** are wall-clock in an isolated subprocess and depend on the workload;
+  compare them only when the same test harness runs for every candidate.
 
 ---
 
@@ -92,9 +121,31 @@ All commands below are verified and runnable out-of-the-box with the standalone 
 
 ---
 
-### 📊 CEGIS Empirical Benchmark Suite (8 Classic Algorithmic Bugs)
+## Benchmarks
 
-To provide verifiable empirical evidence rather than theoretical claims, Apex ships with a reproducible benchmark suite (`benchmarks/cegis_benchmark.py`) evaluating CEGIS program repair across 8 distinct bugs spanning relational, arithmetic, step, constant boundary, and structural fault classes:
+Repair quality is measured on **QuixBugs** (external, standard benchmark), not on bugs
+written by the Apex authors. Apex sees only a few visible tests; the repaired program is
+then checked independently against all cases, including hidden ones.
+
+```bash
+git clone https://github.com/jkoppel/QuixBugs
+python benchmarks/quixbugs_runner.py --quixbugs QuixBugs --apex dist/apex.pyz --extra --strict
+```
+
+| Metric | Result |
+|---|---|
+| Programs attempted | 26 |
+| Repaired (visible + hidden pass) | 1 |
+| Overfit (visible pass, hidden fail) | 1 |
+| Unrepaired / timeout / error | 24 |
+| Skipped (reference not evaluable) | 14 |
+
+Raw results: `benchmarks/quixbugs_results.json`.
+The 8-case internal suite in `benchmarks/cegis_benchmark.py` is a **regression test**, not evidence of generality.
+
+### CEGIS Internal Regression Suite (8 Empirical Cases)
+
+The internal regression suite tests that known single-token operator and boundary mutations remain covered:
 
 | Bug ID | Benchmark Problem | Fault Class | Status | Rounds | Verified Fix |
 | :--- | :--- | :--- | :---: | :---: | :--- |
@@ -107,9 +158,9 @@ To provide verifiable empirical evidence rather than theoretical claims, Apex sh
 | **BUG-07** | Palindrome Inversion | Relational (`!=` $\to$ `==`) | **REPAIRED** | 1 | `return s == s[::-1]` |
 | **BUG-08** | Safe Division Missing Guard | Structural Guard Insertion | **UNREPAIRED** | 1 | *(Beyond bounded operator grammar)* |
 
-* **Empirical Repair Rate:** 7 of 8 benchmarks repaired (**87.5% success rate** overall; 7 of 7 single-operator/boundary faults within grammar).
-* **Structural Fault Honesty:** Faults requiring arbitrary new block insertion (`if b == 0: return 0.0`) are honestly documented as UNREPAIRED by the single-operator bounded grammar.
-* **Reproduce locally in ~22 seconds (Zero Dependencies):**
+* **Internal Regression Rate:** 7 of 8 benchmarks repaired (**87.5%**).
+* **Structural Fault Boundary:** Faults requiring arbitrary new block insertion (`if b == 0: return 0.0`) are reported as UNREPAIRED by the single-operator bounded grammar.
+* **Run regression suite locally (~12s, Zero Dependencies):**
   ```bash
   python benchmarks/cegis_benchmark.py
   ```
@@ -172,11 +223,11 @@ Apex maintains an absolute regression-free policy. Every commit is tested across
 python -m unittest discover -s tests
 ```
 ```text
-Ran 242 tests in 38.115s
+Ran 246 tests in 36.421s
 OK
 ```
 
-* **185 Platform Baseline Tests:** MCTS search, CEGIS invariant synthesizer, Ochiai SBFL, Hoare logic, AST mutation fuzzing, DLP sanitization, RBAC, and Git plumbing.
+* **189 Platform Baseline Tests:** MCTS search, CEGIS invariant synthesizer with differential oracle, Ochiai SBFL, Hoare logic, AST mutation fuzzing, DLP sanitization, RBAC, and Git plumbing.
 * **20 Tool Integration Tests (`tests/test_e2e_tool_integrations.py`):** REA bytecode/binary inspection, Reviewdog unified diff filtering, Netdata wire protocol.
 * **15 Transformer Model Tests (`tests/test_e2e_transformer_model.py`):** ByteTokenizer (0% OOV), RoPE, RMSNorm, GQA, causal masking, KV cache step decoding.
 * **7 Training Pipeline Tests (`tests/test_e2e_transformer_pipeline.py`):** Multi-domain text chunking, CrossEntropy loss, AdamW optimizer, warmup-cosine schedule.
@@ -199,7 +250,7 @@ Apex includes production containerization ready for cloud or edge deployment:
 
 ```bash
 # Build multi-stage lightweight image (Python 3.11-slim, non-root user)
-docker build -f packaging/Dockerfile -t apex-sovereign .
+docker build -f packaging/Dockerfile -t apex .
 
 # Or run with Docker Compose (API on 8000, Netdata telemetry on 19999)
 docker compose -f packaging/docker-compose.yml up -d

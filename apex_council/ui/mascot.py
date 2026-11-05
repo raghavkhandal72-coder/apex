@@ -116,7 +116,7 @@ class MascotRenderer:
     @classmethod
     def render_header(
         cls,
-        version: str = "v3.0.0-SOVEREIGN",
+        version: str = "v0.9.0",
         model: str = "Claude 3.7 Sonnet · Gemini 2.5 Pro · GPT-4o",
         workspace_path: Optional[str] = None,
         tip: Optional[str] = None,
@@ -135,7 +135,7 @@ class MascotRenderer:
         accent_color = cls.THEME_COLORS.get(theme_name, t.APEX_GOLD)
 
         info_lines = [
-            f"{t.BOLD}{t.WHITE}Apex-Sovereign {version}{t.RESET}",
+            f"{t.BOLD}{t.WHITE}Apex {version}{t.RESET}",
             f"{accent_color}{model}{t.RESET}",
             f"{t.GRAY}{cwd}{t.RESET}",
             f"{t.CYAN}★ MCTS PUCT × CEGIS Inductive Synthesis × OmO DAG Waves{t.RESET}",

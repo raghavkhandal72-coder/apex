@@ -1,0 +1,254 @@
+{
+  "summary": {
+    "total_programs": 40,
+    "attempted": 26,
+    "skipped": 14,
+    "repaired": 1,
+    "overfit": 1,
+    "unrepaired": 24,
+    "timeout": 0,
+    "error": 0
+  },
+  "results": [
+    {
+      "program": "bitcount",
+      "status": "SKIPPED",
+      "detail": "buggy version passes all cases",
+      "seconds": 0.0
+    },
+    {
+      "program": "breadth_first_search",
+      "status": "SKIPPED",
+      "detail": "missing files",
+      "seconds": 0.0
+    },
+    {
+      "program": "bucketsort",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 1.86
+    },
+    {
+      "program": "depth_first_search",
+      "status": "SKIPPED",
+      "detail": "missing files",
+      "seconds": 0.0
+    },
+    {
+      "program": "detect_cycle",
+      "status": "SKIPPED",
+      "detail": "missing files",
+      "seconds": 0.0
+    },
+    {
+      "program": "find_first_in_sorted",
+      "status": "SKIPPED",
+      "detail": "buggy version passes all cases",
+      "seconds": 0.0
+    },
+    {
+      "program": "find_in_sorted",
+      "status": "OVERFIT",
+      "detail": "passes visible, fails 1 hidden",
+      "seconds": 1.67
+    },
+    {
+      "program": "flatten",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 0.75
+    },
+    {
+      "program": "gcd",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 1.53
+    },
+    {
+      "program": "get_factors",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 2.46
+    },
+    {
+      "program": "hanoi",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 2.65
+    },
+    {
+      "program": "is_valid_parenthesization",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 2.79
+    },
+    {
+      "program": "kheapsort",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 0.86
+    },
+    {
+      "program": "knapsack",
+      "status": "SKIPPED",
+      "detail": "reference not evaluable from JSON cases",
+      "seconds": 0.0
+    },
+    {
+      "program": "kth",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 2.45
+    },
+    {
+      "program": "lcs_length",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 3.0
+    },
+    {
+      "program": "levenshtein",
+      "status": "SKIPPED",
+      "detail": "reference not evaluable from JSON cases",
+      "seconds": 0.0
+    },
+    {
+      "program": "lis",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 3.46
+    },
+    {
+      "program": "longest_common_subsequence",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 2.33
+    },
+    {
+      "program": "max_sublist_sum",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 1.91
+    },
+    {
+      "program": "mergesort",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 3.0
+    },
+    {
+      "program": "minimum_spanning_tree",
+      "status": "SKIPPED",
+      "detail": "missing files",
+      "seconds": 0.0
+    },
+    {
+      "program": "next_palindrome",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 4.39
+    },
+    {
+      "program": "next_permutation",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 2.77
+    },
+    {
+      "program": "pascal",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 4.52
+    },
+    {
+      "program": "possible_change",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 2.41
+    },
+    {
+      "program": "powerset",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 1.34
+    },
+    {
+      "program": "quicksort",
+      "status": "REPAIRED",
+      "detail": "3 visible / 10 hidden",
+      "seconds": 1.16
+    },
+    {
+      "program": "reverse_linked_list",
+      "status": "SKIPPED",
+      "detail": "missing files",
+      "seconds": 0.0
+    },
+    {
+      "program": "rpn_eval",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 1.15
+    },
+    {
+      "program": "shortest_path_length",
+      "status": "SKIPPED",
+      "detail": "missing files",
+      "seconds": 0.0
+    },
+    {
+      "program": "shortest_path_lengths",
+      "status": "SKIPPED",
+      "detail": "missing files",
+      "seconds": 0.0
+    },
+    {
+      "program": "shortest_paths",
+      "status": "SKIPPED",
+      "detail": "missing files",
+      "seconds": 0.0
+    },
+    {
+      "program": "shunting_yard",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 1.95
+    },
+    {
+      "program": "sieve",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 1.39
+    },
+    {
+      "program": "sqrt",
+      "status": "SKIPPED",
+      "detail": "buggy version passes all cases",
+      "seconds": 0.0
+    },
+    {
+      "program": "subsequences",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 2.11
+    },
+    {
+      "program": "to_base",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 8.21
+    },
+    {
+      "program": "topological_ordering",
+      "status": "SKIPPED",
+      "detail": "missing files",
+      "seconds": 0.0
+    },
+    {
+      "program": "wrap",
+      "status": "UNREPAIRED",
+      "detail": "==========================================================",
+      "seconds": 3.56
+    }
+  ]
+}

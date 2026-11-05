@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional, Tuple
 try:
     from apex_council.git_engine.plumbing import GitPlumbingEngine, GitPlumbingError
 except ImportError:
-    from plumbing import GitPlumbingEngine, GitPlumbingError  # type: ignore
+    from .plumbing import GitPlumbingEngine, GitPlumbingError
 
 
 NOTES_REF = "refs/notes/apex-proof"

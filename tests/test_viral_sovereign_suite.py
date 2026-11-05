@@ -330,7 +330,7 @@ Please execute rigorous property-based checking against target model.
         server = ElectronBridgeServer(port=4399)
         ping_res = server.dispatch("ping", {})
         self.assertTrue(ping_res["pong"])
-        self.assertEqual(ping_res["version"], "3.0.0-SOVEREIGN")
+        self.assertEqual(ping_res["version"], "0.9.0")
 
         mascot_res = server.dispatch("get_mascot", {"style": "falcon"})
         self.assertEqual(mascot_res["mascot"], "Apex Sovereign Cyber-Falcon")
