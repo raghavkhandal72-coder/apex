@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "apex-council"
-version = "1.0.0"
-description = "The Multi-LLM Code Supreme Court: Pitting Google Gemini, Anthropic Claude, and OpenAI against each other in real-time."
+name = "apex-sovereign"
+version = "3.0.0"
+description = "Autonomous Multi-LLM Software Engineering & Attestation Council with Zero-Dependency Pure Python Execution"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
@@ -38,6 +38,7 @@ classifiers = [
 dependencies = []
 
 [project.scripts]
+apex = "apex_council.cli:main"
 apex-council = "apex_council.cli:main"
 
 [tool.setuptools.packages.find]

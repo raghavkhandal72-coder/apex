@@ -178,3 +178,76 @@ class MascotRenderer:
         divider = f"{t.DARK_GRAY}{'─' * term_width}{t.RESET}"
         status_line = f"{left}{' ' * spaces}{right}"
         return f"{divider}\n{status_line}"
+
+    @classmethod
+    def render_agent_speech(
+        cls,
+        persona: str,
+        speech_lines: List[str],
+        status_tag: str = "DELIBERATING",
+    ) -> str:
+        """
+        Renders an agent's speech box side-by-side with its dedicated pixel art mascot.
+        """
+        t = MascotTheme
+        meta = ApexAgentPersona.METADATA.get(persona, ApexAgentPersona.METADATA["commander"])
+        style = meta["style"]
+        theme_color = cls.THEME_COLORS.get(meta["theme"], t.APEX_GOLD)
+        mascot_lines = cls.MASCOT_STYLES.get(style, APEX_SOVEREIGN_FALCON)
+
+        header_badge = f"{theme_color}{meta['icon']} [{meta['title']}]{t.RESET} {t.DIM}· {status_tag}{t.RESET}"
+
+        dialogue_lines = [header_badge]
+        for line in speech_lines:
+            dialogue_lines.append(f"{t.WHITE}{line}{t.RESET}")
+
+        rendered = []
+        max_rows = max(len(mascot_lines), len(dialogue_lines))
+        for i in range(max_rows):
+            m_part = mascot_lines[i] if i < len(mascot_lines) else " " * 16
+            d_part = dialogue_lines[i] if i < len(dialogue_lines) else ""
+            rendered.append(f"{theme_color}{m_part}{t.RESET}   {d_part}")
+
+        return "\n".join(rendered)
+
+
+class ApexAgentPersona:
+    """
+    Council Agent Persona with dedicated pixel mascot, color theme,
+    and voice/role specialization.
+    """
+    COMMANDER = "commander"   # Apex Sovereign Falcon (Gold) - Strategic Orchestration
+    ARCHITECT = "architect"   # Crowned Mech-Guardian (Cyan) - Structure & Invariants
+    SENTINEL = "sentinel"     # Citadel Diamond Aegis (Emerald) - Security & Attestation
+    NINJA = "ninja"           # Terracotta Sprite (Amber) - Rapid Bug Localization & Edits
+
+    METADATA = {
+        "commander": {
+            "title": "APEX SUPREME COMMANDER",
+            "icon": "★",
+            "style": "falcon",
+            "theme": "gold",
+            "description": "Multi-Model Orchestrator & MCTS Consensus Search Leader",
+        },
+        "architect": {
+            "title": "SYSTEM ARCHITECT & SYNTHESIZER",
+            "icon": "⚡",
+            "style": "guardian",
+            "theme": "cyan",
+            "description": "Deterministic AST Synthesizer & Hoare Logic Boundary Prover",
+        },
+        "sentinel": {
+            "title": "SECURITY SENTINEL & BREAKER",
+            "icon": "🛡️",
+            "style": "aegis",
+            "theme": "emerald",
+            "description": "Zero-Trust DLP Sanitizer & Cryptographic Merkle Auditor",
+        },
+        "ninja": {
+            "title": "AUTONOMOUS BUG HUNTER & NINJA",
+            "icon": "🥷",
+            "style": "retro",
+            "theme": "amber",
+            "description": "Ochiai Fault Localizer & Atomic Git Worktree Sweeper",
+        },
+    }

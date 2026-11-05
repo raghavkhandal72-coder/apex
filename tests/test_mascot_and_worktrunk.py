@@ -43,6 +43,18 @@ class TestMascotAndWorktrunkSuite(unittest.TestCase):
         self.assertIn("Summary", table_output)
         self.assertIn("Showing", table_output)
 
+    def test_agent_persona_speech_rendering(self) -> None:
+        from apex_council.ui.mascot import ApexAgentPersona
+        for persona in ["commander", "architect", "sentinel", "ninja"]:
+            speech = MascotRenderer.render_agent_speech(
+                persona=persona,
+                speech_lines=["Synthesizing formal verification proof.", "Zero counter-examples."],
+                status_tag="ACTIVE",
+            )
+            self.assertIn("ACTIVE", speech)
+            meta = ApexAgentPersona.METADATA[persona]
+            self.assertIn(meta["title"], speech)
+
 
 if __name__ == "__main__":
     unittest.main()
