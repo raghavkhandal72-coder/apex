@@ -34,7 +34,7 @@ class CouncilReporter:
   / /| | / /_/ / __/  |   /    / /    / / / / / / /  |/ / /    / /  / /  
  / ___ |/ ____/ /___ /   |    / /___ / /_/ / /_/ / /|  / /____/ /  / /___
 /_/  |_/_/   /_____//_/|_|    \____/ \____/\____/_/ |_/\____/___/ /_____/
-{RESET}{BOLD}{GREEN}   Sovereign Consensus Core × Military-Grade Hardened Sandbox  [v1.0.0]{RESET}"""
+{RESET}{BOLD}{GREEN}   Sovereign Consensus Core × Isolated Subprocess Runner  [v1.0.0]{RESET}"""
         lines.append(banner)
         lines.append(f"{BOLD}{CYAN}========================================================================{RESET}\n")
 
@@ -54,11 +54,11 @@ class CouncilReporter:
 
         # Head-to-Head Scoreboard Table
         lines.append(f"{BOLD}📊 HEAD-TO-HEAD SCOREBOARD{RESET}")
-        lines.append("-" * 85)
+        lines.append("-" * 88)
         lines.append(
-            f"{'Model Provider':<20} | {'Status':<11} | {'Security':<10} | {'Peer Review':<12} | {'Runtime':<10} | {'Overall Score'}"
+            f"{'Model Provider':<20} | {'Status':<11} | {'CWE Checks':<13} | {'Peer Review':<12} | {'Runtime':<10} | {'Overall Score'}"
         )
-        lines.append("-" * 85)
+        lines.append("-" * 88)
 
         for provider, score in result.evaluations.items():
             color = PROVIDER_COLORS.get(provider, WHITE)
@@ -70,21 +70,25 @@ class CouncilReporter:
             status_display = f"{GREEN}LIVE{RESET}" if not is_sim else f"{YELLOW}SIMULATED{RESET}"
 
             if is_ranked:
-                sec_display = f"{GREEN}{score.security_score:.0f}%{RESET}" if score.security_score >= 80 else f"{RED}{score.security_score:.0f}%{RESET}"
+                cwe_pass_count = max(0, 5 - len(score.security_issues))
+                cwe_display = f"{GREEN}{cwe_pass_count}/5 pass{RESET}" if cwe_pass_count == 5 else f"{RED}{cwe_pass_count}/5 pass{RESET}"
                 peer_display = f"{YELLOW}{score.peer_review_avg:.1f} / 10{RESET}"
                 runtime_display = f"{score.execution_time_ms:.1f} ms"
                 overall_display = f"{BOLD}{score.overall_score:.1f} / 100{RESET}"
             else:
-                sec_display = f"{DIM}[UNRANKED]{RESET}"
+                cwe_display = f"{DIM}[UNRANKED]{RESET}"
                 peer_display = f"{DIM}[UNRANKED]{RESET}"
                 runtime_display = f"{score.execution_time_ms:.1f} ms"
                 overall_display = f"{DIM}(SIMULATED, not scored){RESET}"
 
             lines.append(
-                f"{name_display:<29} | {status_display:<20} | {sec_display:<19} | {peer_display:<21} | {runtime_display:<10} | {overall_display}"
+                f"{name_display:<29} | {status_display:<20} | {cwe_display:<22} | {peer_display:<21} | {runtime_display:<10} | {overall_display}"
             )
 
-        lines.append("-" * 85)
+        lines.append("-" * 88)
+        lines.append(f"{DIM}* CWE Checks: Static AST/regex verification for CWE-78, CWE-95, CWE-798, CWE-22, CWE-391.{RESET}")
+        lines.append(f"{DIM}* Runtime: Execution duration in isolated Python subprocess with scrubbed environment.{RESET}")
+        lines.append(f"{DIM}* Sandbox Notice: Isolated subprocess runner; not an OS kernel/seccomp security sandbox.{RESET}")
         lines.append("")
 
         # Peer Critique Highlights

@@ -29,11 +29,16 @@ Apex supports both real live foundation models and an instant offline simulator:
 
 * **Live Multi-Model Execution:** Set your API keys in your environment:
   ```bash
-  export GEMINI_API_KEY="AIzaSy..."      # Google Gemini 2.5 Pro
+  export GEMINI_API_KEY="AIzaSy..."      # Google Gemini 1.5 Pro / 2.0 Flash
   export ANTHROPIC_API_KEY="sk-ant-..."  # Anthropic Claude 3.5 Sonnet
   export OPENAI_API_KEY="sk-proj-..."    # OpenAI GPT-4o
+  # OR use local edge Ollama (Zero-Cost Live Consensus):
+  export OLLAMA_MODEL="llama3"           # Local Ollama at http://localhost:11434
   ```
-  Apex dispatches to all three foundational models simultaneously. Gemini drafts the architecture, Claude generates defensive implementations, and GPT-4o synthesizes adversarial unit tests.
+  Apex dispatches to configured foundation models simultaneously. Real LLMs draft implementations and cross-examine each other's code.
+* **Default Fallback vs. Strict Mode (`--strict`):**
+  - *Default Behavior:* On network timeouts, invalid auth, or rate limits, Apex displays a prominent warning box and falls back to offline simulation so casual CLI exploration does not crash.
+  - *Strict Mode (`--strict`):* Disables all simulation fallbacks. If any live API call fails, execution halts immediately with a non-zero exit code (`exit 1`). Recommended for CI/CD pipelines and automated benchmarks.
 * **Zero External Dependencies (`pip = 0`):** Apex implements custom HTTP/JSON streaming adapters over standard library `urllib.request`. You do **not** need to install `openai`, `anthropic`, or `google-generativeai`.
 * **Instant Offline Simulator:** If no API keys are provided (or if `--offline` is passed), Apex automatically falls back to an offline simulated engine. You can clone the repo and run full council debates and verification workflows immediately with zero tokens or internet access.
 
@@ -43,9 +48,12 @@ Apex supports both real live foundation models and an instant offline simulator:
 
 To ensure absolute credibility with engineers, here is what Apex does and does not do:
 
-* **What CEGIS is:** Counterexample-Guided Inductive Synthesis (Solar-Lezama 2008 & Gulwani 2011). Apex mutates AST candidate operations and systematically evaluates them against hostile test oracles and boundary inputs. It is **bounded inductive program repair**, not an SMT/Z3 theorem prover or Coq proof assistant.
+* **What CEGIS is:** Counterexample-Guided Inductive Synthesis (Solar-Lezama 2008 & Gulwani 2011). Apex mutates AST candidate operations and systematically evaluates them against hostile test oracles and boundary inputs (`[-10, -1, 0, 1, 2, 5, 10, 100]`). It is **bounded inductive program repair**, not an SMT/Z3 theorem prover or Coq proof assistant.
 * **What Ochiai SBFL is:** Spectrum-Based Fault Localization. It instruments code execution using Python's tracing subsystem (`sys.settrace`), computes passing vs. failing test coverage, and mathematically ranks suspicious lines using the Ochiai formula.
-* **What the Consensus Engine does:** Models critique and score each other's ASTs against CWE security rules, typing invariants, and runtime execution latency. A composite score determines the winning candidate or synthesizes an agreed hybrid patch.
+* **What Static CWE Checks are:** Apex inspects candidate ASTs against 5 specific CWE classes (CWE-78, CWE-95, CWE-798, CWE-22, CWE-391). A score of "5/5 pass" verifies compliance against this specific rule set—it is NOT a mathematical guarantee of total software security.
+* **Subprocess Runner Notice (Not an OS Security Sandbox):** Candidate code execution runs in an isolated user-space Python subprocess (`python -E -s`) with environment variables scrubbed of credentials and secrets. This is an execution runner, NOT a kernel-level security boundary (seccomp/cgroups). To run completely untrusted third-party code safely, deploy Apex inside Docker or a VM container (see `packaging/Dockerfile`).
+* **Runtime Workload Benchmark:** Runtime measurements reflect the duration of isolated Python process execution (including compilation and module import overhead). When a test harness is supplied, the exact same benchmark harness is executed against every candidate.
+* **Scoreboard Ranking Integrity:** A true consensus winner is crowned only when $\ge 2$ live models participate. If fewer than 2 live models are active, simulated models are marked `[UNRANKED]` and excluded from competition, and a degraded consensus warning is clearly displayed.
 
 ---
 
