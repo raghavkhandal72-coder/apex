@@ -39,6 +39,7 @@ KNOWN_COMMANDS = {
     "cfg", "abstract-interp", "cegis", "solomonoff",
     "oracle", "ast-nav", "memo-sync", "mini-swe",
     "ontology", "sdd", "worktrunk", "executive",
+    "wt", "console", "mlflow-trace", "mlflow-eval",
     "-h", "--help"
 }
 
@@ -307,6 +308,25 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     exec_parser.add_argument("--title", required=True, help="Proposal or PR title")
     exec_parser.add_argument("--desc", required=True, help="Proposal description")
     exec_parser.add_argument("--diff", help="Path to diff or code file")
+
+    # Command 49: Worktrunk Interactive Git Worktree Matrix (max-sixty/worktrunk style - Image 1)
+    wt_p = subparsers.add_parser("wt", help="Worktrunk interactive worktree matrix & branch manager (Image 1 style)")
+    wt_p.add_argument("subaction", nargs="?", default="list", choices=["list", "switch", "add", "remove"], help="Action: list, switch, add, remove")
+    wt_p.add_argument("branch", nargs="?", help="Target branch for switch/add/remove")
+    wt_p.add_argument("--full", action="store_true", help="Display full table with triple-dot diff and commit summary")
+
+    # Command 50: Interactive Claude Code Style Terminal Console (Image 2)
+    console_p = subparsers.add_parser("console", help="Claude Code style interactive terminal console with pixel mascot (Image 2)")
+
+    # Command 51: MLflow Agent Tracing & OpenTelemetry
+    mlflow_p = subparsers.add_parser("mlflow-trace", help="MLflow-compatible Agent Tracing & OpenTelemetry exporter")
+    mlflow_p.add_argument("--session", default="apex_council_session", help="Trace session name")
+    mlflow_p.add_argument("--export-json", help="Export OpenTelemetry trace JSON file")
+
+    # Command 52: MLflow LLM Judge Evaluation
+    ml_eval_p = subparsers.add_parser("mlflow-eval", help="MLflow LLM Judge automated evaluation on code")
+    ml_eval_p.add_argument("file", type=Path, help="Target Python source code to evaluate")
+    ml_eval_p.add_argument("--prompt", default="Audit code quality and safety", help="Evaluation prompt")
 
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
@@ -1387,6 +1407,92 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"     Action Item: {act}")
         print("==========================================================\n")
         return 0
+
+    # Command 49: Worktrunk Interactive Git Worktree Matrix (max-sixty/worktrunk style - Image 1)
+    if args.command == "wt":
+        from .git_engine.worktrunk_advanced import WorktrunkAdvancedEngine
+        engine = WorktrunkAdvancedEngine(Path("."))
+        sub = getattr(args, "subaction", "list") or "list"
+        if sub == "list":
+            table = engine.render_table(full=args.full)
+            print(table)
+            return 0
+        elif sub == "switch":
+            if not args.branch:
+                print("Error: Target branch required for 'switch'")
+                return 1
+            path = engine.switch_worktree(args.branch)
+            print(f"Switched to worktree for {args.branch} @ {path}")
+            return 0
+        elif sub == "add":
+            if not args.branch:
+                print("Error: Target branch required for 'add'")
+                return 1
+            path = engine.add_worktree(args.branch)
+            print(f"Created worktree for {args.branch} @ {path}")
+            return 0
+        elif sub == "remove":
+            target = args.branch
+            succ = engine.remove_worktree(target)
+            if succ:
+                print(f"Removed worktree {target or 'active'}")
+                return 0
+            else:
+                print(f"Failed to remove worktree {target or 'active'}")
+                return 1
+
+    # Command 50: Interactive Claude Code Style Terminal Console (Image 2)
+    if args.command == "console":
+        from .ui.apex_console import ApexInteractiveConsole
+        console = ApexInteractiveConsole(workspace_root=".")
+        console.launch()
+        return 0
+
+    # Command 51: MLflow Agent Tracing & OpenTelemetry Exporter
+    if args.command == "mlflow-trace":
+        from .mlflow_engine.tracer import AgentTracer
+        tracer = AgentTracer(session_name=args.session)
+        with tracer.span("apex_council_root_turn", attributes={"agent": "Apex-Council-Supreme", "framework": "Pure-Python"}) as span:
+            span.attributes["council_members"] = "Gemini-Pro,Claude-Opus,GPT-4o"
+            span.attributes["status"] = "ACTIVE"
+        print("==========================================================")
+        print("   🔍 MLFLOW & OPENTELEMETRY AGENT TRACER                 ")
+        print("==========================================================")
+        print(f"  Session Name:    {args.session}")
+        print(f"  Spans Recorded:  {len(tracer.spans)}")
+        print(f"  Trace ID:        {tracer.trace_id}")
+        if getattr(args, "export_json", None):
+            tracer.export_json(args.export_json)
+            print(f"  [OK] Exported OpenTelemetry trace to: {args.export_json}")
+        else:
+            print("  Trace Summary:   Valid OpenTelemetry GenAI span tree initialized.")
+        print("==========================================================\n")
+        return 0
+
+    # Command 52: MLflow LLM Judge Evaluation
+    if args.command == "mlflow-eval":
+        from .mlflow_engine.evaluator import LLMJudgeEvaluator
+        target_path = Path(args.file)
+        if not target_path.exists():
+            print(f"Error: Target file not found: {target_path}")
+            return 1
+        code_content = target_path.read_text(encoding="utf-8", errors="replace")
+        evaluator = LLMJudgeEvaluator()
+        result = evaluator.evaluate_code(prompt=args.prompt, generated_code=code_content)
+        print("==========================================================")
+        print("   ⚖️ MLFLOW LLM-AS-A-JUDGE EVALUATION REPORT             ")
+        print("==========================================================")
+        print(f"  Target File:     {target_path}")
+        print(f"  Evaluation Prompt: {args.prompt}")
+        print(f"  Verdict:         {'PASSED' if result.passed else 'FAILED'}")
+        print(f"  Overall Score:   {result.overall_score * 100:.1f}%")
+        print("----------------------------------------------------------")
+        for m in result.metrics:
+            status_icon = "PASS" if m.passed else "FAIL"
+            print(f"  [{status_icon}] {m.name:<25} ({m.score * 100:>5.1f}%)")
+            print(f"         {m.rationale}")
+        print("==========================================================\n")
+        return 0 if result.passed else 1
 
     # 26. Handle battle / default prompt
     prompt = getattr(args, "prompt", None) or args.direct_prompt or "Build an LRU cache with TTL support"
