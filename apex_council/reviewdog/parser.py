@@ -36,7 +36,6 @@ RULE_CODE_PATTERN = re.compile(r"(?:\[|\()([A-Za-z0-9_\-.:]+)(?:\]|\))")
 
 
 def parse_rdjson(raw_content: Union[str, Dict[str, Any], List[Any]]) -> List[Diagnostic]:
-    print(f"\n[DEBUG parse_rdjson] type={type(raw_content)} content={repr(raw_content)[:300]}")
     if isinstance(raw_content, str):
         content = raw_content.strip()
         if not content:

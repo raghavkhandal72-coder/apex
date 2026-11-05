@@ -1,0 +1,14 @@
+{
+  "source": { "name": "apex-lint", "url": "https://apex.local" },
+  "diagnostics": [
+    {
+      "message": "Potential bug: subtraction operator used where addition expected",
+      "location": {
+        "path": "examples/calculator.py",
+        "range": { "start": { "line": 5, "column": 5 } }
+      },
+      "severity": "WARNING",
+      "code": { "value": "APEX_L01" }
+    }
+  ]
+}

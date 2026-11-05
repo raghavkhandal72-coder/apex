@@ -1,0 +1,3 @@
+Apex is a multi-agent consensus and bounded verification engine for autonomous software engineering.
+It pits Gemini, Claude, and OpenAI against each other to produce verified, high-performance code.
+Every line of code is synthesized with zero external pip dependencies.
