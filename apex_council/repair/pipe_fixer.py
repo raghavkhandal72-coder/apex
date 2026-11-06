@@ -91,9 +91,21 @@ def parse_traceback(trace_text: str) -> Optional[FailureTrace]:
         # Fallback: search for any .py file mentioned that exists
         for match in re.findall(r"([\w\-./\\]+\.py)", trace_text):
             p = Path(match)
-            if p.exists() and not p.name.startswith("test_"):
+            if p.exists() and not p.name.startswith("test_") and not p.name.endswith("_test.py"):
                 target_path = p
                 break
+
+    # If target_path is a test file, inspect it to find the implementation module being tested
+    if target_path and (target_path.name.startswith("test_") or target_path.name.endswith("_test.py")):
+        try:
+            test_content = target_path.read_text(encoding="utf-8", errors="replace")
+            for mod in re.findall(r"(?:from|import)\s+([A-Za-z0-9_]+)", test_content):
+                cand = target_path.parent / f"{mod}.py"
+                if cand.exists() and cand != target_path:
+                    target_path = cand
+                    break
+        except Exception:
+            pass
 
     if not target_path or not target_path.exists():
         return None
