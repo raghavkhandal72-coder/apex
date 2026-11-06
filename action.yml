@@ -1,0 +1,67 @@
+name: "Apex PR Review"
+description: "Zero-dependency, diff-aware review: comments only on lines added by the PR."
+author: "apex"
+branding:
+  icon: "git-pull-request"
+  color: "blue"
+inputs:
+  findings-file:
+    description: "Path to findings in rdjson format (reviewdog Diagnostic Format)."
+    required: false
+    default: ""
+  command:
+    description: "Shell command that prints rdjson to stdout (used if findings-file is empty)."
+    required: false
+    default: ""
+  max-comments:
+    description: "Maximum inline comments per review."
+    required: false
+    default: "30"
+  fail-on-error:
+    description: "Fail the job if any ERROR finding is on an added line."
+    required: false
+    default: "false"
+  dry-run:
+    description: "Print the review instead of posting it."
+    required: false
+    default: "false"
+  github-token:
+    description: "Token used to post the review."
+    required: false
+    default: ${{ github.token }}
+runs:
+  using: "composite"
+  steps:
+    - name: Build PR diff
+      shell: bash
+      env:
+        BASE_REF: ${{ github.base_ref }}
+      run: |
+        git fetch --no-tags --depth=1 origin "$BASE_REF" || true
+        git diff "origin/$BASE_REF...HEAD" > "$RUNNER_TEMP/pr.diff" \
+          || git diff "origin/$BASE_REF" HEAD > "$RUNNER_TEMP/pr.diff"
+    - name: Produce findings
+      shell: bash
+      env:
+        FINDINGS_FILE: ${{ inputs.findings-file }}
+        FINDINGS_CMD: ${{ inputs.command }}
+      run: |
+        if [ -n "$FINDINGS_FILE" ]; then
+          cp "$FINDINGS_FILE" "$RUNNER_TEMP/findings.rdjson"
+        elif [ -n "$FINDINGS_CMD" ]; then
+          bash -c "$FINDINGS_CMD" > "$RUNNER_TEMP/findings.rdjson"
+        else
+          echo '{"diagnostics": []}' > "$RUNNER_TEMP/findings.rdjson"
+        fi
+    - name: Post review
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        MAX_COMMENTS: ${{ inputs.max-comments }}
+        FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
+        DRY_RUN: ${{ inputs.dry-run }}
+      run: |
+        ARGS=(--diff "$RUNNER_TEMP/pr.diff" --findings "$RUNNER_TEMP/findings.rdjson" --max-comments "$MAX_COMMENTS")
+        [ "$FAIL_ON_ERROR" = "true" ] && ARGS+=(--fail-on-error)
+        [ "$DRY_RUN" = "true" ] && ARGS+=(--dry-run)
+        python3 "${{ github.action_path }}/tools/pr_review.py" "${ARGS[@]}"

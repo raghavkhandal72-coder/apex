@@ -6,7 +6,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-0%20external%20pip-brightgreen.svg)]()
-[![Tests Passing](https://img.shields.io/badge/tests-246%20passing%20(100%25)-success.svg)]()
+[![Tests Passing](https://img.shields.io/badge/tests-258%20passing%20(100%25)-success.svg)]()
 [![Single Executable](https://img.shields.io/badge/distribution-388KB%20standalone%20.pyz-orange.svg)]()
 
 ---
@@ -223,11 +223,12 @@ Apex maintains an absolute regression-free policy. Every commit is tested across
 python -m unittest discover -s tests
 ```
 ```text
-Ran 246 tests in 36.421s
+Ran 258 tests in 39.792s
 OK
 ```
 
 * **189 Platform Baseline Tests:** MCTS search, CEGIS invariant synthesizer with differential oracle, Ochiai SBFL, Hoare logic, AST mutation fuzzing, DLP sanitization, RBAC, and Git plumbing.
+* **12 GitHub PR Review Tests (`tests/test_pr_review.py`):** Diff-aware added line filtering, rdjson parser, reviewdog diagnostic bridge, PR inline comment posting, fallback resilience.
 * **20 Tool Integration Tests (`tests/test_e2e_tool_integrations.py`):** REA bytecode/binary inspection, Reviewdog unified diff filtering, Netdata wire protocol.
 * **15 Transformer Model Tests (`tests/test_e2e_transformer_model.py`):** ByteTokenizer (0% OOV), RoPE, RMSNorm, GQA, causal masking, KV cache step decoding.
 * **7 Training Pipeline Tests (`tests/test_e2e_transformer_pipeline.py`):** Multi-domain text chunking, CrossEntropy loss, AdamW optimizer, warmup-cosine schedule.
