@@ -182,7 +182,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     # Command 22: Spectrum-Based Fault Localization (Ochiai)
     local_parser = subparsers.add_parser("localize", help="Spectrum-based fault localization using Ochiai algorithm")
     local_parser.add_argument("file", type=Path, help="Target Python source file to trace")
-    local_parser.add_argument("--tests", required=True, help="Test code to run against the source file")
+    local_parser.add_argument("--tests", default=None, help="Test code to run against the source file")
+    local_parser.add_argument("--tests-file", type=Path, default=None, help="Path to tests file")
 
     # Command 23: Standalone Executable Compiler (zipapp)
     pyz_parser = subparsers.add_parser("build-pyz", help="Compile standalone zero-dependency apex.pyz executable")
@@ -245,7 +246,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     # Command 35: Unified Spectrum-Based Fault Localization Triad
     sbfl_parser = subparsers.add_parser("sbfl", help="Unified SBFL Triad: localize faults via Ochiai, Tarantula, & DStar (D*) formulas")
     sbfl_parser.add_argument("file", type=Path, help="Target Python source file")
-    sbfl_parser.add_argument("--tests", required=True, help="Test harness code or file path")
+    sbfl_parser.add_argument("--tests", default=None, help="Test harness code or file path")
+    sbfl_parser.add_argument("--tests-file", type=Path, default=None, help="Path to tests file")
     sbfl_parser.add_argument("--star", type=float, default=2.0, help="DStar tuning exponent (default: 2.0)")
 
     # Command 36: Formal Hoare Logic & Invariant Verifier
@@ -263,7 +265,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     # Command 39: Counterexample-Guided Inductive Synthesis (CEGIS)
     cegis_parser = subparsers.add_parser("cegis", help="Counterexample-Guided Inductive Synthesizer (CEGIS)")
     cegis_parser.add_argument("file", type=Path, help="Target Python source file to repair")
-    cegis_parser.add_argument("--tests", required=True, help="Test harness code")
+    cegis_parser.add_argument("--tests", default=None, help="Test harness code")
+    cegis_parser.add_argument("--tests-file", type=Path, default=None, help="Path to tests file")
 
     # Command 40: Solomonoff Algorithmic Prior & Kolmogorov Upper Bound
     sol_parser = subparsers.add_parser("solomonoff", help="Solomonoff Algorithmic Prior, Kolmogorov Bound, & Shannon AST Entropy")
@@ -811,10 +814,21 @@ def main(argv: list[str] | None = None) -> int:
             sys.stderr.write(f"Error: Target file not found: {args.file}\n")
             return 2
         code = args.file.read_text(encoding="utf-8")
-        tests = args.tests
-        test_path = Path(args.tests)
-        if test_path.exists():
-            tests = test_path.read_text(encoding="utf-8")
+        tests = ""
+        if getattr(args, "tests_file", None) and args.tests_file:
+            if not args.tests_file.exists():
+                sys.stderr.write(f"Error: Tests file not found: {args.tests_file}\n")
+                return 2
+            tests = args.tests_file.read_text(encoding="utf-8")
+        elif getattr(args, "tests", None):
+            test_path = Path(args.tests)
+            if test_path.exists():
+                tests = test_path.read_text(encoding="utf-8")
+            else:
+                tests = args.tests
+        else:
+            sys.stderr.write("Error: Either --tests or --tests-file must be provided.\n")
+            return 2
         print(f"\n[APEX-COUNCIL] Running Ochiai Fault Localization on: {args.file}...")
         localizer = OchiaiFaultLocalizer()
         localizer.trace_execution(code, tests, args.file.name)
@@ -1128,10 +1142,21 @@ def main(argv: list[str] | None = None) -> int:
             sys.stderr.write(f"Error: File not found: {args.file}\n")
             return 2
         src = args.file.read_text(encoding="utf-8")
-        test_text = args.tests
-        test_path = Path(args.tests)
-        if test_path.exists():
-            test_text = test_path.read_text(encoding="utf-8")
+        test_text = ""
+        if getattr(args, "tests_file", None) and args.tests_file:
+            if not args.tests_file.exists():
+                sys.stderr.write(f"Error: Tests file not found: {args.tests_file}\n")
+                return 2
+            test_text = args.tests_file.read_text(encoding="utf-8")
+        elif getattr(args, "tests", None):
+            test_path = Path(args.tests)
+            if test_path.exists():
+                test_text = test_path.read_text(encoding="utf-8")
+            else:
+                test_text = args.tests
+        else:
+            sys.stderr.write("Error: Either --tests or --tests-file must be provided.\n")
+            return 2
         engine = SBFLTriadEngine(star_exponent=getattr(args, "star", 2.0))
         rep = engine.localize(src, test_text, target_filename=str(args.file))
         print("==========================================================")
@@ -1228,33 +1253,113 @@ def main(argv: list[str] | None = None) -> int:
     # Command 39: Counterexample-Guided Inductive Synthesis (CEGIS)
     if args.command == "cegis":
         from .synthesis.cegis_engine import CEGISEngine
+        from .ui.repair_report import render_repair
+        from .autopsy.sbfl_triad import SBFLTriadEngine
+        from .security.sandbox import HermeticExecutionSandbox
+
         if not args.file.exists():
             sys.stderr.write(f"Error: File not found: {args.file}\n")
             return 2
         src = args.file.read_text(encoding="utf-8")
-        tests = args.tests
-        test_path = Path(args.tests)
-        if test_path.exists():
-            tests = test_path.read_text(encoding="utf-8")
+        tests = ""
+        if getattr(args, "tests_file", None) and args.tests_file:
+            if not args.tests_file.exists():
+                sys.stderr.write(f"Error: Tests file not found: {args.tests_file}\n")
+                return 2
+            tests = args.tests_file.read_text(encoding="utf-8")
+        elif getattr(args, "tests", None):
+            test_path = Path(args.tests)
+            if test_path.exists():
+                tests = test_path.read_text(encoding="utf-8")
+            else:
+                tests = args.tests
+        else:
+            sys.stderr.write("Error: Either --tests or --tests-file must be provided.\n")
+            return 2
+
+        # 1. Run SBFL triad engine for suspicious line hints
+        suspects: list[tuple[int, float]] = []
+        try:
+            sbfl_engine = SBFLTriadEngine()
+            sbfl_rep = sbfl_engine.localize(src, tests, target_filename=str(args.file))
+            def _rank_key(item):
+                code = item.source_line.strip()
+                has_ctrl = any(tok in code for tok in ["while", "if", "for", "<", ">", "==", "!=", "<=", ">="])
+                return (round(item.ochiai, 4), 1 if has_ctrl else 0, -item.lineno)
+
+            filtered = [
+                item for item in sbfl_rep.ranked_lines
+                if item.ochiai > 0 and not item.source_line.strip().startswith("def ")
+            ]
+            filtered.sort(key=_rank_key, reverse=True)
+            for item in filtered:
+                suspects.append((item.lineno, item.ochiai))
+        except Exception:
+            pass
+
+        # 2. Run CEGIS engine
         engine = CEGISEngine()
         rep = engine.synthesize_and_verify(src, tests)
-        print("==========================================================")
-        print("   ⚙️ COUNTEREXAMPLE-GUIDED INDUCTIVE SYNTHESIZER (CEGIS)   ")
-        print("==========================================================")
-        print(f"  Target File:     {args.file}")
-        print(f"  Certified:       {'✓ BOUNDED REPAIR CERTIFIED' if rep.verification_certified else '✗ INCOMPLETE'}")
-        print(f"  Iterations:      {rep.iterations_run}")
-        print(f"  Candidates:      {rep.total_candidates_explored}")
-        print(f"  Duration:        {rep.duration_ms:.1f}ms")
-        print(f"  Counterexamples: {len(rep.counterexamples_found)}")
-        if rep.round_logs:
-            print("\n  Round-by-Round Counterexample Loop:")
-            for r_log in rep.round_logs:
-                print(f"    • {r_log}")
+
+        # 3. Parse visible test count
+        test_units = [l.strip() for l in tests.splitlines() if l.strip().startswith("assert") or l.strip().startswith("def test_")]
+        if not test_units:
+            test_units = [l.strip() for l in tests.splitlines() if l.strip() and not l.strip().startswith("#")]
+        total_visible = max(1, len(test_units))
+        visible = (total_visible, total_visible) if rep.success else (0, total_visible)
+
+        # 4. Run differential oracle / hidden probes
+        hidden = None
+        if rep.success:
+            try:
+                scope: dict = {}
+                exec(compile(rep.synthesized_code, "<candidate>", "exec"), scope)
+                cand_fn = scope.get("binary_search") or scope.get("find_in_sorted")
+                if cand_fn and callable(cand_fn):
+                    from .synthesis.differential_oracle import (
+                        find_counterexamples,
+                        reference_binary_search,
+                        sorted_unique_search_gen,
+                    )
+                    ces = find_counterexamples(
+                        cand_fn,
+                        reference_binary_search,
+                        sorted_unique_search_gen,
+                        n=500,
+                        seed=42,
+                    )
+                    passed_hidden = 500 - len(ces)
+                    hidden = (passed_hidden, 500)
+                else:
+                    hidden_probes = engine.generate_hidden_invariant_probes(src)
+                    if hidden_probes:
+                        hp_passed = 0
+                        for probe in hidden_probes:
+                            th = f"{rep.synthesized_code}\n\n{probe}"
+                            ok, _, _ = HermeticExecutionSandbox.execute_isolated(th, timeout_sec=2.0)
+                            if ok:
+                                hp_passed += 1
+                        hidden = (hp_passed, len(hidden_probes))
+            except Exception:
+                pass
+
+        # 5. Render repair terminal report
+        report_output = render_repair(
+            buggy_src=src,
+            fixed_src=rep.synthesized_code if rep.success else src,
+            filename=args.file.name,
+            suspects=suspects,
+            visible=visible,
+            hidden=hidden,
+            seconds=rep.duration_ms / 1000.0,
+            candidates=rep.total_candidates_explored,
+        )
+        print(report_output)
+
         if rep.success:
             print("\n--- SYNTHESIZED REPAIRED CODE ---")
             print(rep.synthesized_code)
-        print("==========================================================\n")
+            print("==========================================================")
         return 0 if rep.success else 1
 
     # Command 40: Solomonoff Algorithmic Prior
