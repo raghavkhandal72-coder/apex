@@ -551,12 +551,13 @@ sys.addaudithook(_pep578_guard)
             tmp_path = tmp.name
 
         try:
+            safe_env = os.environ.copy()
             proc = subprocess.run(
                 [sys.executable, "-I", tmp_path],
                 capture_output=True,
                 text=True,
                 timeout=5.0,
-                env={"PATH": os.environ.get("PATH", "")},
+                env=safe_env,
             )
             return proc.returncode == 0
         except subprocess.TimeoutExpired:
