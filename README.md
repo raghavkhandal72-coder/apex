@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/dependencies-0-brightgreen.svg" alt="Dependencies">
   <img src="https://img.shields.io/badge/python-3.10%2B-blue.svg" alt="Python 3.10+">
-  <img src="https://img.shields.io/badge/size-~380%20KB-informational.svg" alt="Size">
+  <img src="https://img.shields.io/badge/size-~430%20KB-informational.svg" alt="Size">
   <img src="https://img.shields.io/badge/license-MIT-lightgrey.svg" alt="License">
 </p>
 
@@ -39,7 +39,7 @@ Bounded search over a small mutation grammar. Passing tests is not a proof.
 ## 💡 Why It Feels Different
 
 1. **Zero Dependencies (`pip = 0`):**
-   The entire engine—CEGIS synthesizer, Ochiai/DStar/Tarantula SBFL, AST mutators, HTTP streaming clients, differential oracle, and reviewdog diff-filtering—runs on the **Python standard library alone**. No PyTorch, no pip packages, no C extensions. Ships as a single ~380 KB executable zipapp (`apex.pyz`).
+   The entire engine—CEGIS synthesizer, Ochiai/DStar/Tarantula SBFL, AST mutators, HTTP streaming clients, differential oracle, and reviewdog diff-filtering—runs on the **Python standard library alone**. No PyTorch, no pip packages, no C extensions. Ships as a single ~430 KB executable zipapp (`apex.pyz`).
 2. **One-Token Minimal Surgery:**
    Apex does not hallucinate new architectures or rewrite 200 lines of your file when you have an off-by-one bug. It explores bounded AST mutations (operator swaps, comparison adjustments, boundary constants) to find the minimal change that turns failing tests green.
 3. **Hidden Differential Probes:**

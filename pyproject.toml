@@ -10,7 +10,17 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 dependencies = []          # keep empty: the zero-dependency promise is enforced in CI
-keywords = ["program-repair", "fault-localization", "code-review", "zero-dependencies"]
+keywords = [
+    "program-repair",
+    "fault-localization",
+    "code-review",
+    "zero-dependencies",
+    "mutation-testing",
+    "language-server",
+    "flamegraph",
+    "slicing",
+    "null-safety",
+]
 
 [project.urls]
 Homepage = "https://github.com/YOUR_USER/apex"

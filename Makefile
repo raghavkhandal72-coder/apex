@@ -2,7 +2,7 @@
 
 help:
 	@echo "Apex Developer Commands (Standard Library Only):"
-	@echo "  make test           Run full 272-test unit suite"
+	@echo "  make test           Run full 307-test unit suite"
 	@echo "  make check          Verify zero external dependencies (pip = 0)"
 	@echo "  make build          Compile standalone zipapp (dist/apex.pyz)"
 	@echo "  make demo           Run 20-second binary search repair demo"
