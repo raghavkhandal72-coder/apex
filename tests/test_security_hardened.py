@@ -36,11 +36,11 @@ assert "ANTHROPIC_API_KEY" not in os.environ, "Leak: Anthropic key exposed!"
 
     def test_filesystem_jail_blocks_path_traversal(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
-            base = Path(tmp_dir)
+            base = Path(tmp_dir).resolve()
 
             # Normal path passes
             safe_p = FilesystemJail.resolve_safe_path(base, "sub/file.txt")
-            self.assertTrue(str(safe_p).startswith(str(base)))
+            self.assertTrue(safe_p.is_relative_to(base))
 
             # Traversal attempt ../../ fails with SecurityJailBreach
             with self.assertRaises(SecurityJailBreach):
