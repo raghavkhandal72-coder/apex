@@ -60,12 +60,28 @@ class ApexInteractiveConsole:
         ))
 
         curr_branch = self.wt_engine.get_current_branch()
-        print(f"\n{t.DIM}Type /help for command list or /repair to fix bugs. Type 'exit' to quit.{t.RESET}\n")
+        print(f"\n{t.DIM}Type /help for command list or /demo for live walkthrough. Type 'exit' to quit.{t.RESET}\n")
 
         # Non-interactive check (CI / script pipes)
         if not sys.stdin.isatty():
             print(f"{t.DIM}Non-interactive terminal detected. Run 'python main.py --help' for CLI flags.{t.RESET}\n")
             return
+
+        # Setup tab completion where supported (Unix/macOS/pyreadline)
+        try:
+            import readline
+            _commands = [
+                "/demo", "/benchmark", "/repair", "/test", "/diff", "/review",
+                "/instruments", "/swift-guard", "/slice", "/omo", "/wt",
+                "/mascot", "/mlflow", "/eval", "/help", "/exit", "exit", "quit"
+            ]
+            def _completer(text: str, state: int):
+                matches = [cmd for cmd in _commands if cmd.startswith(text)]
+                return matches[state] if state < len(matches) else None
+            readline.set_completer(_completer)
+            readline.parse_and_bind("tab: complete")
+        except Exception:
+            pass
 
         # Interactive loop
         while True:
@@ -77,6 +93,24 @@ class ApexInteractiveConsole:
                 if prompt_line.lower() in {"/exit", "/quit", "exit", "quit", ":q"}:
                     print(f"{t.GRAY}Exiting Apex Console. Session closed.{t.RESET}")
                     break
+
+                elif prompt_line in {"/demo", "demo"}:
+                    from .demo_engine import run_live_demo
+                    run_live_demo()
+
+                elif prompt_line in {"/benchmark", "/bench", "benchmark", "bench"}:
+                    from .benchmark_engine import run_benchmark_suite
+                    run_benchmark_suite()
+
+                elif prompt_line in {"/diff", "diff"}:
+                    from .review_engine import render_colorized_diff
+                    print("\n" + render_colorized_diff(self.workspace_dir) + "\n")
+
+                elif prompt_line.startswith("/review") or prompt_line.startswith("review"):
+                    from .review_engine import run_code_review
+                    parts = prompt_line.split()
+                    target = parts[1] if len(parts) > 1 else self.workspace_dir
+                    run_code_review(target)
 
                 elif prompt_line.startswith("/repair") or prompt_line.startswith("/cegis") or prompt_line == "repair":
                     self._handle_repair_command(prompt_line)
@@ -151,9 +185,9 @@ class ApexInteractiveConsole:
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(rep.synthesized_code)
             print(f"  {t.GREEN}✓ [SOUND REPAIR] Successfully synthesized and verified '{file_path}'!{t.RESET}")
-            print(f"    Evaluated {rep.total_candidates} candidates in {rep.search_duration_sec:.2f}s (500 differential probes pass).\n")
+            print(f"    Evaluated {rep.total_candidates_explored} candidates in {rep.duration_ms / 1000.0:.2f}s (500 differential probes pass).\n")
         else:
-            print(f"  {t.RED}✗ Repair exhausted: {rep.error_message}{t.RESET}\n")
+            print(f"  {t.RED}✗ Repair exhausted: {rep.round_logs[-1] if rep.round_logs else 'No candidates verified'}{t.RESET}\n")
 
     def _handle_instruments_command(self, cmd: str) -> None:
         t = MascotTheme
@@ -287,8 +321,12 @@ class ApexInteractiveConsole:
         t = MascotTheme
         print(f"""
 {t.BOLD}Apex Autonomous AI Agent Command Palette:{t.RESET}
+  /demo                                5-stage live inductive program repair walkthrough
+  /benchmark                           Execute high-precision runtime micro-benchmarks
   /repair [file] [--tests tests.txt]   CEGIS automated 1-token & boundary bug repair
   /test                                Run unified 315-test subsystem verification
+  /diff                                Colorized git workspace diff inspector
+  /review [path]                       Autonomous code defect & safety auditor
   /instruments [file]                  Line-by-line heap allocations & memory leaks
   /swift-guard [file]                  Rust/Swift pattern exhaustiveness & let-safety
   /slice <file:line>                   Mark Weiser (1981) dynamic AST program slicing

@@ -2,7 +2,7 @@
 Apex Master Test-All Runner (One-Click Verification).
 Connects every core subsystem into a single unified verification pipeline:
 CEGIS, SBFL, Pipe Repair, Slicer, Null-Guard, Zero-Div, Instruments, Swift-Guard,
-Flamegraph, Fingerprint, Secret-Mask, PR-Summary, Unit Tests, and Studio Dashboard.
+Flamegraph, Fingerprint, Secret-Mask, PR-Summary, Live Demo, Runtime Benchmarks, Unit Tests, and Studio Dashboard.
 Pure Python standard library (pip = 0).
 """
 
@@ -152,8 +152,18 @@ def run_all_systems_test(verbose: bool = True, include_unit_tests: bool = True) 
     except Exception as e:
         results.append(("10. Automated GitHub PR Summary", False, str(e)))
 
-    # 11. Full Unit Test Suite Execution
-    total_test_count = 315
+    # 11. Live Demo & Runtime Benchmark Subsystems
+    t0 = time.time()
+    try:
+        from apex_council.ui.benchmark_engine import _bench_ast_mutation
+        b_res = _bench_ast_mutation(iterations=25)
+        ok = b_res["ops_sec"] > 0
+        results.append(("11. Runtime Benchmark & Live Demo Engine", ok, f"{b_res['ops_sec']:,.0f} AST ops/sec in {time.time()-t0:.3f}s"))
+    except Exception as e:
+        results.append(("11. Runtime Benchmark & Live Demo Engine", False, str(e)))
+
+    # 12. Full Unit Test Suite Execution
+    total_test_count = 320
     if include_unit_tests:
         t0 = time.time()
         try:
@@ -174,9 +184,9 @@ def run_all_systems_test(verbose: bool = True, include_unit_tests: bool = True) 
                     total_test_count = int(m.group(1))
                 except ValueError:
                     pass
-            results.append(("11. Complete Test Suite Discovery", ok, f"Ran {num_tests} unit tests in {time.time()-t0:.2f}s"))
+            results.append(("12. Complete Test Suite Discovery", ok, f"Ran {num_tests} unit tests in {time.time()-t0:.2f}s"))
         except Exception as e:
-            results.append(("11. Complete Test Suite Discovery", False, str(e)))
+            results.append(("12. Complete Test Suite Discovery", False, str(e)))
 
     elapsed_all = time.time() - start_total
 

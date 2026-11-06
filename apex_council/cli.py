@@ -57,7 +57,7 @@ KNOWN_COMMANDS = {
     "rea", "reviewdog", "netdata", "lint", "fix", "hook", "challenge", "null-guard",
     "watch", "slice", "modern", "lsp", "loop",
     "patch-export", "crash-fingerprint", "flamegraph", "pr-summary", "secret-mask", "completion", "zero-div",
-    "instruments", "swift-guard", "studio", "test-all",
+    "instruments", "swift-guard", "studio", "test-all", "demo-live", "bench-live", "review",
     "-h", "--help"
 }
 
@@ -150,6 +150,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     bench_parser = subparsers.add_parser("benchmark", help="Run 5-Challenge SWE Tournament across Gemini, Claude, and OpenAI")
     bench_parser.add_argument("--format", choices=["table", "json"], default="table")
     bench_parser.add_argument("--offline", action="store_true")
+    bench_parser.add_argument("--runtime", action="store_true", help="Execute high-precision runtime micro-benchmarks")
 
     # Command 13: Enterprise SOC2 Cryptographic Audit Verifier
     audit_ver_parser = subparsers.add_parser("audit-verify", help="Verify cryptographic SHA-256 integrity of SOC2 / ISO 27001 audit logs")
@@ -188,6 +189,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     demo_parser = subparsers.add_parser("demo", help="Zero-API-key offline flight recorder replay")
     demo_parser.add_argument("--replay", action="store_true", help="Stream realistic autonomous session")
     demo_parser.add_argument("--fast", action="store_true", help="Skip animation delay for speed")
+    demo_parser.add_argument("--live", "--interactive", dest="live", action="store_true", help="5-stage live inductive program repair walkthrough")
 
     # Command 21: Cryptographic Hash-Chained Audit Ledger Verifier
     ledger_parser = subparsers.add_parser("verify-ledger", help="Verify HMAC-SHA512 cryptographic audit chain")
@@ -555,6 +557,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     # Command 86: Master Verification Runner (apex test-all)
     subparsers.add_parser("test-all", help="Execute unified master verification scorecard across all Apex systems")
 
+    # Command 87: 5-Stage Live Inductive Program Repair Walkthrough (apex demo-live)
+    subparsers.add_parser("demo-live", help="5-stage live inductive program repair walkthrough")
+
+    # Command 88: High-Precision Runtime Micro-Benchmarks (apex bench-live)
+    subparsers.add_parser("bench-live", help="Execute high-precision runtime micro-benchmarks")
+
+    # Command 89: Autonomous Code Review & Defect Auditor (apex review)
+    review_p = subparsers.add_parser("review", help="Autonomous code review and safety auditor")
+    review_p.add_argument("target", nargs="?", default=".", help="Target file or directory to audit")
+
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
     parser.add_argument("--format", choices=["table", "markdown", "json"], default="table")
@@ -708,11 +720,26 @@ def main(argv: list[str] | None = None) -> int:
             print("Specify --query <text> or --list to inspect memory.")
         return 0
 
-    # Command 20: Zero-API-Key Offline Flight Recorder Replay
+    # Command 20: Zero-API-Key Offline Flight Recorder Replay / Live Demo
     if args.command == "demo":
+        if getattr(args, "live", False):
+            from .ui.demo_engine import run_live_demo
+            return run_live_demo(animated=not args.fast)
         delay = 0.0 if args.fast else 0.35
         FlightRecorderReplay.run_replay(delay_sec=delay)
         return 0
+
+    if args.command == "demo-live":
+        from .ui.demo_engine import run_live_demo
+        return run_live_demo()
+
+    if args.command == "bench-live":
+        from .ui.benchmark_engine import run_benchmark_suite
+        return run_benchmark_suite()
+
+    if args.command == "review":
+        from .ui.review_engine import run_code_review
+        return run_code_review(args.target)
 
     # Command 21: Cryptographic Hash-Chained Audit Ledger Verifier
     if args.command == "verify-ledger":
@@ -836,6 +863,9 @@ def main(argv: list[str] | None = None) -> int:
 
     # 6. Benchmark Tournament
     if args.command == "benchmark":
+        if getattr(args, "runtime", False):
+            from .ui.benchmark_engine import run_benchmark_suite
+            return run_benchmark_suite()
         print("\n[APEX-COUNCIL] Starting SWE Benchmark Tournament across 5 production challenges...\n")
         bench_data = run_benchmark_tournament(force_offline=args.offline)
         if args.format == "json":

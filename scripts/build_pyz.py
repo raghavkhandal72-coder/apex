@@ -37,13 +37,13 @@ def build_standalone_pyz(output_path: str = "dist/apex.pyz") -> Path:
             shutil.copytree(
                 repo_root / "benchmarks",
                 staging_path / "benchmarks",
-                ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo"),
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", "*.md", "*.json"),
             )
         if (repo_root / "scripts").exists():
             shutil.copytree(
                 repo_root / "scripts",
                 staging_path / "scripts",
-                ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo"),
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", "*.ps1", "*.sh"),
             )
 
         # Create __main__.py inside staging root
