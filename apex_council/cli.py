@@ -5,6 +5,17 @@ import os
 import sys
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 from .engine import CouncilEngine
 from .engineer.autonomous_engineer import AutonomousEngineer
 from .enterprise.audit import CryptographicAuditLogger
@@ -46,7 +57,7 @@ KNOWN_COMMANDS = {
     "rea", "reviewdog", "netdata", "lint", "fix", "hook", "challenge", "null-guard",
     "watch", "slice", "modern", "lsp", "loop",
     "patch-export", "crash-fingerprint", "flamegraph", "pr-summary", "secret-mask", "completion", "zero-div",
-    "instruments", "swift-guard", "studio",
+    "instruments", "swift-guard", "studio", "test-all",
     "-h", "--help"
 }
 
@@ -540,6 +551,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     # Command 85: Apple Pro Studio Console (apex studio)
     subparsers.add_parser("studio", help="Launch Apple Pro terminal telemetry & health dashboard")
+
+    # Command 86: Master Verification Runner (apex test-all)
+    subparsers.add_parser("test-all", help="Execute unified master verification scorecard across all Apex systems")
 
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
@@ -2828,6 +2842,11 @@ def main(argv: list[str] | None = None) -> int:
         from .ui.studio import render_studio_dashboard
         print(render_studio_dashboard())
         return 0
+
+    # Command 86: Master Verification Runner (apex test-all)
+    if args.command == "test-all":
+        from .test_all_runner import run_all_systems_test
+        return run_all_systems_test()
 
     # 26. Handle battle / default prompt
     prompt = getattr(args, "prompt", None) or args.direct_prompt or "Build an LRU cache with TTL support"

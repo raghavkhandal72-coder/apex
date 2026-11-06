@@ -5,6 +5,7 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/) and [
 ## [Unreleased]
 
 ### Added
+- **Unified Master Verification Pipeline (`apex test-all`) & 1-Click PowerShell Runner (`test_all.ps1`)**: Single-command executive scorecard connecting all 11 core subsystems (CEGIS, AST Slicer, Kotlin Null-Guard, Zero-Div Guard, Apple Instruments Memory Profiler, Swift-Guard Exhaustiveness, Terminal Flamegraph, Crash Fingerprinting, Secret Masking, PR Summary, and 315-test Unit Suite) with real-time Apple Pro Studio dashboard telemetry.
 - **Apple Instruments Memory Profiler (`apex instruments`)**: Line-by-line heap allocation waterfall, peak footprint analysis, and circular reference leak detection via stdlib `tracemalloc` and `gc`.
 - **Apple Swift-Guard Safety Prover (`apex swift-guard`)**: Pattern match exhaustiveness verification, immutability & let-safety checking, and nil-coalescing analysis.
 - **Apple Pro Studio Telemetry Console (`apex studio`)**: Apple Pro terminal dashboard with system architecture telemetry, test latency sparklines, and unified health metrics.

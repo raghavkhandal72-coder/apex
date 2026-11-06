@@ -128,6 +128,11 @@ python apex.pyz swift-guard src/
 
 # 20. Apple Pro Studio terminal telemetry console
 python apex.pyz studio
+
+# 21. Unified master verification pipeline (11 subsystems + 315 tests)
+python apex.pyz test-all
+# On Windows PowerShell (1-click runner):
+.\test_all.ps1
 ```
 
 ---

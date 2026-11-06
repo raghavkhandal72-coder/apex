@@ -39,6 +39,8 @@ def check_stdlib_purity(root: Path) -> bool:
         cwd=root,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     )
     ok = res.returncode == 0
     _log(ok, "Standard library purity verified (pip = 0 across apex_council & tools)")
@@ -51,10 +53,13 @@ def check_tests(root: Path) -> bool:
         cwd=root,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     )
     ok = res.returncode == 0
     num_tests = "all"
-    m = re.search(r"Ran (\d+) tests", res.stderr + res.stdout)
+    out_txt = (res.stderr or "") + (res.stdout or "")
+    m = re.search(r"Ran (\d+) tests", out_txt)
     if m:
         num_tests = m.group(1)
     _log(ok, f"Unit test suite: {num_tests} tests passing (100% success)")
@@ -84,8 +89,11 @@ def check_demo(root: Path) -> bool:
         cwd=root,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     )
-    ok = res.returncode == 0 and "<=" in res.stdout and "500/500" in res.stdout
+    out_str = res.stdout or ""
+    ok = res.returncode == 0 and "<=" in out_str and "500/500" in out_str
     _log(ok, "20-second repair demo (binary_search.py) synthesizes '<=' and passes 500/500 hidden probes")
     return ok
 

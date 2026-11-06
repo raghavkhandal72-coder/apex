@@ -13,6 +13,18 @@ import time
 from typing import Dict, List, Optional
 
 
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+
 def generate_sparkline(values: List[float]) -> str:
     """Generate Unicode sparkline from numeric series."""
     if not values:
@@ -49,7 +61,7 @@ def render_studio_dashboard(
 
     lines = [
         "╭─────────────────────────────────────────────────────────────╮",
-        "│   APEX PRO STUDIO  —  ENGINEERING & REPAIR CONSOLE         │",
+        "│  APEX PRO STUDIO  —  ENGINEERING & REPAIR CONSOLE            │",
         "├─────────────────────────────────────────────────────────────┤",
         f"│  System Architecture : {os_name} ({arch})               │",
         f"│  Hardware Compute    : {cpu_count} CPU Cores | Python {py_ver:<18} │",
