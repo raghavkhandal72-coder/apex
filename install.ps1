@@ -1,9 +1,9 @@
 # Apex Installer for Windows PowerShell
-# Usage: irm https://raw.githubusercontent.com/YOUR_USER/apex/main/install.ps1 | iex
+# Usage: irm https://raw.githubusercontent.com/raghavkhandal72-coder/apex/main/install.ps1 | iex
 
 $ErrorActionPreference = "Stop"
 
-$Repo = "YOUR_USER/apex"
+$Repo = "raghavkhandal72-coder/apex"
 $InstallDir = Join-Path $env:LOCALAPPDATA "Programs\apex"
 $PyzTarget = Join-Path $InstallDir "apex.pyz"
 $CmdTarget = Join-Path $InstallDir "apex.cmd"

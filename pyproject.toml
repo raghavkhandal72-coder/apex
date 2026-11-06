@@ -23,7 +23,7 @@ keywords = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/YOUR_USER/apex"
+Homepage = "https://github.com/raghavkhandal72-coder/apex"
 
 [project.scripts]
 # Point this at your real CLI entry point.

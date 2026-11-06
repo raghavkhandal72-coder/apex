@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Apex Installer: Standalone zero-dependency Python program repair
-# Usage: curl -fsSL https://raw.githubusercontent.com/YOUR_USER/apex/main/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/raghavkhandal72-coder/apex/main/install.sh | bash
 
 set -euo pipefail
 
-REPO="YOUR_USER/apex"
+REPO="raghavkhandal72-coder/apex"
 INSTALL_DIR="${APEX_INSTALL_DIR:-$HOME/.local/bin}"
 BIN_NAME="apex"
 TARGET="$INSTALL_DIR/$BIN_NAME"

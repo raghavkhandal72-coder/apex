@@ -55,17 +55,17 @@ Install with a single command (no pip, standard library only):
 
 ```bash
 # Linux / macOS
-curl -fsSL https://raw.githubusercontent.com/YOUR_USER/apex/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/raghavkhandal72-coder/apex/main/install.sh | bash
 
 # Windows (PowerShell)
-irm https://raw.githubusercontent.com/YOUR_USER/apex/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/raghavkhandal72-coder/apex/main/install.ps1 | iex
 ```
 
 Or run directly from source with Python 3.10+:
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USER/apex.git
+git clone https://github.com/raghavkhandal72-coder/apex.git
 cd apex
 
 # 1. Try the 20-second repair demo
@@ -168,7 +168,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: YOUR_USER/apex@v0.1.0      # pin a released tag, never a moving branch
+      - uses: raghavkhandal72-coder/apex@v0.1.0      # pin a released tag, never a moving branch
         with:
           # Built-in zero-dependency linter runs right away with no setup:
           command: python apex.pyz lint . --format rdjson
@@ -186,7 +186,7 @@ python apex.pyz lint src/ --fail-on-error
 Or add to `.pre-commit-config.yaml`:
 ```yaml
 repos:
-  - repo: https://github.com/YOUR_USER/apex
+  - repo: https://github.com/raghavkhandal72-coder/apex
     rev: v0.1.0
     hooks:
       - id: apex-lint
