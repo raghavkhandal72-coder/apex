@@ -51,12 +51,22 @@ Bounded search over a small mutation grammar. Passing tests is not a proof.
 
 ## 🚀 Quickstart
 
-Run directly with Python 3.10+:
+Install with a single command (no pip, standard library only):
+
+```bash
+# Linux / macOS
+curl -fsSL https://raw.githubusercontent.com/YOUR_USER/apex/main/install.sh | bash
+
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/YOUR_USER/apex/main/install.ps1 | iex
+```
+
+Or run directly from source with Python 3.10+:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/apex-council.git
-cd apex-council
+git clone https://github.com/YOUR_USER/apex.git
+cd apex
 
 # 1. Try the 20-second repair demo
 python apex.pyz cegis binary_search.py --tests-file tests.txt
@@ -110,6 +120,23 @@ jobs:
           # Built-in zero-dependency linter runs right away with no setup:
           command: python apex.pyz lint . --format rdjson
           max-comments: "20"
+```
+
+### 4. Zero-Dependency Linter & Pre-Commit Hook (`apex lint`)
+Apex includes a built-in AST linter checking 6 high-signal rules (`APX001`-`APX006`: bare except, mutable default arguments, hardcoded credentials, eval/exec, shell injection, tuple assert).
+
+Run locally:
+```bash
+python apex.pyz lint src/ --fail-on-error
+```
+
+Or add to `.pre-commit-config.yaml`:
+```yaml
+repos:
+  - repo: https://github.com/YOUR_USER/apex
+    rev: v0.1.0
+    hooks:
+      - id: apex-lint
 ```
 
 ---

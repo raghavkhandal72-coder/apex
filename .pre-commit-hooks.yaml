@@ -1,0 +1,8 @@
+- id: apex-lint
+  name: apex-lint
+  description: "Zero-dependency AST linter for Python (bare except, mutable defaults, hardcoded credentials, shell injection, assert tuple bug)"
+  entry: python -m apex_council.lint.rules --fail-on-error
+  language: python
+  types: [python]
+  files: \.py$
+  stages: [pre-commit, manual]

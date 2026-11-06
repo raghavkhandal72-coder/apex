@@ -54,6 +54,8 @@ class _ASTCandidateMutator:
         ast.Mult: [ast.FloorDiv, ast.Div],
         ast.FloorDiv: [ast.Mult],
         ast.Div: [ast.Mult],
+        ast.BitAnd: [ast.BitOr],
+        ast.BitOr: [ast.BitAnd],
     }
 
     SWAP_CMPOPS: Dict[type[ast.cmpop], list[type[ast.cmpop]]] = {
@@ -63,13 +65,26 @@ class _ASTCandidateMutator:
         ast.GtE: [ast.NotEq, ast.Gt, ast.Eq],
         ast.Eq: [ast.NotEq, ast.LtE, ast.GtE],
         ast.NotEq: [ast.Eq],
+        ast.In: [ast.NotIn],
+        ast.NotIn: [ast.In],
+        ast.Is: [ast.IsNot],
+        ast.IsNot: [ast.Is],
     }
 
-    SWAP_CONSTS: Dict[int, list[int]] = {
-        0: [-1, 1],
-        -1: [0],
-        1: [0, 2],
+    SWAP_BOOLOPS: Dict[type[ast.boolop], list[type[ast.boolop]]] = {
+        ast.And: [ast.Or],
+        ast.Or: [ast.And],
     }
+
+    @staticmethod
+    def get_constant_mutations(val: int) -> list[int]:
+        """Generates off-by-one and boundary sentinel replacements for an integer constant."""
+        replacements = [val + 1, val - 1]
+        if val != 0 and 0 not in replacements:
+            replacements.append(0)
+        if val != -1 and -1 not in replacements:
+            replacements.append(-1)
+        return replacements
 
 
 class CEGISEngine:
@@ -135,20 +150,42 @@ class CEGISEngine:
                             pass
                         break
 
-        # 3. Constant integer boundary replacements (sentinel values: 0 <-> -1, offsets: 1 <-> 0)
+        # 3. BoolOp operators (boolean logic: and <-> or)
+        boolop_nodes = [n for n in ast.walk(tree) if isinstance(n, ast.BoolOp)]
+        for node in boolop_nodes:
+            current_op = type(node.op)
+            replacements = _ASTCandidateMutator.SWAP_BOOLOPS.get(current_op, [])
+            for new_op in replacements:
+                t_copy = copy.deepcopy(tree)
+                for n in ast.walk(t_copy):
+                    if (
+                        isinstance(n, ast.BoolOp)
+                        and type(n.op) == current_op
+                        and getattr(n, "lineno", -1) == getattr(node, "lineno", -1)
+                        and getattr(n, "col_offset", -1) == getattr(node, "col_offset", -1)
+                    ):
+                        n.op = new_op()
+                        try:
+                            candidates.append(ast.unparse(t_copy))
+                        except Exception:
+                            pass
+                        break
+
+        # 4. Constant integer boundary replacements (off-by-one: +1/-1 and boundary sentinels: 0, -1)
         const_nodes = [
             n for n in ast.walk(tree)
-            if isinstance(n, ast.Constant) and isinstance(n.value, int)
+            if isinstance(n, ast.Constant) and isinstance(n.value, int) and not isinstance(n.value, bool)
         ]
         for node in const_nodes:
             current_val = node.value
-            replacements = _ASTCandidateMutator.SWAP_CONSTS.get(current_val, [])
+            replacements = _ASTCandidateMutator.get_constant_mutations(current_val)
             for new_val in replacements:
                 t_copy = copy.deepcopy(tree)
                 for n in ast.walk(t_copy):
                     if (
                         isinstance(n, ast.Constant)
                         and n.value == current_val
+                        and not isinstance(n.value, bool)
                         and getattr(n, "lineno", -1) == getattr(node, "lineno", -1)
                         and getattr(n, "col_offset", -1) == getattr(node, "col_offset", -1)
                     ):
