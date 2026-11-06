@@ -5,6 +5,13 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/) and [
 ## [Unreleased]
 
 ### Added
+- **Git Patch Exporter (`apex patch-export`)**: Generates Git-compatible unified `.patch` / `.diff` files from CEGIS repairs for `git apply`.
+- **Deterministic Crash Fingerprint (`apex crash-fingerprint`)**: Computes line-drift-invariant normalized SHA-256 crash signatures to group identical bugs in CI/CD.
+- **Terminal Flamegraph Profiler (`apex flamegraph`)**: Zero-dependency hierarchical execution profiler and ASCII flamegraph renderer using stdlib `cProfile` and `pstats`.
+- **Automated PR Summary Generator (`apex pr-summary`)**: Inspects git diffs and AST changes to generate rich GitHub PR descriptions with file matrices and risk heuristics.
+- **Sensitive Secret Redactor (`apex secret-mask`)**: Real-time log and traceback sanitizer redacting Google API keys, OpenAI tokens, AWS keys, JWTs, and DB passwords.
+- **Shell Auto-Completion Generator (`apex completion`)**: Dynamic argument completion script generator for Bash, Zsh, and PowerShell.
+- **Zero-Division Static Guard (`apex zero-div`)**: Static AST analyzer and defensive prover preventing `ZeroDivisionError` across division and modulo operators.
 - **Continuous File Watcher (`apex watch`)**: Zero-dependency filesystem watcher polling `os.stat` mtimes to continuously trigger test runs and CEGIS repairs on save.
 - **AST Program Slicing (`apex slice`)**: Backward and forward data/control dependency program slicing (Mark Weiser 1981) to isolate the minimal causal statements influencing a crash.
 - **Python Modernizer Codemod (`apex modern`)**: Zero-dependency AST and token codemod upgrading legacy `typing.Union` / `Optional` / `List` / `Dict` to native Python 3.10+ PEP 604 & 585 syntax.

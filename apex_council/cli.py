@@ -45,6 +45,7 @@ KNOWN_COMMANDS = {
     "gbrain", "scrape", "floci", "voice", "skills", "browser", "electron",
     "rea", "reviewdog", "netdata", "lint", "fix", "hook", "challenge", "null-guard",
     "watch", "slice", "modern", "lsp", "loop",
+    "patch-export", "crash-fingerprint", "flamegraph", "pr-summary", "secret-mask", "completion", "zero-div",
     "-h", "--help"
 }
 
@@ -494,6 +495,38 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     loop_p.add_argument("--test-cmd", dest="test_command", help="Test command to run (default: python -m unittest)")
     loop_p.add_argument("--max-iter", dest="max_iterations", type=int, default=5, help="Max repair iterations (default: 5)")
     loop_p.add_argument("--commit", dest="auto_commit", action="store_true", help="Auto-commit verified repairs to Git")
+
+    # Command 76: Patch Export (apex patch-export)
+    patch_p = subparsers.add_parser("patch-export", help="Export unified .patch comparing file with .bak or git version")
+    patch_p.add_argument("file", help="Target source file")
+    patch_p.add_argument("-o", "--output", help="Output patch file (default: stdout)")
+    patch_p.add_argument("--backup", help="Path to original/backup file")
+
+    # Command 77: Crash Fingerprint (apex crash-fingerprint)
+    fp_p = subparsers.add_parser("crash-fingerprint", help="Normalized deterministic SHA-256 crash fingerprint from traceback")
+    fp_p.add_argument("log", nargs="?", default="-", help="Path to traceback log file or '-' for stdin")
+
+    # Command 78: Terminal Flamegraph (apex flamegraph)
+    flame_p = subparsers.add_parser("flamegraph", help="ASCII hierarchical execution flamegraph profiler")
+    flame_p.add_argument("target", help="Target Python script to profile")
+    flame_p.add_argument("--top", type=int, default=8, help="Top functions to show (default: 8)")
+
+    # Command 79: PR Summary (apex pr-summary)
+    pr_sum_p = subparsers.add_parser("pr-summary", help="Generate GitHub PR description from git diff")
+    pr_sum_p.add_argument("--base", help="Base git ref to diff against (e.g. main, HEAD~1)")
+    pr_sum_p.add_argument("--title", help="PR title header")
+
+    # Command 80: Secret Mask (apex secret-mask)
+    mask_p = subparsers.add_parser("secret-mask", help="Redact API keys, tokens, and credentials from text/logs")
+    mask_p.add_argument("input", nargs="?", default="-", help="Input file or '-' for stdin")
+
+    # Command 81: Shell Completion (apex completion)
+    comp_p = subparsers.add_parser("completion", help="Generate shell auto-completion script (bash, zsh, powershell)")
+    comp_p.add_argument("shell", choices=["bash", "zsh", "powershell", "pwsh"], help="Target shell")
+
+    # Command 82: Zero-Division Guard (apex zero-div)
+    zdiv_p = subparsers.add_parser("zero-div", help="Static AST analyzer and safe guard prover for division operators")
+    zdiv_p.add_argument("paths", nargs="+", help="Files or directories to scan")
 
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
@@ -2664,6 +2697,99 @@ def main(argv: list[str] | None = None) -> int:
             verbose=getattr(args, "verbose", False),
         )
         return 0 if res.get("success") else 1
+
+    # Command 76: Patch Export (apex patch-export)
+    if args.command == "patch-export":
+        from .repair.patch_export import export_patch_file
+        ok, msg = export_patch_file(args.file, output_patch=getattr(args, "output", None), backup_file=getattr(args, "backup", None))
+        if ok:
+            print(msg)
+            return 0
+        else:
+            sys.stderr.write(f"Error: {msg}\n")
+            return 1
+
+    # Command 77: Crash Fingerprint (apex crash-fingerprint)
+    if args.command == "crash-fingerprint":
+        from .analysis.fingerprint import compute_crash_fingerprint, format_fingerprint_report
+        log_input = getattr(args, "log", "-")
+        if log_input == "-" or not log_input:
+            if sys.stdin.isatty():
+                sys.stderr.write("Apex Crash Fingerprint: Pipe traceback via stdin or pass log file path.\n")
+                return 1
+            text = sys.stdin.read()
+        else:
+            p = Path(log_input)
+            if not p.exists():
+                sys.stderr.write(f"Error: File not found: {p}\n")
+                return 2
+            text = p.read_text(encoding="utf-8", errors="replace")
+        fp = compute_crash_fingerprint(text)
+        if not fp:
+            sys.stderr.write("Could not parse traceback from input.\n")
+            return 1
+        print(format_fingerprint_report(fp))
+        return 0
+
+    # Command 78: Terminal Flamegraph (apex flamegraph)
+    if args.command == "flamegraph":
+        from .analysis.flamegraph import profile_function_or_file
+        rep = profile_function_or_file(target_path=args.target, top_n=getattr(args, "top", 8))
+        print(rep)
+        return 0
+
+    # Command 79: PR Summary (apex pr-summary)
+    if args.command == "pr-summary":
+        from .git.pr_summary import get_git_diff, generate_pr_summary_markdown
+        diff_text = get_git_diff(getattr(args, "base", None))
+        summary = generate_pr_summary_markdown(diff_text, title=getattr(args, "title", None), base_ref=getattr(args, "base", None))
+        print(summary)
+        return 0
+
+    # Command 80: Secret Mask (apex secret-mask)
+    if args.command == "secret-mask":
+        from .security.secret_mask import mask_secrets
+        inp = getattr(args, "input", "-")
+        if inp == "-" or not inp:
+            if sys.stdin.isatty():
+                sys.stderr.write("Apex Secret Mask: Pipe text via stdin or pass file path.\n")
+                return 1
+            text = sys.stdin.read()
+        else:
+            p = Path(inp)
+            if not p.exists():
+                sys.stderr.write(f"Error: File not found: {p}\n")
+                return 2
+            text = p.read_text(encoding="utf-8", errors="replace")
+        masked, count = mask_secrets(text)
+        print(masked)
+        return 0
+
+    # Command 81: Shell Completion (apex completion)
+    if args.command == "completion":
+        from .cli_completion import generate_completion_script
+        print(generate_completion_script(args.shell, KNOWN_COMMANDS))
+        return 0
+
+    # Command 82: Zero-Division Guard (apex zero-div)
+    if args.command == "zero-div":
+        from .lint.rules import iter_files
+        from .lint.zero_div_guard import analyze_zero_divisions
+        total_violations = 0
+        for f in iter_files(args.paths):
+            src = f.read_text(encoding="utf-8", errors="replace")
+            violations = analyze_zero_divisions(src)
+            if violations:
+                total_violations += len(violations)
+                print(f"\n[APEX ZERO-DIV] {f} - Found {len(violations)} potentially unsafe division(s):")
+                for v in violations:
+                    tag = "[LITERAL ZERO ERROR]" if v.is_literal_zero else "[UNGUARDED]"
+                    print(f"  Line {v.lineno:3d} {tag} Denominator: '{v.denominator}'")
+                    print(f"    Code: {v.statement_code}")
+        if total_violations == 0:
+            print("[APEX ZERO-DIV] [OK] All division operations verified safe.")
+            return 0
+        return 1
 
     # 26. Handle battle / default prompt
     prompt = getattr(args, "prompt", None) or args.direct_prompt or "Build an LRU cache with TTL support"

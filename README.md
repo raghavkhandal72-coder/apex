@@ -104,6 +104,21 @@ python apex.pyz modern src/ --write
 
 # 12. Autonomous closed-loop repair until 100% tests pass
 python apex.pyz loop --commit
+
+# 13. Terminal hierarchical ASCII flamegraph profiler
+python apex.pyz flamegraph binary_search.py
+
+# 14. Normalized crash deduplication fingerprint
+python apex.pyz crash-fingerprint crash.log
+
+# 15. Zero-dependency PR summary generator from git diff
+python apex.pyz pr-summary
+
+# 16. Sensitive credentials redactor for logs and traces
+python apex.pyz secret-mask failure.log
+
+# 17. Shell auto-completion (bash, zsh, powershell)
+python apex.pyz completion bash > ~/.apex-completion.bash
 ```
 
 ---
@@ -284,7 +299,7 @@ Apex verifies its entire codebase using Python's standard library `unittest` acr
 python -m unittest discover -s tests
 ```
 ```text
-Ran 294 tests in 52.081s
+Ran 307 tests in 46.010s
 OK
 ```
 
