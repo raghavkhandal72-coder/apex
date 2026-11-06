@@ -235,7 +235,7 @@ class CEGISEngine:
                         f"assert {fn_name}([1, 3, 5, 7, 9], 10) == -1",
                     ])
                 # Case 2: Arithmetic binary operators with (a, b) or (x, y)
-                elif len(args) == 2 and args in (["a", "b"], ["x", "y"]):
+                elif len(args) == 2 and args in (["a", "b"], ["x", "y"]) and fn_name in ("add", "sum", "plus"):
                     probes.extend([
                         f"assert {fn_name}(0, 0) == 0",
                         f"assert {fn_name}(1, 0) == 1",

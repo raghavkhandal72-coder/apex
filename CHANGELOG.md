@@ -5,6 +5,10 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/) and [
 ## [Unreleased]
 
 ### Added
+- **Pipe Repair Engine (`apex fix`)**: Unix pipe traceback auto-repair (`pytest | apex fix --apply`). Parses tracebacks from stdin, isolates crash sites, executes bounded CEGIS, and applies in-place patches with automatic `.bak` backups.
+- **Self-Healing Git Pre-Commit Hook (`apex hook install`)**: Zero-dependency Git pre-commit hook that intercepts broken staged commits, repairs regressions via CEGIS, and auto-stages verified fixes.
+- **Mutation Challenge Suite (`apex challenge`)**: Standard-library mutation testing engine and Mutation Resilience Score (`%`) that reveals test suite blindspots and fake code coverage.
+- **Kotlin-Style Null Guard (`apex null-guard`)**: Static `None`/null-safety analyzer and auto-patcher for Python (`AttributeError: 'NoneType' object has no attribute '...'`) tracking optional types and safe navigation.
 - QuixBugs benchmark runner with hidden-test evaluation.
 - Differential oracle for CEGIS verifier probes.
 - Built-in linter (rdjson) and diff-aware PR review GitHub Action.

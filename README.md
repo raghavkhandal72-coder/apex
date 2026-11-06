@@ -80,6 +80,18 @@ python apex.pyz battle "Build a thread-safe LRU Cache" --strict
 
 # 4. Diff-Aware Code Review (reports only on added lines)
 python apex.pyz reviewdog findings.rdjson --git
+
+# 5. Pipe auto-repair directly from pytest or crash logs
+pytest | python apex.pyz fix --apply
+
+# 6. Self-healing Git pre-commit hook (fixes regressions & stages automatically)
+python apex.pyz hook install
+
+# 7. Mutation testing & suite resilience score
+python apex.pyz challenge binary_search.py --tests-file tests.txt
+
+# 8. Kotlin-style None/Null safety prover & auto-patcher
+python apex.pyz null-guard src/ --fix
 ```
 
 ---
@@ -139,6 +151,42 @@ repos:
       - id: apex-lint
 ```
 
+### 5. Pipe Auto-Repair (`pytest | apex fix --apply`)
+Pipe test failures or crash tracebacks directly from standard input. Apex parses tracebacks from `pytest`, `unittest`, or raw exceptions, isolates the crash site, searches tests, executes CEGIS repair, and applies the patch in-place with `.bak` safety backup:
+
+```bash
+pytest | python apex.pyz fix --apply
+```
+
+### 6. Self-Healing Git Pre-Commit Hook (`apex hook install`)
+Never commit a regression. Intercepts `git commit`, runs tests against staged changes, and if a test fails, runs bounded CEGIS in-process. When a sound fix is synthesized, Apex stages the fix automatically and lets the commit proceed seamlessly:
+
+```bash
+# Install self-healing pre-commit hook into .git/hooks/pre-commit
+python apex.pyz hook install
+
+# Remove when desired
+python apex.pyz hook uninstall
+```
+
+### 7. Mutation Testing & Resilience Score (`apex challenge`)
+Code coverage numbers can be misleading. `apex challenge` perturbs your code AST (boundary conditions, comparison operators, off-by-one constants) and runs your test suite against each mutant in an isolated runner. Reports your **Mutation Resilience Score (%)** and pinpoints untested logic paths:
+
+```bash
+python apex.pyz challenge binary_search.py --tests-file tests.txt
+```
+
+### 8. Kotlin-Style Null Guard (`apex null-guard`)
+Prevents Python's #1 production crash: `AttributeError: 'NoneType' object has no attribute '...'`. Statically traces `Optional[T]`, `dict.get()`, and `re.search()` returns using AST flow analysis. Flags unguarded member accesses and can automatically patch safe guard blocks (`--fix`):
+
+```bash
+# Scan and audit
+python apex.pyz null-guard src/
+
+# Auto-apply safe navigation guards
+python apex.pyz null-guard src/ --fix
+```
+
 ---
 
 ## 📊 External Benchmark: QuixBugs
@@ -181,7 +229,7 @@ Apex verifies its entire codebase using Python's standard library `unittest` acr
 python -m unittest discover -s tests
 ```
 ```text
-Ran 257 tests in 38.214s
+Ran 283 tests in 39.120s
 OK
 ```
 

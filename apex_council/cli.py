@@ -43,7 +43,7 @@ KNOWN_COMMANDS = {
     "wt", "console", "mlflow-trace", "mlflow-eval",
     "omo", "dag", "gstack",
     "gbrain", "scrape", "floci", "voice", "skills", "browser", "electron",
-    "rea", "reviewdog", "netdata", "lint",
+    "rea", "reviewdog", "netdata", "lint", "fix", "hook", "challenge", "null-guard",
     "-h", "--help"
 }
 
@@ -443,6 +443,28 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     lint_p.add_argument("paths", nargs="+", help="Paths to files or directories to lint")
     lint_p.add_argument("--format", choices=["rdjson", "text"], default="text", help="Output format")
     lint_p.add_argument("--fail-on-error", action="store_true", help="Exit code 1 if ERROR findings exist")
+
+    # Command 67: Pipe Fix (pytest | apex fix)
+    fix_p = subparsers.add_parser("fix", help="Pipe auto-repair: parse traceback from stdin/log & synthesize 1-token fix")
+    fix_p.add_argument("log", nargs="?", default="-", help="Path to traceback log file or '-' for stdin")
+    fix_p.add_argument("--apply", action="store_true", help="Apply synthesized fix in-place to target file (creates .bak)")
+    fix_p.add_argument("--tests", help="Optional test suite code")
+
+    # Command 68: Self-Healing Git Hook (apex hook)
+    hook_p = subparsers.add_parser("hook", help="Self-healing git pre-commit hook")
+    hook_p.add_argument("action", choices=["install", "uninstall", "run"], default="run", nargs="?", help="Hook action")
+
+    # Command 69: Mutation Challenge (apex challenge)
+    chal_p = subparsers.add_parser("challenge", help="Mutation testing resilience score vs fake code coverage")
+    chal_p.add_argument("file", type=Path, help="Target Python source file")
+    chal_p.add_argument("--tests", help="Test code")
+    chal_p.add_argument("--tests-file", type=Path, help="Path to tests file")
+    chal_p.add_argument("--mutants", type=int, default=30, help="Max mutants to evaluate (default: 30)")
+
+    # Command 70: Kotlin-Style Null Safety (apex null-guard)
+    null_p = subparsers.add_parser("null-guard", help="Kotlin-style static null/none safety prover for Python")
+    null_p.add_argument("paths", nargs="+", help="Files or directories to audit for unguarded None dereferences")
+    null_p.add_argument("--fix", action="store_true", help="Auto-apply Kotlin-style safe navigation codemods")
 
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
@@ -2457,6 +2479,88 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"{loc['path']}:{loc['range']['start']['line']}: [{d['code']['value']}] {d['message']}")
             print(f"{len(diags)} finding(s)")
         return 1 if getattr(args, "fail_on_error", False) and any(d["severity"] == "ERROR" for d in diags) else 0
+
+    # Command 67: Pipe Fix (pytest | apex fix)
+    if args.command == "fix":
+        from .repair.pipe_fixer import run_pipe_repair
+        log_input = getattr(args, "log", "-")
+        if log_input == "-" or not log_input:
+            if sys.stdin.isatty():
+                sys.stderr.write("Apex Fix: No traceback provided via stdin. Pipe failure output to apex fix:\n  pytest | apex fix\n")
+                return 1
+            trace_text = sys.stdin.read()
+        else:
+            p = Path(log_input)
+            if not p.exists():
+                sys.stderr.write(f"Error: Traceback log file not found: {p}\n")
+                return 2
+            trace_text = p.read_text(encoding="utf-8", errors="replace")
+        return run_pipe_repair(trace_text, apply_fix=getattr(args, "apply", False), tests_content=getattr(args, "tests", None))
+
+    # Command 68: Self-Healing Git Hook (apex hook)
+    if args.command == "hook":
+        from .git.hook import install_hook, uninstall_hook, run_pre_commit_hook
+        action = getattr(args, "action", "run")
+        if action == "install":
+            return 0 if install_hook() else 1
+        elif action == "uninstall":
+            return 0 if uninstall_hook() else 1
+        else:
+            return run_pre_commit_hook()
+
+    # Command 69: Mutation Challenge (apex challenge)
+    if args.command == "challenge":
+        from .evaluator.mutation_challenge import run_mutation_challenge, render_challenge_report
+        if not args.file.exists():
+            sys.stderr.write(f"Error: Target file not found: {args.file}\n")
+            return 2
+        src = args.file.read_text(encoding="utf-8")
+        tests = ""
+        if getattr(args, "tests_file", None) and args.tests_file:
+            if not args.tests_file.exists():
+                sys.stderr.write(f"Error: Tests file not found: {args.tests_file}\n")
+                return 2
+            tests = args.tests_file.read_text(encoding="utf-8")
+        elif getattr(args, "tests", None):
+            test_path = Path(args.tests)
+            if test_path.exists():
+                tests = test_path.read_text(encoding="utf-8")
+            else:
+                tests = args.tests
+        else:
+            sys.stderr.write("Error: Either --tests or --tests-file must be provided.\n")
+            return 2
+        try:
+            rep = run_mutation_challenge(src, tests, target_name=args.file.name, max_mutants=getattr(args, "mutants", 30))
+            print(render_challenge_report(rep, filename=args.file.name))
+            return 0
+        except Exception as ex:
+            sys.stderr.write(f"Apex Mutation Challenge Error: {ex}\n")
+            return 1
+
+    # Command 70: Kotlin-Style Null Safety (apex null-guard)
+    if args.command == "null-guard":
+        from .lint.rules import iter_files
+        from .lint.null_guard import analyze_null_safety, apply_null_fixes
+        total_violations = 0
+        for f in iter_files(args.paths):
+            src = f.read_text(encoding="utf-8", errors="replace")
+            violations = analyze_null_safety(src, filename=str(f))
+            if violations:
+                total_violations += len(violations)
+                print(f"\n[APEX NULL-GUARD] {f} - Found {len(violations)} potentially unsafe None dereference(s):")
+                for v in violations:
+                    print(f"  Line {v.lineno:3d} | Variable '{v.variable_name}' from {v.source_origin}")
+                    print(f"    - Unsafe:   {v.statement_code}")
+                    print(f"    + Suggested: {v.suggested_fix}")
+                if getattr(args, "fix", False):
+                    fixed_code = apply_null_fixes(src, violations)
+                    f.write_text(fixed_code, encoding="utf-8")
+                    print(f"    [OK] Applied Kotlin-style safe navigation codemods to {f.name}")
+        if total_violations == 0:
+            print("\n[APEX NULL-GUARD] [OK] All paths verified. Zero unguarded None dereferences detected.")
+            return 0
+        return 0 if getattr(args, "fix", False) else 1
 
     # 26. Handle battle / default prompt
     prompt = getattr(args, "prompt", None) or args.direct_prompt or "Build an LRU cache with TTL support"
