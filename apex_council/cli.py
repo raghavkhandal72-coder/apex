@@ -46,6 +46,7 @@ KNOWN_COMMANDS = {
     "rea", "reviewdog", "netdata", "lint", "fix", "hook", "challenge", "null-guard",
     "watch", "slice", "modern", "lsp", "loop",
     "patch-export", "crash-fingerprint", "flamegraph", "pr-summary", "secret-mask", "completion", "zero-div",
+    "instruments", "swift-guard", "studio",
     "-h", "--help"
 }
 
@@ -527,6 +528,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     # Command 82: Zero-Division Guard (apex zero-div)
     zdiv_p = subparsers.add_parser("zero-div", help="Static AST analyzer and safe guard prover for division operators")
     zdiv_p.add_argument("paths", nargs="+", help="Files or directories to scan")
+
+    # Command 83: Apple Instruments Memory Profiler (apex instruments)
+    inst_p = subparsers.add_parser("instruments", help="Apple Instruments-grade line-by-line heap allocations & leak profiler")
+    inst_p.add_argument("target", help="Target Python script to profile")
+    inst_p.add_argument("--top", type=int, default=6, help="Top allocation hotspots to show (default: 6)")
+
+    # Command 84: Apple Swift-Guard Prover (apex swift-guard)
+    swift_p = subparsers.add_parser("swift-guard", help="Swift-grade pattern match exhaustiveness & let-immutability prover")
+    swift_p.add_argument("paths", nargs="+", help="Files or directories to audit")
+
+    # Command 85: Apple Pro Studio Console (apex studio)
+    subparsers.add_parser("studio", help="Launch Apple Pro terminal telemetry & health dashboard")
 
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
@@ -2790,6 +2803,31 @@ def main(argv: list[str] | None = None) -> int:
             print("[APEX ZERO-DIV] [OK] All division operations verified safe.")
             return 0
         return 1
+
+    # Command 83: Apple Instruments Memory Profiler (apex instruments)
+    if args.command == "instruments":
+        from .instruments.alloc_profiler import profile_memory_allocations
+        rep = profile_memory_allocations(target_path=args.target, top_n=getattr(args, "top", 6))
+        print(rep)
+        return 0
+
+    # Command 84: Apple Swift-Guard Prover (apex swift-guard)
+    if args.command == "swift-guard":
+        from .lint.rules import iter_files
+        from .formal.swift_guard import audit_swift_safety, format_swift_report
+        total_findings = 0
+        for f in iter_files(args.paths):
+            src = f.read_text(encoding="utf-8", errors="replace")
+            findings = audit_swift_safety(src)
+            total_findings += len(findings)
+            print(format_swift_report(findings, f.name))
+        return 0 if total_findings == 0 else 1
+
+    # Command 85: Apple Pro Studio Console (apex studio)
+    if args.command == "studio":
+        from .ui.studio import render_studio_dashboard
+        print(render_studio_dashboard())
+        return 0
 
     # 26. Handle battle / default prompt
     prompt = getattr(args, "prompt", None) or args.direct_prompt or "Build an LRU cache with TTL support"

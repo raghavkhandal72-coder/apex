@@ -5,6 +5,9 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/) and [
 ## [Unreleased]
 
 ### Added
+- **Apple Instruments Memory Profiler (`apex instruments`)**: Line-by-line heap allocation waterfall, peak footprint analysis, and circular reference leak detection via stdlib `tracemalloc` and `gc`.
+- **Apple Swift-Guard Safety Prover (`apex swift-guard`)**: Pattern match exhaustiveness verification, immutability & let-safety checking, and nil-coalescing analysis.
+- **Apple Pro Studio Telemetry Console (`apex studio`)**: Apple Pro terminal dashboard with system architecture telemetry, test latency sparklines, and unified health metrics.
 - **Git Patch Exporter (`apex patch-export`)**: Generates Git-compatible unified `.patch` / `.diff` files from CEGIS repairs for `git apply`.
 - **Deterministic Crash Fingerprint (`apex crash-fingerprint`)**: Computes line-drift-invariant normalized SHA-256 crash signatures to group identical bugs in CI/CD.
 - **Terminal Flamegraph Profiler (`apex flamegraph`)**: Zero-dependency hierarchical execution profiler and ASCII flamegraph renderer using stdlib `cProfile` and `pstats`.

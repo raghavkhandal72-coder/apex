@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/dependencies-0-brightgreen.svg" alt="Dependencies">
   <img src="https://img.shields.io/badge/python-3.10%2B-blue.svg" alt="Python 3.10+">
-  <img src="https://img.shields.io/badge/size-~430%20KB-informational.svg" alt="Size">
+  <img src="https://img.shields.io/badge/size-~435%20KB-informational.svg" alt="Size">
   <img src="https://img.shields.io/badge/license-MIT-lightgrey.svg" alt="License">
 </p>
 
@@ -119,6 +119,15 @@ python apex.pyz secret-mask failure.log
 
 # 17. Shell auto-completion (bash, zsh, powershell)
 python apex.pyz completion bash > ~/.apex-completion.bash
+
+# 18. Apple Instruments line-by-line memory & leak profiler
+python apex.pyz instruments binary_search.py
+
+# 19. Apple Swift-grade pattern exhaustiveness & let-immutability prover
+python apex.pyz swift-guard src/
+
+# 20. Apple Pro Studio terminal telemetry console
+python apex.pyz studio
 ```
 
 ---
@@ -299,7 +308,7 @@ Apex verifies its entire codebase using Python's standard library `unittest` acr
 python -m unittest discover -s tests
 ```
 ```text
-Ran 307 tests in 46.010s
+Ran 313 tests in 47.120s
 OK
 ```
 
