@@ -192,11 +192,39 @@ cd apex-council
 ./scripts/install.sh       # Linux / macOS
 .\scripts\install.ps1      # Windows PowerShell
 
-# Run the complete test suite (242 tests, ~38s)
+# Run the complete test suite (258 tests, ~40s)
 python -m unittest discover -s tests
 
 # Run the automated live terminal walkthrough
 python scripts/demo_walkthrough.py
+```
+
+### Option C: GitHub Action (Diff-Aware PR Review)
+
+Apex provides a zero-dependency composite GitHub Action that inspects PR diffs and posts inline comments **strictly on lines added by the PR**:
+
+Copy this to `.github/workflows/pr-review.yml` in your repository:
+
+```yaml
+name: Apex PR Review
+on: pull_request
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: YOUR_USER/apex@v0.9.0      # pin a released tag, never a moving branch
+        with:
+          # Any tool that prints rdjson works, e.g. your own linter wrapper:
+          command: python apex.pyz reviewdog lint.log --format rdjson
+          max-comments: "20"
 ```
 
 ---
