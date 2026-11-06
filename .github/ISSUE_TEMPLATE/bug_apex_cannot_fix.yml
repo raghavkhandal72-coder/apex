@@ -1,0 +1,51 @@
+name: "Apex can't fix my bug"
+description: "Submit a Python bug that Apex CEGIS failed to repair, timed out on, or overfit."
+title: "[Cannot Fix]: <Short description of the bug>"
+labels: ["repair-benchmark", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Apex! Apex uses bounded search over a small AST mutation grammar.
+        Sharing bugs it fails on helps us expand the mutation operators and benchmark suites.
+  - type: textarea
+    id: buggy_code
+    attributes:
+      label: Buggy Python Code
+      description: Paste the minimal buggy Python function or snippet.
+      placeholder: |
+        def my_function(x):
+            return x + 1  # Buggy!
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: test_cases
+    attributes:
+      label: Test Cases
+      description: The assert statements or test cases where the code fails.
+      placeholder: |
+        assert my_function(0) == 0
+        assert my_function(2) == 4
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: expected_fix
+    attributes:
+      label: Expected Minimal Fix (if known)
+      description: What is the minimal change that fixes the bug?
+      placeholder: |
+        - return x + 1
+        + return x * 2
+      render: diff
+    validations:
+      required: false
+  - type: textarea
+    id: apex_output
+    attributes:
+      label: Apex Output / Behavior
+      description: What did `python apex.pyz cegis file.py --tests tests.txt` output? (e.g. Unrepaired, Timeout, or Overfit)
+      placeholder: "Candidates explored: 22, no candidate satisfied constraints."
+    validations:
+      required: false

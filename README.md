@@ -105,9 +105,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: YOUR_USER/apex@v0.9.0      # pin a released tag, never a moving branch
+      - uses: YOUR_USER/apex@v0.1.0      # pin a released tag, never a moving branch
         with:
-          command: python apex.pyz reviewdog lint.log --format rdjson
+          # Built-in zero-dependency linter runs right away with no setup:
+          command: python apex.pyz lint . --format rdjson
           max-comments: "20"
 ```
 
@@ -175,13 +176,23 @@ vhs demo/demo.tape
 
 ---
 
-## 🤝 Inspirations & Acknowledgments
+## Acknowledgments
 
-Apex is built on the shoulders of giants:
-- **CEGIS Foundations:** Solar-Lezama (2008) and Sumit Gulwani (2011) for counterexample-guided inductive synthesis principles.
-- **Fault Localization:** Abreu, Zoeteweij, and van Gemund (2007) for the Ochiai metric and spectrum-based fault localization.
-- **Diff-Aware Review:** [reviewdog](https://github.com/reviewdog/reviewdog) for git diff filtering and diagnostic format design.
-- **Reverse Engineering:** [morluto/rea](https://github.com/morluto/rea) for evidence-backed analysis patterns.
+Apex is an independent project that was inspired by, and is not affiliated with, the following.
+
+| Idea | Inspired by |
+| :--- | :--- |
+| Diff-aware review comments | [reviewdog/reviewdog](https://github.com/reviewdog/reviewdog) |
+| Binary/bytecode inspection | [morluto/rea](https://github.com/morluto/rea) |
+| System telemetry | [netdata/netdata](https://github.com/netdata/netdata) |
+| Startup-style review checklists | [garrytan/gstack](https://github.com/garrytan/gstack) |
+| Git worktree workflow | [max-sixty/worktrunk](https://github.com/max-sixty/worktrunk) |
+| Scraping | [D4Vinci/Scrapling](https://github.com/D4Vinci/Scrapling) |
+| Local cloud mocks | [floci-io/floci](https://github.com/floci-io/floci) |
+| Persistent memory | [garrytan/gbrain](https://github.com/garrytan/gbrain) |
+| Cache/limiter utilities | [google/guava](https://github.com/google/guava) (concepts, reimplemented) |
+| Benchmark | [QuixBugs](https://github.com/jkoppel/QuixBugs) |
+| Fault localization | Ochiai (Abreu et al.) |
 
 ---
 

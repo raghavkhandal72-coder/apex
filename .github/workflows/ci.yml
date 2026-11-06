@@ -18,6 +18,10 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Zero-dependency check (pip = 0)
-        run: python tools/check_stdlib_only.py apex_council
+        run: python tools/check_stdlib_only.py apex_council tools
       - name: Unit tests
         run: python -m unittest discover -s tests -v
+      - name: Build standalone zipapp (apex.pyz)
+        run: python scripts/build_pyz.py
+      - name: Verify standalone zipapp execution
+        run: python dist/apex.pyz cegis binary_search.py --tests-file tests.txt

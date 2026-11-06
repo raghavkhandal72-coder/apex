@@ -43,7 +43,7 @@ KNOWN_COMMANDS = {
     "wt", "console", "mlflow-trace", "mlflow-eval",
     "omo", "dag", "gstack",
     "gbrain", "scrape", "floci", "voice", "skills", "browser", "electron",
-    "rea", "reviewdog", "netdata",
+    "rea", "reviewdog", "netdata", "lint",
     "-h", "--help"
 }
 
@@ -59,7 +59,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         prog="apex",
         description="🏛️ The Multi-LLM Code Supreme Court: Enterprise AI Engineering & Consensus Platform.",
     )
-    parser.add_argument("--version", action="version", version="Apex v0.9.0")
+    parser.add_argument("--version", action="version", version="Apex v0.1.0")
 
     subparsers = parser.add_subparsers(dest="command", help="Sub-commands")
 
@@ -437,6 +437,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     nd_p.add_argument("--url", default="http://127.0.0.1:19999", help="Target Netdata daemon URL")
     nd_p.add_argument("--once", action="store_true", help="Capture a single telemetry snapshot and exit")
     nd_p.add_argument("-o", "--output", type=Path, help="Save output to file")
+
+    # Command 66: Lint (Built-in Zero-Dependency Linter)
+    lint_p = subparsers.add_parser("lint", help="Zero-dependency AST linter emitting reviewdog rdjson or text")
+    lint_p.add_argument("paths", nargs="+", help="Paths to files or directories to lint")
+    lint_p.add_argument("--format", choices=["rdjson", "text"], default="text", help="Output format")
+    lint_p.add_argument("--fail-on-error", action="store_true", help="Exit code 1 if ERROR findings exist")
 
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
@@ -2435,6 +2441,22 @@ def main(argv: list[str] | None = None) -> int:
             out_file.write_text(output_text, encoding="utf-8")
             print(f"[APEX-NETDATA] Telemetry exported to: {out_file}")
         return 0
+
+    # Command 66: Lint (Built-in Zero-Dependency Linter)
+    if args.command == "lint":
+        from .lint.rules import iter_files, lint_source
+        import json
+        diags: list[dict] = []
+        for f in iter_files(args.paths):
+            diags += lint_source(f.read_text(encoding="utf-8", errors="replace"), str(f))
+        if args.format == "rdjson":
+            print(json.dumps({"source": {"name": "apex-lint"}, "diagnostics": diags}))
+        else:
+            for d in diags:
+                loc = d["location"]
+                print(f"{loc['path']}:{loc['range']['start']['line']}: [{d['code']['value']}] {d['message']}")
+            print(f"{len(diags)} finding(s)")
+        return 1 if getattr(args, "fail_on_error", False) and any(d["severity"] == "ERROR" for d in diags) else 0
 
     # 26. Handle battle / default prompt
     prompt = getattr(args, "prompt", None) or args.direct_prompt or "Build an LRU cache with TTL support"

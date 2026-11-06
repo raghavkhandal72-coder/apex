@@ -1,28 +1,15 @@
 # Security Policy
 
-## Supported Versions
+## Reporting a vulnerability
+Please report privately via GitHub: **Security → Report a vulnerability**. Do not open a public issue.
+Expect an acknowledgement within 5 days.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 3.x     | :white_check_mark: |
-| 2.x     | :white_check_mark: |
-| < 2.0   | :x:                |
+## Scope and honest threat model
+- Apex executes candidate code (LLM output or mutated code) in an **isolated subprocess**
+  (`python -E -s`, scrubbed environment). This is **not** a kernel sandbox: it does not block
+  file-system or network access. Run Apex inside Docker or a VM when handling untrusted code.
+- API keys are read from environment variables and are never written to logs (only a masked prefix in `--verbose`).
+- The PR Action needs `pull-requests: write` and nothing else. It sends no data to third parties.
 
-## Reporting a Vulnerability
-
-The Apex-Council team takes security and sovereign code execution extremely seriously. If you discover a vulnerability or security flaw in:
-* The AST Security Analyzer
-* The Sandbox Runtime Execution Engine
-* The Enterprise Data Loss Prevention (DLP) Sanitizer
-* The SOC2 Cryptographic Audit Trail Chaining
-
-Please do **NOT** open a public issue.
-
-### Safe Reporting Process
-
-1. Email your finding and proof-of-concept to **security@apex-council.org** (or open a Private Vulnerability Advisory on GitHub).
-2. Include:
-   * Description of the vulnerability and attack vector (CWE reference).
-   * Steps or sample payloads to reproduce.
-   * Potential blast radius.
-3. Our security team will acknowledge receipt within 24 hours and issue a CVE/patch within 72 hours.
+## Supported versions
+Only the latest release receives fixes while the project is pre-1.0.
