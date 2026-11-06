@@ -1,36 +1,32 @@
-.PHONY: help install test benchmark serve diff redteam dlp-test audit-verify docker-build clean
+.PHONY: help test check build demo lint doctor clean
 
 help:
-	@echo "Apex-Council Enterprise Developer Commands:"
-	@echo "  make install        Install package in editable mode"
-	@echo "  make test           Run the full 15-test unit suite"
-	@echo "  make benchmark      Run the 5-challenge SWE Tournament"
-	@echo "  make serve          Launch local Cyberpunk Web Studio (port 8080)"
-	@echo "  make diff           Run pre-commit Git diff audit"
-	@echo "  make audit-verify   Verify SOC2 cryptographic audit trail"
-	@echo "  make docker-build   Build Docker container image"
-	@echo "  make clean          Clean temporary caches and test artifacts"
-
-install:
-	pip install -e .
+	@echo "Apex Developer Commands (Standard Library Only):"
+	@echo "  make test           Run full 272-test unit suite"
+	@echo "  make check          Verify zero external dependencies (pip = 0)"
+	@echo "  make build          Compile standalone zipapp (dist/apex.pyz)"
+	@echo "  make demo           Run 20-second binary search repair demo"
+	@echo "  make lint           Run built-in zero-dependency AST linter"
+	@echo "  make doctor         Run pre-flight launch health check"
+	@echo "  make clean          Clean build caches and temporary artifacts"
 
 test:
 	python -m unittest discover -s tests
 
-benchmark:
-	python -m apex_council benchmark
+check:
+	python tools/check_stdlib_only.py apex_council tools
 
-serve:
-	python -m apex_council serve --port 8080
+build:
+	python scripts/build_pyz.py
 
-diff:
-	python -m apex_council diff
+demo:
+	python dist/apex.pyz cegis binary_search.py --tests-file tests.txt
 
-audit-verify:
-	python -m apex_council audit-verify
+lint:
+	python -m apex_council.lint.rules . --format text
 
-docker-build:
-	docker build -t apex-council:latest .
+doctor:
+	python tools/doctor.py
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
