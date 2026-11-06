@@ -44,6 +44,7 @@ KNOWN_COMMANDS = {
     "omo", "dag", "gstack",
     "gbrain", "scrape", "floci", "voice", "skills", "browser", "electron",
     "rea", "reviewdog", "netdata", "lint", "fix", "hook", "challenge", "null-guard",
+    "watch", "slice", "modern", "lsp", "loop",
     "-h", "--help"
 }
 
@@ -465,6 +466,34 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     null_p = subparsers.add_parser("null-guard", help="Kotlin-style static null/none safety prover for Python")
     null_p.add_argument("paths", nargs="+", help="Files or directories to audit for unguarded None dereferences")
     null_p.add_argument("--fix", action="store_true", help="Auto-apply Kotlin-style safe navigation codemods")
+
+    # Command 71: Continuous Watcher (apex watch)
+    watch_p = subparsers.add_parser("watch", help="Continuous file watcher and automated test/repair trigger")
+    watch_p.add_argument("path", nargs="?", default=".", help="Target directory or file to watch (default: .)")
+    watch_p.add_argument("--cmd", dest="command", help="Custom test command to execute on change")
+    watch_p.add_argument("--interval", type=float, default=0.5, help="Polling interval in seconds (default: 0.5)")
+    watch_p.add_argument("--fix", action="store_true", help="Auto-repair regressions with CEGIS on test failure")
+    watch_p.add_argument("--once", action="store_true", help="Execute single pass without looping")
+
+    # Command 72: Program Slicing (apex slice)
+    slice_p = subparsers.add_parser("slice", help="Backward/Forward AST data & control dependency program slicing (Weiser 1981)")
+    slice_p.add_argument("target", help="Target source file (e.g. file.py:42) or file path")
+    slice_p.add_argument("--line", type=int, help="Target line number (if not in target arg)")
+    slice_p.add_argument("--var", help="Comma-separated variable names to slice for")
+
+    # Command 73: Python 3.10+ / 3.12+ Modernizer (apex modern)
+    modern_p = subparsers.add_parser("modern", help="Upgrade legacy typing (Union, Optional, List, Dict) to native PEP 604 & 585 syntax")
+    modern_p.add_argument("files", nargs="+", help="Files to modernize")
+    modern_p.add_argument("--write", action="store_true", help="Apply modernization changes in-place (creates .bak)")
+
+    # Command 74: Language Server Protocol (apex lsp)
+    subparsers.add_parser("lsp", help="Run standard-library Language Server Protocol (LSP) server over stdio")
+
+    # Command 75: Autonomous Closed-Loop Repair (apex loop)
+    loop_p = subparsers.add_parser("loop", help="Autonomous closed-loop test-driven repair (Feature #100)")
+    loop_p.add_argument("--test-cmd", dest="test_command", help="Test command to run (default: python -m unittest)")
+    loop_p.add_argument("--max-iter", dest="max_iterations", type=int, default=5, help="Max repair iterations (default: 5)")
+    loop_p.add_argument("--commit", dest="auto_commit", action="store_true", help="Auto-commit verified repairs to Git")
 
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
@@ -2561,6 +2590,80 @@ def main(argv: list[str] | None = None) -> int:
             print("\n[APEX NULL-GUARD] [OK] All paths verified. Zero unguarded None dereferences detected.")
             return 0
         return 0 if getattr(args, "fix", False) else 1
+
+    # Command 71: Continuous Watcher (apex watch)
+    if args.command == "watch":
+        from .repair.watcher import run_watch_loop
+        return run_watch_loop(
+            target_path=getattr(args, "path", "."),
+            command=getattr(args, "command", None),
+            interval=getattr(args, "interval", 0.5),
+            auto_fix=getattr(args, "fix", False),
+            once=getattr(args, "once", False),
+        )
+
+    # Command 72: Program Slicing (apex slice)
+    if args.command == "slice":
+        from .formal.slicer import compute_backward_slice, format_slice_report
+        target_str = args.target
+        line_num = getattr(args, "line", None)
+        if ":" in target_str and line_num is None:
+            parts = target_str.rsplit(":", 1)
+            target_file = Path(parts[0])
+            line_num = int(parts[1])
+        else:
+            target_file = Path(target_str)
+            if line_num is None:
+                sys.stderr.write("Error: Line number required (e.g. file.py:42 or --line 42)\n")
+                return 2
+
+        if not target_file.exists():
+            sys.stderr.write(f"Error: Target file not found: {target_file}\n")
+            return 2
+
+        src = target_file.read_text(encoding="utf-8", errors="replace")
+        vars_set = set(args.var.split(",")) if getattr(args, "var", None) else None
+        slice_lines, _ = compute_backward_slice(src, line_num, variables=vars_set)
+        report = format_slice_report(target_file.name, line_num, slice_lines, src)
+        print(report)
+        return 0
+
+    # Command 73: Python 3.10+ / 3.12+ Modernizer (apex modern)
+    if args.command == "modern":
+        from .lint.modernizer import modernize_file
+        from .lint.rules import iter_files
+        write_mode = getattr(args, "write", False)
+        total_changed = 0
+        for f in iter_files(args.files):
+            res = modernize_file(str(f), write=write_mode)
+            if res.get("changed"):
+                total_changed += 1
+                action_label = "[MODERNIZED]" if write_mode else "[DIFF]"
+                print(f"\n{action_label} {f} ({len(res.get('changes', []))} upgrade(s)):")
+                for c in res.get("changes", []):
+                    print(f"  • {c}")
+                if not write_mode and res.get("diff"):
+                    print(res.get("diff"))
+        if total_changed == 0:
+            print("[APEX MODERN] Codebase is already modern. 0 transformations needed.")
+        return 0
+
+    # Command 74: Language Server Protocol (apex lsp)
+    if args.command == "lsp":
+        from .lsp.server import start_lsp_server
+        start_lsp_server()
+        return 0
+
+    # Command 75: Autonomous Closed-Loop Repair (apex loop)
+    if args.command == "loop":
+        from .repair.autonomous_loop import run_autonomous_loop
+        res = run_autonomous_loop(
+            test_command=getattr(args, "test_command", None),
+            max_iterations=getattr(args, "max_iterations", 5),
+            auto_commit=getattr(args, "auto_commit", False),
+            verbose=getattr(args, "verbose", False),
+        )
+        return 0 if res.get("success") else 1
 
     # 26. Handle battle / default prompt
     prompt = getattr(args, "prompt", None) or args.direct_prompt or "Build an LRU cache with TTL support"

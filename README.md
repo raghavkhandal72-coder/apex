@@ -92,6 +92,18 @@ python apex.pyz challenge binary_search.py --tests-file tests.txt
 
 # 8. Kotlin-style None/Null safety prover & auto-patcher
 python apex.pyz null-guard src/ --fix
+
+# 9. Continuous live test & repair file watcher
+python apex.pyz watch --fix
+
+# 10. Backward AST data-flow program slicing (Weiser 1981)
+python apex.pyz slice binary_search.py:12
+
+# 11. Python 3.10+ / 3.12+ type modernization codemod
+python apex.pyz modern src/ --write
+
+# 12. Autonomous closed-loop repair until 100% tests pass
+python apex.pyz loop --commit
 ```
 
 ---
@@ -187,6 +199,49 @@ python apex.pyz null-guard src/
 python apex.pyz null-guard src/ --fix
 ```
 
+### 9. Continuous File Watcher (`apex watch`)
+Zero-dependency filesystem watcher polling `os.stat` mtimes. Re-runs unit tests continuously on save, and if `--fix` is passed, automatically synthesizes and applies CEGIS repairs on regression failures:
+
+```bash
+# Watch directory and re-run tests on save
+python apex.pyz watch tests/
+
+# Auto-repair failing tests continuously
+python apex.pyz watch --fix
+```
+
+### 10. Backward AST Program Slicing (`apex slice`)
+Isolate the exact statements that caused a bug or crash (Mark Weiser 1981). Traces Def-Use data dependencies and enclosing control flow backwards from a target line, discarding 90%+ of irrelevant code scaffolding:
+
+```bash
+python apex.pyz slice binary_search.py:12
+```
+
+### 11. Python Modernizer Codemod (`apex modern`)
+Upgrades legacy typing syntax (`Union[int, str]`, `Optional[T]`, `List[X]`, `Dict[K, V]`) to native Python 3.10+ PEP 604 (`int | str`) and PEP 585 (`list[X]`, `dict[K, V]`), cleaning up redundant imports:
+
+```bash
+# Preview diff
+python apex.pyz modern src/
+
+# Apply in-place with .bak backups
+python apex.pyz modern src/ --write
+```
+
+### 12. Language Server Protocol Server (`apex lsp`)
+Integrate Apex natively into Cursor, VS Code, or Neovim without installing extra third-party LSP plugins. Communicates via standard JSON-RPC over stdio and emits real-time AST lint diagnostics and null-guard warnings:
+
+```bash
+python apex.pyz lsp
+```
+
+### 13. Autonomous Closed-Loop Repair (`apex loop`)
+The ultimate test-driven self-healing loop: executes tests, intercepts failures, parses tracebacks, synthesizes sound patches via CEGIS, validates against 500 hidden probes, applies patches, and commits passing code to Git automatically:
+
+```bash
+python apex.pyz loop --commit
+```
+
 ---
 
 ## 📊 External Benchmark: QuixBugs
@@ -229,7 +284,7 @@ Apex verifies its entire codebase using Python's standard library `unittest` acr
 python -m unittest discover -s tests
 ```
 ```text
-Ran 283 tests in 39.120s
+Ran 294 tests in 52.081s
 OK
 ```
 

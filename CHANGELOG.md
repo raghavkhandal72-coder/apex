@@ -5,6 +5,11 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/) and [
 ## [Unreleased]
 
 ### Added
+- **Continuous File Watcher (`apex watch`)**: Zero-dependency filesystem watcher polling `os.stat` mtimes to continuously trigger test runs and CEGIS repairs on save.
+- **AST Program Slicing (`apex slice`)**: Backward and forward data/control dependency program slicing (Mark Weiser 1981) to isolate the minimal causal statements influencing a crash.
+- **Python Modernizer Codemod (`apex modern`)**: Zero-dependency AST and token codemod upgrading legacy `typing.Union` / `Optional` / `List` / `Dict` to native Python 3.10+ PEP 604 & 585 syntax.
+- **Language Server Protocol Server (`apex lsp`)**: Minimal stdlib JSON-RPC LSP server communicating over stdio to bring Apex diagnostics and quick-fixes into Cursor, VS Code, and Neovim.
+- **Autonomous Closed-Loop Repair (`apex loop`)**: Autonomous test-driven loop (Test -> Traceback -> CEGIS Synthesis -> Invariant Verification -> In-Place Patch -> Re-Test) that runs until 100% tests pass.
 - **Pipe Repair Engine (`apex fix`)**: Unix pipe traceback auto-repair (`pytest | apex fix --apply`). Parses tracebacks from stdin, isolates crash sites, executes bounded CEGIS, and applies in-place patches with automatic `.bak` backups.
 - **Self-Healing Git Pre-Commit Hook (`apex hook install`)**: Zero-dependency Git pre-commit hook that intercepts broken staged commits, repairs regressions via CEGIS, and auto-stages verified fixes.
 - **Mutation Challenge Suite (`apex challenge`)**: Standard-library mutation testing engine and Mutation Resilience Score (`%`) that reveals test suite blindspots and fake code coverage.
