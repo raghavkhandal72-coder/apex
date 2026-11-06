@@ -2848,6 +2848,18 @@ def main(argv: list[str] | None = None) -> int:
         from .test_all_runner import run_all_systems_test
         return run_all_systems_test()
 
+    # Default bare invocation (`python main.py` or `apex` with no arguments)
+    if args.command is None and args.direct_prompt is None and getattr(args, "prompt", None) is None:
+        from .ui.studio import render_studio_dashboard
+        print(render_studio_dashboard())
+        print("  [APEX QUICKSTART] Run any command below:")
+        print("    python main.py cegis binary_search.py --tests-file tests.txt   (20-second CEGIS repair demo)")
+        print("    python main.py test-all                                        (Unified master verification scorecard)")
+        print("    python main.py instruments binary_search.py                    (Line-by-line memory & leak profiler)")
+        print("    python main.py swift-guard binary_search.py                    (Swift/Rust pattern exhaustiveness)")
+        print("    python main.py --help                                          (Full command directory)\n")
+        return 0
+
     # 26. Handle battle / default prompt
     prompt = getattr(args, "prompt", None) or args.direct_prompt or "Build an LRU cache with TTL support"
     offline = getattr(args, "offline", False)

@@ -68,8 +68,11 @@ Or run directly from source with Python 3.10+:
 git clone https://github.com/raghavkhandal72-coder/apex.git
 cd apex
 
+# Launch interactive console immediately:
+python main.py
+
 # 1. Try the 20-second repair demo
-python apex.pyz cegis binary_search.py --tests-file tests.txt
+python main.py cegis binary_search.py --tests-file tests.txt
 
 # 2. Spectrum-based fault localization (Ochiai, Tarantula, D*)
 python apex.pyz sbfl binary_search.py --tests-file tests.txt
