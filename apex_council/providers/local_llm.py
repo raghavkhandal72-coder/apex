@@ -52,7 +52,7 @@ class LocalLLMClient:
             if engine_type == "ollama":
                 url = f"{base_url}/api/generate"
                 payload = {
-                    "model": model_hint or os.environ.get("OLLAMA_MODEL", "qwen2.5-coder"),
+                    "model": model_hint or os.environ.get("OLLAMA_MODEL") or "codegemma:2b",
                     "prompt": prompt,
                     "system": system_prompt or "You are an expert Python systems engineer. Write only clean, type-safe Python code.",
                     "stream": False,

@@ -25,7 +25,7 @@ class OllamaEngine:
     """Manages local Ollama daemon connection, models, and inference."""
 
     DEFAULT_HOST = "http://127.0.0.1:11434"
-    DEFAULT_MODEL = "qwen2.5-coder"
+    DEFAULT_MODEL = "codegemma:2b"
 
     def __init__(self, host: Optional[str] = None, model: Optional[str] = None):
         self.host = (host or os.environ.get("OLLAMA_HOST") or self.DEFAULT_HOST).rstrip("/")
@@ -58,7 +58,7 @@ class OllamaEngine:
         if not models:
             return self.DEFAULT_MODEL
         names = [m.get("name", "") for m in models]
-        for pref in ["qwen2.5-coder:0.5b", "qwen2.5-coder:1.5b", "qwen2.5-coder:latest", "qwen2.5-coder", "llama3.2", "codellama"]:
+        for pref in ["codegemma:2b", "codegemma:7b", "codegemma", "qwen2.5-coder:0.5b", "qwen2.5-coder:1.5b", "qwen2.5-coder", "llama3.2"]:
             for name in names:
                 if name == pref or name.startswith(pref.split(":")[0]):
                     return name

@@ -230,6 +230,49 @@ class StudioWebHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps(resp).encode("utf-8"))
 
+        elif self.path == "/api/stream":
+            prompt = data.get("prompt", "Build a high performance algorithm")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Connection", "keep-alive")
+            self.end_headers()
+
+            from ..providers.ollama_engine import OllamaEngine
+            engine = OllamaEngine()
+            if engine.is_running():
+                try:
+                    url = f"{engine.host}/api/generate"
+                    payload = json.dumps({"model": engine.get_preferred_model(), "prompt": prompt, "stream": True}).encode("utf-8")
+                    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+                    with urllib.request.urlopen(req, timeout=60) as resp:
+                        for line in resp:
+                            chunk = json.loads(line.decode("utf-8"))
+                            tok = chunk.get("response", "")
+                            if tok:
+                                self.wfile.write(f"data: {json.dumps({'token': tok})}\n\n".encode("utf-8"))
+                                self.wfile.flush()
+                            if chunk.get("done", False):
+                                break
+                    self.wfile.write(b'data: {"done": true}\n\n')
+                    self.wfile.flush()
+                    return
+                except Exception:
+                    pass
+
+            # Fallback streaming using Offline AI Synthesizer
+            from ..synthesis.offline_ai import OfflineAISynthesizer
+            synth = OfflineAISynthesizer()
+            code = synth.synthesize(prompt)
+            lines = code.splitlines(keepends=True)
+            for line in lines:
+                self.wfile.write(f"data: {json.dumps({'token': line})}\n\n".encode("utf-8"))
+                self.wfile.flush()
+                time.sleep(0.012)
+            self.wfile.write(b'data: {"done": true}\n\n')
+            self.wfile.flush()
+            return
+
         elif self.path == "/api/ollama/start":
             from ..providers.ollama_engine import OllamaEngine
             ok = OllamaEngine.start_service()
