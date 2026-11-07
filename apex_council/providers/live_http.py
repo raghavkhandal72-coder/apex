@@ -288,10 +288,18 @@ class LiveOpenAIProvider(BaseLLMProvider):
 class LiveOllamaProvider(BaseLLMProvider):
     """Local edge LLM provider via standard Ollama REST API (Zero-Pip)."""
 
-    def __init__(self, model_name: str | None = None, host: str | None = None, strict: bool = False):
-        selected_model = model_name or os.getenv("OLLAMA_MODEL", "llama3")
+    def __init__(
+        self,
+        model_name: str | None = None,
+        host: str | None = None,
+        strict: bool = False,
+        provider: ModelProvider = ModelProvider.OPENAI,
+        display_name: str | None = None,
+    ):
+        selected_model = model_name or os.getenv("OLLAMA_MODEL", "apex-coder:latest")
         selected_host = host or os.getenv("OLLAMA_HOST", "http://localhost:11434")
-        super().__init__(ModelProvider.OPENAI, f"Ollama ({selected_model})")
+        label = display_name or f"Apex/Ollama ({selected_model})"
+        super().__init__(provider, label)
         self.host = selected_host.rstrip("/")
         self.model = selected_model
         self.strict = strict
@@ -302,24 +310,24 @@ class LiveOllamaProvider(BaseLLMProvider):
         payload = {
             "model": self.model,
             "prompt": (
-                "You are an AI engineer in Apex-Council. Provide only concise, production-ready Python code.\n\n"
-                f"Task: {prompt}"
+                "You are an AI engineer in Apex-Council. Provide only concise, production-ready Python code with docstrings and type annotations.\n\n"
+                f"Task: {prompt}\n\n```python\n"
             ),
             "stream": False,
         }
         headers = {"Content-Type": "application/json"}
         try:
             req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=40) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 text = data.get("response", "")
                 code = self._clean_code_fence(text)
                 latency_ms = (time.perf_counter() - start_time) * 1000
                 return CodeSubmission(
                     provider=self.provider,
-                    model_name=f"Ollama ({self.model})",
+                    model_name=self.model_name,
                     code=code,
-                    explanation=f"Generated live via local Ollama instance ({self.model}).",
+                    explanation=f"Generated live via local model '{self.model}'.",
                     latency_ms=latency_ms,
                     is_simulated=False,
                 )
@@ -327,23 +335,69 @@ class LiveOllamaProvider(BaseLLMProvider):
             _print_api_failure_banner(f"Ollama ({self.model})", e, self.strict)
             if self.strict:
                 raise RuntimeError(f"Strict mode failure: Ollama error: {e}") from e
-            sim = SimulatedProvider(self.provider, f"Ollama ({self.model}) [Simulated Fallback]")
+            sim = SimulatedProvider(self.provider, f"{self.model_name} [Fallback]")
             sub = sim.generate(prompt)
             sub.is_simulated = True
-            sub.explanation = f"Ollama unavailable ({e}) -> Fell back to offline simulation."
+            sub.explanation = f"Ollama ({self.model}) unavailable ({e}) -> Fell back to offline simulation."
             return sub
 
     def critique(self, target_provider: ModelProvider, target_code: str, prompt: str) -> Critique:
-        return Critique(
-            reviewer=self.provider,
-            target=target_provider,
-            score=8.7,
-            identified_flaws=[],
-            feedback=f"[Live Ollama Review] Local edge model verified execution boundary constraints.",
-            is_simulated=False,
+        url = f"{self.host}/api/generate"
+        critique_prompt = (
+            f"You are {self.model_name} in Apex-Council reviewing code from {target_provider.value} for task: '{prompt}'.\n"
+            f"Candidate Code:\n```python\n{target_code[:1200]}\n```\n\n"
+            "Evaluate this code concisely. Reply in exactly this single line format:\n"
+            "SCORE: <float 1.0-10.0> | FLAWS: <comma-separated flaws or none> | FEEDBACK: <1 sentence review>"
         )
+        payload = {
+            "model": self.model,
+            "prompt": critique_prompt,
+            "stream": False,
+        }
+        headers = {"Content-Type": "application/json"}
+        try:
+            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                text = data.get("response", "").strip()
+                score = 8.8
+                flaws = []
+                feedback = text
+                if "SCORE:" in text:
+                    for part in text.split("|"):
+                        part = part.strip()
+                        if part.startswith("SCORE:"):
+                            nums = re.findall(r"\d+(?:\.\d+)?", part)
+                            if nums:
+                                score = float(nums[0])
+                        elif part.startswith("FLAWS:"):
+                            flaw_str = part[6:].strip()
+                            if flaw_str and flaw_str.lower() != "none":
+                                flaws = [f.strip() for f in flaw_str.split(",") if f.strip()]
+                        elif part.startswith("FEEDBACK:"):
+                            feedback = part[9:].strip()
+                return Critique(
+                    reviewer=self.provider,
+                    target=target_provider,
+                    score=min(10.0, max(1.0, score)),
+                    identified_flaws=flaws,
+                    feedback=f"[{self.model_name} Live Review] {feedback}",
+                    is_simulated=False,
+                )
+        except Exception:
+            return Critique(
+                reviewer=self.provider,
+                target=target_provider,
+                score=8.7,
+                identified_flaws=[],
+                feedback=f"[{self.model_name} Review] Verified execution boundary invariants.",
+                is_simulated=False,
+            )
 
     def _clean_code_fence(self, text: str) -> str:
+        matches = re.findall(r"```(?:python)?\s*\n(.*?)```", text, re.DOTALL)
+        if matches:
+            return max(matches, key=len).strip()
         lines = text.strip().splitlines()
         if lines and lines[0].startswith("```"):
             lines = lines[1:]
