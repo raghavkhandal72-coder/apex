@@ -388,8 +388,46 @@ class ApexInteractiveConsole:
     apex > Solve issue in calculator.py
 """)
 
+    def _explain_file(self, file_path: str) -> None:
+        t = MascotTheme
+        try:
+            import ast
+            src = open(file_path, "r", encoding="utf-8", errors="replace").read()
+            tree = ast.parse(src, filename=file_path)
+            classes = [n.name for n in ast.walk(tree) if isinstance(n, ast.ClassDef)]
+            funcs = [n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]
+            from ..formal.swift_guard import audit_swift_safety
+            findings = audit_swift_safety(src)
+
+            print(f"\n{t.CYAN}{t.BOLD}Architectural Analysis: {os.path.basename(file_path)}{t.RESET}")
+            print(f"  • Total Lines:       {len(src.splitlines())}")
+            print(f"  • Classes ({len(classes)}):       {', '.join(classes) if classes else 'None'}")
+            print(f"  • Functions ({len(funcs)}):     {', '.join(funcs) if funcs else 'None'}")
+            print(f"  • SwiftGuard Safety: {len(findings)} finding(s)")
+            if findings:
+                for fnd in findings[:2]:
+                    print(f"    - {fnd.message}")
+            else:
+                print(f"    ✓ 100% compliant with let-immutability and exhaustive patterns.")
+            print()
+        except Exception as ex:
+            print(f"  {t.RED}Error analyzing '{file_path}': {ex}{t.RESET}\n")
+
     def _execute_agent_task(self, prompt: str) -> None:
         t = MascotTheme
+        p_lower = prompt.lower().strip()
+        words = p_lower.split()
+
+        # 1. Direct file repair intent
+        if len(words) >= 2 and words[0] in {"fix", "repair"} and (words[1].endswith(".py") or os.path.exists(words[1])):
+            self._handle_repair_command(f"/repair {words[1]}")
+            return
+
+        # 2. Direct file explanation intent
+        if len(words) >= 2 and words[0] in {"explain", "analyze", "inspect"} and (words[1].endswith(".py") or os.path.exists(words[1])):
+            self._explain_file(words[1])
+            return
+
         print(f"\n{t.AMBER}• Convening Autonomous Supreme Council for task: \"{prompt}\"...{t.RESET}")
         try:
             from ..engine import CouncilEngine

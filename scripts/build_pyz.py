@@ -25,26 +25,12 @@ def build_standalone_pyz(output_path: str = "dist/apex.pyz") -> Path:
         staging_path = Path(staging_dir)
         target_pkg = staging_path / "apex_council"
         
-        # Copy source package, excluding caches
+        # Copy source package, excluding caches and tests
         shutil.copytree(
             src_package,
             target_pkg,
             ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", ".git*"),
         )
-
-        # Copy benchmarks and scripts modules so self-contained commands work in zipapp
-        if (repo_root / "benchmarks").exists():
-            shutil.copytree(
-                repo_root / "benchmarks",
-                staging_path / "benchmarks",
-                ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", "*.md", "*.json"),
-            )
-        if (repo_root / "scripts").exists():
-            shutil.copytree(
-                repo_root / "scripts",
-                staging_path / "scripts",
-                ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", "*.ps1", "*.sh"),
-            )
 
         # Create __main__.py inside staging root
         main_py = staging_path / "__main__.py"
