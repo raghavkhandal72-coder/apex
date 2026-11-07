@@ -1,3 +1,6 @@
 [submodule "spark"]
 	path = spark
 	url = https://github.com/apache/spark.git
+[submodule "dify"]
+	path = dify
+	url = https://github.com/langgenius/dify.git

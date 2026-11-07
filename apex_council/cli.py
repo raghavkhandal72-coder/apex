@@ -57,7 +57,7 @@ KNOWN_COMMANDS = {
     "rea", "reviewdog", "netdata", "lint", "fix", "hook", "challenge", "null-guard",
     "watch", "slice", "modern", "lsp", "loop",
     "patch-export", "crash-fingerprint", "flamegraph", "pr-summary", "secret-mask", "completion", "zero-div",
-    "instruments", "swift-guard", "studio", "test-all", "demo-live", "bench-live", "review", "ollama", "llamafile", "runner", "audit-sec", "security-audit", "scala", "scala-guard", "spark", "spark-guard",
+    "instruments", "swift-guard", "studio", "test-all", "demo-live", "bench-live", "review", "ollama", "llamafile", "runner", "audit-sec", "security-audit", "scala", "scala-guard", "spark", "spark-guard", "dify", "dify-guard",
     "-h", "--help"
 }
 
@@ -604,6 +604,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     spark_guard_p = subparsers.add_parser("spark-guard", help="SparkGuard static AppSec & OOM auditor for PySpark/Scala pipelines (alias)")
     spark_guard_p.add_argument("spark_args", nargs="*", help="Target path to audit (.py or .scala Spark files)")
 
+    # Command 95: LangGenius Dify Agentic Workflow & RAG Engine (apex dify / apex dify-guard)
+    dify_p = subparsers.add_parser("dify", help="LangGenius Dify visual agentic workflow DAG execution, in-memory BM25 RAG & DifyGuard")
+    dify_p.add_argument("dify_args", nargs="*", help="Dify subcommands (demo, run <workflow.json>, audit <path>)")
+
+    dify_guard_p = subparsers.add_parser("dify-guard", help="DifyGuard static AppSec, SSRF & dead-node auditor for Dify workflows (alias)")
+    dify_guard_p.add_argument("dify_args", nargs="*", help="Target Dify workflow JSON/YAML file to audit")
+
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
     parser.add_argument("--format", choices=["table", "markdown", "json"], default="table")
@@ -806,6 +813,13 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "spark-guard":
             return handle_spark_cli(["guard"] + args.spark_args)
         return handle_spark_cli(args.spark_args)
+
+    # Command 95: LangGenius Dify Agentic Workflow & RAG Engine (apex dify / apex dify-guard)
+    if args.command in {"dify", "dify-guard"}:
+        from .dify.engine import handle_dify_cli
+        if args.command == "dify-guard":
+            return handle_dify_cli(["guard"] + args.dify_args)
+        return handle_dify_cli(args.dify_args)
 
     # Command 21: Cryptographic Hash-Chained Audit Ledger Verifier
     if args.command == "verify-ledger":

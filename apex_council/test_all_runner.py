@@ -207,8 +207,25 @@ def run_all_systems_test(verbose: bool = True, include_unit_tests: bool = True) 
     except Exception as e:
         results.append(("15. Apache Spark Sovereign Engine", False, str(e)))
 
-    # 16. Full Unit Test Suite Execution
-    total_test_count = 370
+    # 16. LangGenius Dify Agentic Workflow & RAG Engine
+    t0 = time.time()
+    try:
+        from apex_council.dify.engine import DifyKnowledgeBase, DifyWorkflowEngine, StartNode, EndNode
+        kb = DifyKnowledgeBase("TestAllKB")
+        kb.add_document("doc1", "Dify visual workflows with sovereign RAG.")
+        m = kb.search("sovereign RAG", top_k=1)
+        wf = DifyWorkflowEngine("TestAllWF")
+        wf.add_node(StartNode("start", "Start", {"variables": {"msg": "hello"}}))
+        wf.add_node(EndNode("end", "End", {"outputs": {"out": "{{#start.msg#}}"}}))
+        wf.add_edge("start", "end")
+        out = wf.run({"msg": "hello"})
+        ok = len(m) == 1 and out["outputs"]["out"] == "hello"
+        results.append(("16. Dify Agentic Workflow & RAG", ok, f"DAG Execution & BM25 RAG in {time.time()-t0:.3f}s"))
+    except Exception as e:
+        results.append(("16. Dify Agentic Workflow & RAG", False, str(e)))
+
+    # 17. Full Unit Test Suite Execution
+    total_test_count = 378
     if include_unit_tests:
         t0 = time.time()
         try:
@@ -232,9 +249,9 @@ def run_all_systems_test(verbose: bool = True, include_unit_tests: bool = True) 
                     total_test_count = int(m.group(1))
                 except ValueError:
                     pass
-            results.append(("16. Complete Test Suite Discovery", ok, f"Ran {num_tests} unit tests in {time.time()-t0:.2f}s"))
+            results.append(("17. Complete Test Suite Discovery", ok, f"Ran {num_tests} unit tests in {time.time()-t0:.2f}s"))
         except Exception as e:
-            results.append(("16. Complete Test Suite Discovery", False, str(e)))
+            results.append(("17. Complete Test Suite Discovery", False, str(e)))
 
     elapsed_all = time.time() - start_total
 
