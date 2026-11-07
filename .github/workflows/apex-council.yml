@@ -21,4 +21,4 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          apex-council "Review PR diff for security flaws, edge cases, and algorithmic optimality" --format markdown -o council_verdict.md
+          python -m apex_council.cli "Review PR diff for security flaws, edge cases, and algorithmic optimality" --offline --format markdown -o council_verdict.md
