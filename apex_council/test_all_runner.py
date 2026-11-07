@@ -162,8 +162,18 @@ def run_all_systems_test(verbose: bool = True, include_unit_tests: bool = True) 
     except Exception as e:
         results.append(("11. Runtime Benchmark & Live Demo Engine", False, str(e)))
 
-    # 12. Full Unit Test Suite Execution
-    total_test_count = 320
+    # 12. Local Ollama Integration Engine
+    t0 = time.time()
+    try:
+        from apex_council.providers.ollama_engine import OllamaEngine
+        o_eng = OllamaEngine()
+        status_str = "online (ready)" if o_eng.is_running(timeout=0.1) else "offline fallback ready"
+        results.append(("12. Local Ollama Integration Engine", True, f"Host: {o_eng.host} [{status_str}]"))
+    except Exception as e:
+        results.append(("12. Local Ollama Integration Engine", False, str(e)))
+
+    # 13. Full Unit Test Suite Execution
+    total_test_count = 327
     if include_unit_tests:
         t0 = time.time()
         try:
@@ -184,9 +194,9 @@ def run_all_systems_test(verbose: bool = True, include_unit_tests: bool = True) 
                     total_test_count = int(m.group(1))
                 except ValueError:
                     pass
-            results.append(("12. Complete Test Suite Discovery", ok, f"Ran {num_tests} unit tests in {time.time()-t0:.2f}s"))
+            results.append(("13. Complete Test Suite Discovery", ok, f"Ran {num_tests} unit tests in {time.time()-t0:.2f}s"))
         except Exception as e:
-            results.append(("12. Complete Test Suite Discovery", False, str(e)))
+            results.append(("13. Complete Test Suite Discovery", False, str(e)))
 
     elapsed_all = time.time() - start_total
 

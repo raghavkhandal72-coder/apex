@@ -80,7 +80,11 @@ python main.py bench-live
 # 3. Autonomous Code Review & Defect Auditor
 python main.py review
 
-# 4. Try the 20-second repair demo
+# 4. Local Ollama Model Integration & Offline Runner
+python main.py ollama status
+python main.py ollama run "Write a quicksort in Python"
+
+# 5. Try the 20-second repair demo
 python main.py cegis binary_search.py --tests-file tests.txt
 
 # 2. Spectrum-based fault localization (Ochiai, Tarantula, D*)

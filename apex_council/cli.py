@@ -57,7 +57,7 @@ KNOWN_COMMANDS = {
     "rea", "reviewdog", "netdata", "lint", "fix", "hook", "challenge", "null-guard",
     "watch", "slice", "modern", "lsp", "loop",
     "patch-export", "crash-fingerprint", "flamegraph", "pr-summary", "secret-mask", "completion", "zero-div",
-    "instruments", "swift-guard", "studio", "test-all", "demo-live", "bench-live", "review",
+    "instruments", "swift-guard", "studio", "test-all", "demo-live", "bench-live", "review", "ollama",
     "-h", "--help"
 }
 
@@ -567,6 +567,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     review_p = subparsers.add_parser("review", help="Autonomous code review and safety auditor")
     review_p.add_argument("target", nargs="?", default=".", help="Target file or directory to audit")
 
+    # Command 90: Local Ollama Model Manager (apex ollama)
+    ollama_p = subparsers.add_parser("ollama", help="Manage and run local Ollama GPU/CPU models")
+    ollama_p.add_argument("ollama_args", nargs="*", help="Ollama subcommands (status, list, use <model>, run <prompt>)")
+
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
     parser.add_argument("--format", choices=["table", "markdown", "json"], default="table")
@@ -740,6 +744,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "review":
         from .ui.review_engine import run_code_review
         return run_code_review(args.target)
+
+    # Command 90: Local Ollama Model Manager (apex ollama)
+    if args.command == "ollama":
+        from .providers.ollama_engine import handle_ollama_cli
+        return handle_ollama_cli(args.ollama_args)
 
     # Command 21: Cryptographic Hash-Chained Audit Ledger Verifier
     if args.command == "verify-ledger":
