@@ -145,7 +145,10 @@ class CloudflareSecurityAuditor:
             files_to_scan = [self.target_path]
         else:
             files_to_scan = []
-            exclude_dirs = {".git", ".venv", "venv", "__pycache__", "node_modules", "dist", "build", ".apex", "scratch"}
+            exclude_dirs = {
+                ".git", ".venv", "venv", "__pycache__", "node_modules", "dist", "build",
+                ".apex", "scratch", "spark", "dify", "llamafile", "QuixBugs", ".agents"
+            }
             for root, dirs, files in os.walk(self.target_path):
                 dirs[:] = [d for d in dirs if d not in exclude_dirs]
                 for file in files:
