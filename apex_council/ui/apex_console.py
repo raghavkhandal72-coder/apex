@@ -443,7 +443,7 @@ class ApexInteractiveConsole:
         try:
             from ..engine import CouncilEngine
             from ..reporter import CouncilReporter
-            engine = CouncilEngine(force_offline=True)
+            engine = CouncilEngine(force_offline=False)
             res = engine.convene_council(prompt)
             print(CouncilReporter.format_terminal(res) + "\n")
         except Exception as ex:
