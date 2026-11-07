@@ -190,10 +190,27 @@ class RDD(Generic[T]):
 
         return RDD(self.sc, _comp, self.num_partitions, "CoGroupedRDD[join]", self, DependencyType.WIDE)
 
+    # --- Fault-Tolerance & Checkpointing ---
+
+    def checkpoint(self) -> RDD[T]:
+        """Materializes partitions and truncates parent lineage to prevent stack overflow on deep DAGs."""
+        data = self.collect()
+        self._is_checkpointed = True
+        self._checkpoint_data = data
+        self.parent = None
+        self.dep_type = "Checkpointed (Lineage Truncated)"
+        return self
+
+    def isCheckpointed(self) -> bool:
+        return getattr(self, "_is_checkpointed", False)
+
     # --- Actions (Trigger Execution Lineage) ---
 
     def collect(self) -> List[T]:
         """Action: Materializes all partitions from the lineage DAG into driver memory."""
+        if getattr(self, "_is_checkpointed", False):
+            return list(getattr(self, "_checkpoint_data", []))
+
         results: List[T] = []
         for p in range(self.num_partitions):
             results.extend(list(self._compute_fn(p)))

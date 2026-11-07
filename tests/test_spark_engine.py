@@ -97,6 +97,18 @@ class TestSparkEngine(unittest.TestCase):
         self.assertIn("MapPartitionsRDD", debug_str)
         self.assertIn(DependencyType.NARROW, debug_str)
 
+    def test_rdd_checkpointing(self):
+        rdd = self.sc.parallelize([10, 20, 30]).map(lambda x: x * 2)
+        self.assertFalse(rdd.isCheckpointed())
+        self.assertIsNotNone(rdd.parent)
+
+        # Checkpoint truncates parent lineage
+        rdd.checkpoint()
+        self.assertTrue(rdd.isCheckpointed())
+        self.assertIsNone(rdd.parent)
+        self.assertEqual(rdd.collect(), [20, 40, 60])
+        self.assertIn("Checkpointed", rdd.toDebugString())
+
     def test_catalyst_optimizer_and_dataframe(self):
         records = [
             {"id": 1, "name": "Aditi", "age": 28, "salary": 90000},
