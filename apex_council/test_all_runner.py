@@ -182,8 +182,18 @@ def run_all_systems_test(verbose: bool = True, include_unit_tests: bool = True) 
     except Exception as e:
         results.append(("13. Cloudflare Defensive Auditor", False, str(e)))
 
-    # 14. Full Unit Test Suite Execution
-    total_test_count = 350
+    # 14. Scala 3 Functional & Actor Suite
+    t0 = time.time()
+    try:
+        from apex_council.scala.engine import ScalaSome, for_comprehension
+        res = for_comprehension([ScalaSome(10), ScalaSome(20)], lambda a, b: a + b)
+        ok = res.get() == 30
+        results.append(("14. Scala 3 Functional Engine", ok, f"Monads, For-Comprehensions & Actors in {time.time()-t0:.3f}s"))
+    except Exception as e:
+        results.append(("14. Scala 3 Functional Engine", False, str(e)))
+
+    # 15. Full Unit Test Suite Execution
+    total_test_count = 362
     if include_unit_tests:
         t0 = time.time()
         try:
@@ -207,9 +217,9 @@ def run_all_systems_test(verbose: bool = True, include_unit_tests: bool = True) 
                     total_test_count = int(m.group(1))
                 except ValueError:
                     pass
-            results.append(("14. Complete Test Suite Discovery", ok, f"Ran {num_tests} unit tests in {time.time()-t0:.2f}s"))
+            results.append(("15. Complete Test Suite Discovery", ok, f"Ran {num_tests} unit tests in {time.time()-t0:.2f}s"))
         except Exception as e:
-            results.append(("14. Complete Test Suite Discovery", False, str(e)))
+            results.append(("15. Complete Test Suite Discovery", False, str(e)))
 
     elapsed_all = time.time() - start_total
 

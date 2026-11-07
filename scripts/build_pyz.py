@@ -41,10 +41,18 @@ def build_standalone_pyz(output_path: str = "dist/apex.pyz") -> Path:
                 in_doc = False
                 for line in lines:
                     s = line.strip()
+                    # Skip single-line docstrings
+                    if (s.startswith('"""') and s.endswith('"""') and len(s) >= 6) or (s.startswith("'''") and s.endswith("'''") and len(s) >= 6):
+                        continue
+                    # Toggle multi-line docstrings
                     if s.startswith('"""') or s.startswith("'''"):
-                        if s.count('"""') == 1 or s.count("'''") == 1:
-                            in_doc = not in_doc
-                    if not in_doc and s.startswith("#") and not s.startswith("#!") and "coding" not in s:
+                        in_doc = not in_doc
+                        continue
+                    if in_doc:
+                        continue
+                    if s.startswith("#") and not s.startswith("#!") and "coding" not in s:
+                        continue
+                    if not s:
                         continue
                     filtered.append(line)
                 py_file.write_text("".join(filtered), encoding="utf-8")

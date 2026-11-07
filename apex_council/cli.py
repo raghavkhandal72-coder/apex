@@ -57,7 +57,7 @@ KNOWN_COMMANDS = {
     "rea", "reviewdog", "netdata", "lint", "fix", "hook", "challenge", "null-guard",
     "watch", "slice", "modern", "lsp", "loop",
     "patch-export", "crash-fingerprint", "flamegraph", "pr-summary", "secret-mask", "completion", "zero-div",
-    "instruments", "swift-guard", "studio", "test-all", "demo-live", "bench-live", "review", "ollama", "llamafile", "runner", "audit-sec", "security-audit",
+    "instruments", "swift-guard", "studio", "test-all", "demo-live", "bench-live", "review", "ollama", "llamafile", "runner", "audit-sec", "security-audit", "scala", "scala-guard",
     "-h", "--help"
 }
 
@@ -590,6 +590,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     security_audit_p = subparsers.add_parser("security-audit", help="Cloudflare-grade sovereign defensive security audit engine (alias)")
     security_audit_p.add_argument("audit_args", nargs="*", help="Target path and audit flags (--output-dir, --format, --strict)")
 
+    # Command 93: Scala 3 Functional & Actor Concurrency Engine (apex scala / apex scala-guard)
+    scala_p = subparsers.add_parser("scala", help="Scala 3 pure functional monadic & actor concurrency engine with static defect auditor")
+    scala_p.add_argument("scala_args", nargs="*", help="Scala subcommands (demo, audit <path>, guard)")
+
+    scala_guard_p = subparsers.add_parser("scala-guard", help="Scala 3 static defect & MatchError auditor (alias)")
+    scala_guard_p.add_argument("scala_args", nargs="*", help="Target path to audit (.scala files)")
+
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
     parser.add_argument("--format", choices=["table", "markdown", "json"], default="table")
@@ -778,6 +785,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.command in {"audit-sec", "security-audit"}:
         from .security.cloudflare_auditor import handle_security_audit_cli
         return handle_security_audit_cli(args.audit_args)
+
+    # Command 93: Scala 3 Functional & Actor Concurrency Engine (apex scala / apex scala-guard)
+    if args.command in {"scala", "scala-guard"}:
+        from .scala.engine import handle_scala_cli
+        if args.command == "scala-guard":
+            return handle_scala_cli(["guard"] + args.scala_args)
+        return handle_scala_cli(args.scala_args)
 
     # Command 21: Cryptographic Hash-Chained Audit Ledger Verifier
     if args.command == "verify-ledger":
