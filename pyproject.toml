@@ -28,6 +28,7 @@ Homepage = "https://github.com/raghavkhandal72-coder/apex"
 [project.scripts]
 # Point this at your real CLI entry point.
 apex = "apex_council.cli:main"
+apex-council = "apex_council.cli:main"
 apex-lint = "apex_council.lint.rules:main"
 
 [tool.setuptools.packages.find]
