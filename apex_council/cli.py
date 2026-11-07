@@ -552,7 +552,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     swift_p.add_argument("paths", nargs="+", help="Files or directories to audit")
 
     # Command 85: Apple Pro Studio Console (apex studio)
-    subparsers.add_parser("studio", help="Launch Apple Pro terminal telemetry & health dashboard")
+    studio_p = subparsers.add_parser("studio", help="Launch Apple Pro Studio interactive web & terminal telemetry dashboard")
+    studio_p.add_argument("--web", action="store_true", help="Launch interactive browser dashboard")
+    studio_p.add_argument("--port", type=int, default=8765, help="Port for web studio (default: 8765)")
+    studio_p.add_argument("--host", default="127.0.0.1", help="Host for web studio (default: 127.0.0.1)")
+    studio_p.add_argument("--terminal", action="store_true", help="Render terminal dashboard only without web server")
+    studio_p.add_argument("--no-browser", action="store_true", help="Do not automatically open the browser")
 
     # Command 86: Master Verification Runner (apex test-all)
     subparsers.add_parser("test-all", help="Execute unified master verification scorecard across all Apex systems")
@@ -2878,8 +2883,16 @@ def main(argv: list[str] | None = None) -> int:
 
     # Command 85: Apple Pro Studio Console (apex studio)
     if args.command == "studio":
-        from .ui.studio import render_studio_dashboard
-        print(render_studio_dashboard())
+        from .ui.studio import render_studio_dashboard, launch_studio_web
+        if getattr(args, "terminal", False):
+            print(render_studio_dashboard())
+            return 0
+        launch_studio_web(
+            host=getattr(args, "host", "127.0.0.1"),
+            port=getattr(args, "port", 8765),
+            open_browser=not getattr(args, "no_browser", False),
+            blocking=True,
+        )
         return 0
 
     # Command 86: Master Verification Runner (apex test-all)

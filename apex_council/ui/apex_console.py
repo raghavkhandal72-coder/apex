@@ -77,7 +77,7 @@ class ApexInteractiveConsole:
         hist_dir = os.path.expanduser("~/.apex")
         hist_file = os.path.join(hist_dir, "history")
         _commands = [
-            "/ollama", "/demo", "/benchmark", "/repair", "/test", "/diff", "/review",
+            "/studio", "/ollama", "/demo", "/benchmark", "/repair", "/test", "/diff", "/review",
             "/instruments", "/swift-guard", "/slice", "/omo", "/wt",
             "/mascot", "/mlflow", "/eval", "/clear", "/help", "/exit", "exit", "quit"
         ]
@@ -133,6 +133,10 @@ class ApexInteractiveConsole:
                         parts = prompt_line.split()
                         target = parts[1] if len(parts) > 1 else self.workspace_dir
                         run_code_review(target)
+
+                    elif prompt_line in {"/studio", "studio"}:
+                        from .studio import launch_studio_web
+                        launch_studio_web(open_browser=True, blocking=False)
 
                     elif prompt_line.startswith("/ollama") or prompt_line == "ollama":
                         from ..providers.ollama_engine import handle_ollama_cli
@@ -370,7 +374,8 @@ class ApexInteractiveConsole:
         t = MascotTheme
         print(f"""
 {t.BOLD}Apex Autonomous AI Agent Command Palette:{t.RESET}
-  /ollama [status|list|use|run]        Local Ollama GPU/CPU model manager
+  /studio                              Launch Apple Pro Studio Web & Telemetry Dashboard
+  /ollama [status|list|use|run|pull]   Local Ollama GPU/CPU model manager
   /demo                                5-stage live inductive program repair walkthrough
   /benchmark                           Execute high-precision runtime micro-benchmarks
   /repair [file] [--tests tests.txt]   CEGIS automated 1-token & boundary bug repair

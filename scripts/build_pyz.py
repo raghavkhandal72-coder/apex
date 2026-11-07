@@ -29,7 +29,7 @@ def build_standalone_pyz(output_path: str = "dist/apex.pyz") -> Path:
         shutil.copytree(
             src_package,
             target_pkg,
-            ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", ".git*"),
+            ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", ".git*", "*.html", "*.md"),
         )
 
         # Create __main__.py inside staging root

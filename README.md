@@ -68,23 +68,26 @@ Or run directly from source with Python 3.10+:
 git clone https://github.com/raghavkhandal72-coder/apex.git
 cd apex
 
-# Launch interactive autonomous agent console:
+# 1. Launch the Apple Pro Studio Web & Telemetry Dashboard:
+python main.py studio
+
+# 2. Launch interactive autonomous agent console:
 python main.py
 
-# 1. 5-Stage Live Inductive Program Repair Walkthrough
-python main.py demo-live
-
-# 2. High-Precision Runtime Micro-Benchmarks
-python main.py bench-live
-
-# 3. Autonomous Code Review & Defect Auditor
-python main.py review
-
-# 4. Local Ollama Model Integration & Offline Runner
+# 3. First-class local Ollama GPU/CPU model manager:
 python main.py ollama status
 python main.py ollama run "Write a quicksort in Python"
 
-# 5. Try the 20-second repair demo
+# 4. 5-Stage Live Inductive Program Repair Walkthrough:
+python main.py demo-live
+
+# 5. High-Precision Runtime Micro-Benchmarks:
+python main.py bench-live
+
+# 6. Autonomous Code Review & Defect Auditor:
+python main.py review
+
+# 7. Try the 20-second repair demo:
 python main.py cegis binary_search.py --tests-file tests.txt
 
 # 2. Spectrum-based fault localization (Ochiai, Tarantula, D*)

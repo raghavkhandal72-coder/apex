@@ -36,6 +36,8 @@ BUGGY_BINARY_SEARCH = '''def binary_search(arr, target):
     return -1
 '''
 
+FIXED_BINARY_SEARCH = BUGGY_BINARY_SEARCH.replace("while left < right:", "while left <= right:")
+
 TEST_SPEC = '''assert binary_search([1, 3, 5, 7, 9], 1) == 0
 assert binary_search([1, 3, 5, 7, 9], 5) == 2
 assert binary_search([1, 3, 5, 7, 9], 9) == 4

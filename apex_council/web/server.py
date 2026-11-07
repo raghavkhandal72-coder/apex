@@ -22,7 +22,8 @@ class CouncilWebHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
-            self.wfile.write(HTML_FILE.read_bytes())
+            from ..ui.studio import STUDIO_HTML
+            self.wfile.write(STUDIO_HTML.encode("utf-8"))
 
         elif self.path in ("/api/health", "/healthz", "/livez"):
             self.send_response(200)
