@@ -19,9 +19,15 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Zero-dependency check (pip = 0)
         run: python tools/check_stdlib_only.py apex_council tools
+      - name: Cloudflare defensive security audit
+        run: python main.py audit-sec apex_council
       - name: Unit tests
         run: python -m unittest discover -s tests -v
       - name: Build standalone zipapp (apex.pyz)
         run: python scripts/build_pyz.py
       - name: Verify standalone zipapp execution
         run: python dist/apex.pyz cegis binary_search.py --tests-file tests.txt
+      - name: Verify Apache Spark sovereign engine
+        run: python dist/apex.pyz spark demo
+      - name: Verify LangGenius Dify agentic workflow & RAG
+        run: python dist/apex.pyz dify demo

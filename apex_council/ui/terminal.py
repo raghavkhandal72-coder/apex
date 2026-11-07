@@ -72,7 +72,7 @@ class CyberpunkTUI:
             f"{c.CYAN}{c.BOLD}╔═" + "═" * inner_width + "═╗",
             f"║  {title1}" + " " * max(0, inner_width - len(title1) + 2) + "║",
             f"║     {title2}" + " " * max(0, inner_width - len(title2) - 3) + "║",
-            f"╚═" + "═" * inner_width + "═╝{c.RESET}",
+            f"╚═" + "═" * inner_width + f"═╝{c.RESET}",
         ]
         return "\n".join(lines)
 

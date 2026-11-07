@@ -3,6 +3,11 @@ import unittest
 from pathlib import Path
 
 from apex_council.scala.engine import (
+    ActorPath,
+    ClusterMember,
+    ClusterRegistry,
+    RemoteActorRef,
+    RemoteTransportServer,
     ScalaActor,
     ScalaActorSystem,
     ScalaEither,
@@ -17,9 +22,12 @@ from apex_council.scala.engine import (
     ScalaSuccess,
     ScalaTry,
     SupervisorStrategy,
+    Terminated,
+    deserialize_scala_message,
     for_comprehension,
     handle_scala_cli,
     run_scala_demo,
+    serialize_scala_message,
 )
 
 
@@ -109,6 +117,119 @@ class TestScalaActorSystem(unittest.TestCase):
         self.assertEqual(reply.get_right()["type"], "pong")
         self.assertEqual(reply.get_right()["payload"], "Apex-Scala")
         system.terminate()
+
+    def test_actor_path_parsing(self):
+        p1 = ActorPath.parse("akka.tcp://ClusterSystem@192.168.1.10:2552/user/worker/task1")
+        self.assertEqual(p1.system, "ClusterSystem")
+        self.assertEqual(p1.host, "192.168.1.10")
+        self.assertEqual(p1.port, 2552)
+        self.assertEqual(p1.elements, ["user", "worker", "task1"])
+        self.assertEqual(p1.name, "task1")
+        self.assertTrue(p1.is_remote)
+        self.assertEqual(str(p1), "akka.tcp://ClusterSystem@192.168.1.10:2552/user/worker/task1")
+
+        p_parent = p1.parent()
+        self.assertEqual(p_parent.elements, ["user", "worker"])
+        self.assertEqual(p_parent.name, "worker")
+
+        p_child = p_parent.child("subtask")
+        self.assertEqual(p_child.elements, ["user", "worker", "subtask"])
+
+        p_local = ActorPath.parse("/user/local-actor")
+        self.assertFalse(p_local.is_remote)
+        self.assertEqual(p_local.elements, ["user", "local-actor"])
+
+    def test_scala_monadic_message_serialization(self):
+        some = ScalaSome({"code": 200, "status": "OK"})
+        serialized = serialize_scala_message(some)
+        deserialized = deserialize_scala_message(serialized)
+        self.assertIsInstance(deserialized, ScalaSome)
+        self.assertEqual(deserialized.get()["code"], 200)
+
+        none = ScalaNone()
+        self.assertIsInstance(deserialize_scala_message(serialize_scala_message(none)), ScalaNone)
+
+        right = ScalaRight("Valid")
+        self.assertTrue(deserialize_scala_message(serialize_scala_message(right)).is_right())
+
+        left = ScalaLeft("Invalid")
+        self.assertTrue(deserialize_scala_message(serialize_scala_message(left)).is_left())
+
+        term = Terminated(ActorPath.parse("/user/worker"))
+        des_term = deserialize_scala_message(serialize_scala_message(term))
+        self.assertIsInstance(des_term, Terminated)
+
+    def test_death_watch_protocol(self):
+        system = ScalaActorSystem("WatchSystem")
+        terminated_events = []
+
+        class WatcherActor(ScalaActor):
+            def receive(self, msg):
+                if isinstance(msg, Terminated):
+                    terminated_events.append(msg)
+
+        class WorkerActor(ScalaActor):
+            def receive(self, msg):
+                pass
+
+        watcher = system.actor_of(WatcherActor, "watcher")
+        worker = system.actor_of(WorkerActor, "worker")
+
+        watcher.watch(worker)
+        # Terminate worker
+        worker.stop()
+
+        import time
+        for _ in range(20):
+            if terminated_events:
+                break
+            time.sleep(0.05)
+
+        self.assertEqual(len(terminated_events), 1)
+        self.assertEqual(terminated_events[0].actor_ref, worker)
+        system.terminate()
+
+    def test_akka_tcp_remoting(self):
+        system = ScalaActorSystem("RemoteSystem")
+        port = system.enable_remoting(host="127.0.0.1", port=0)
+        self.assertGreater(port, 0)
+
+        class ComputeActor(ScalaActor):
+            def receive(self, msg):
+                if isinstance(msg, dict) and "val" in msg:
+                    if self.sender:
+                        self.sender.tell(ScalaRight(msg["val"] * 10))
+
+        system.actor_of(ComputeActor, "compute")
+
+        # Client system connecting from outside
+        client_system = ScalaActorSystem("ClientSystem")
+        path_str = f"akka.tcp://RemoteSystem@127.0.0.1:{port}/user/compute"
+        remote_ref = client_system.actor_selection(path_str)
+        self.assertIsInstance(remote_ref, RemoteActorRef)
+
+        reply = remote_ref.ask({"val": 7}, timeout=2.0)
+        self.assertTrue(reply.is_right())
+        # The reply returned was ScalaRight(70)
+        self.assertEqual(reply.get_right().get_right(), 70)
+
+        client_system.terminate()
+        system.terminate()
+
+    def test_cluster_registry_and_heartbeat(self):
+        registry = ClusterRegistry(local_node_id="node-1")
+        m2 = registry.register(node_id="node-2", host="127.0.0.1", port=2552)
+        self.assertEqual(m2.status, "UP")
+
+        hb = registry.heartbeat("node-2")
+        self.assertTrue(hb)
+
+        # Force heartbeat expiration
+        m2.last_heartbeat -= 10.0
+        failures = registry.check_failures(timeout=3.0)
+        self.assertEqual(len(failures), 1)
+        self.assertEqual(failures[0].node_id, "node-2")
+        self.assertEqual(failures[0].status, "DOWN")
 
 
 class TestScalaGuard(unittest.TestCase):
