@@ -87,27 +87,34 @@ def parse_traceback(trace_text: str) -> Optional[FailureTrace]:
             target_path = Path(py_tb_files[-1][0])
             line_no = int(py_tb_files[-1][1])
 
-    if not target_path or not target_path.exists():
-        # Fallback: search for any .py file mentioned that exists
+    if not target_path:
+        # Fallback: search for any .py file mentioned that exists or is non-test
         for match in re.findall(r"([\w\-./\\]+\.py)", trace_text):
             p = Path(match)
             if p.exists() and not p.name.startswith("test_") and not p.name.endswith("_test.py"):
                 target_path = p
                 break
+        if not target_path:
+            for match in re.findall(r"([\w\-./\\]+\.py)", trace_text):
+                p = Path(match)
+                if not p.name.startswith("test_") and not p.name.endswith("_test.py"):
+                    target_path = p
+                    break
 
     # If target_path is a test file, inspect it to find the implementation module being tested
     if target_path and (target_path.name.startswith("test_") or target_path.name.endswith("_test.py")):
         try:
-            test_content = target_path.read_text(encoding="utf-8", errors="replace")
-            for mod in re.findall(r"(?:from|import)\s+([A-Za-z0-9_]+)", test_content):
-                cand = target_path.parent / f"{mod}.py"
-                if cand.exists() and cand != target_path:
-                    target_path = cand
-                    break
+            if target_path.exists():
+                test_content = target_path.read_text(encoding="utf-8", errors="replace")
+                for mod in re.findall(r"(?:from|import)\s+([A-Za-z0-9_]+)", test_content):
+                    cand = target_path.parent / f"{mod}.py"
+                    if cand.exists() and cand != target_path:
+                        target_path = cand
+                        break
         except Exception:
             pass
 
-    if not target_path or not target_path.exists():
+    if not target_path:
         return None
 
     return FailureTrace(

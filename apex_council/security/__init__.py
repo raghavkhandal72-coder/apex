@@ -1,4 +1,9 @@
 from .ast_shield import ASTShield, ASTBombDetected
+from .cloudflare_auditor import (
+    CloudflareFinding,
+    CloudflareSecurityAuditor,
+    handle_security_audit_cli,
+)
 from .fuzzer import (
     BoundaryValueGenerator,
     ConcurrencyStressResult,
@@ -41,4 +46,7 @@ __all__ = [
     "MerkleTreeAttestor",
     "ASTMutationEngine",
     "MutationReport",
+    "CloudflareSecurityAuditor",
+    "CloudflareFinding",
+    "handle_security_audit_cli",
 ]

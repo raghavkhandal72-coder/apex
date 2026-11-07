@@ -406,8 +406,8 @@ class LiveOllamaProvider(BaseLLMProvider):
         return "\n".join(lines).strip()
 
 
-class LiveLlamafileProvider(BaseLLMProvider):
-    """Local LLM provider via Mozilla-AI / Cosmopolitan Llamafile server (Zero-Pip)."""
+class LiveApexRunnerProvider(BaseLLMProvider):
+    """Local LLM provider via Apex Sovereign Portable Binary Runner on port 8080 (Zero-Pip)."""
 
     def __init__(
         self,
@@ -417,18 +417,18 @@ class LiveLlamafileProvider(BaseLLMProvider):
         provider: ModelProvider = ModelProvider.OPENAI,
         display_name: str | None = None,
     ):
-        selected_host = host or os.getenv("LLAMAFILE_HOST", "http://127.0.0.1:8080")
-        selected_model = model_name or os.getenv("LLAMAFILE_MODEL", "llamafile")
-        label = display_name or f"Mozilla Llamafile ({selected_model})"
+        selected_host = host or os.getenv("APEX_RUNNER_HOST") or os.getenv("LLAMAFILE_HOST", "http://127.0.0.1:8080")
+        selected_model = model_name or os.getenv("APEX_RUNNER_MODEL") or os.getenv("LLAMAFILE_MODEL", "apex-runner")
+        label = display_name or f"Apex Sovereign Runner ({selected_model})"
         super().__init__(provider, label)
         self.host = selected_host.rstrip("/")
         self.model = selected_model
         self.strict = strict
 
     def generate(self, prompt: str) -> CodeSubmission:
-        from .llamafile_engine import LlamafileEngine
+        from .llamafile_engine import ApexPortableRunner
         start_time = time.perf_counter()
-        engine = LlamafileEngine(host=self.host, model=self.model)
+        engine = ApexPortableRunner(host=self.host, model=self.model)
         text = engine.generate(prompt)
         latency_ms = (time.perf_counter() - start_time) * 1000
         code = self._clean_code_fence(text)
@@ -436,7 +436,7 @@ class LiveLlamafileProvider(BaseLLMProvider):
             provider=self.provider,
             model_name=self.model_name,
             code=code,
-            explanation=f"Generated live via local Mozilla Llamafile server ({self.host}).",
+            explanation=f"Generated live via local Apex Sovereign Runner ({self.host}).",
             latency_ms=latency_ms,
             is_simulated=False,
         )
@@ -461,3 +461,7 @@ class LiveLlamafileProvider(BaseLLMProvider):
         if lines and lines[-1].startswith("```"):
             lines = lines[:-1]
         return "\n".join(lines).strip()
+
+
+# Backwards compatibility alias
+LiveLlamafileProvider = LiveApexRunnerProvider

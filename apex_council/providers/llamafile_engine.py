@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Apex Llamafile Integration Engine: First-class support for Mozilla-AI / Cosmopolitan Llamafiles.
-100% Pure Python Standard Library (pip = 0). Uses urllib.request.
+Apex Sovereign Portable Binary Runner Engine.
+Zero-Pip (100% Python standard library). Supports Cosmopolitan / portable standalone runtimes on port 8080.
+Rebranded natively into the Apex Sovereign AI ecosystem.
 """
 
 from __future__ import annotations
@@ -23,35 +24,35 @@ if hasattr(sys.stdout, "reconfigure"):
         pass
 
 
-class LlamafileEngine:
-    """Manages connection, health checks, and inference with Mozilla-AI Llamafiles."""
+class ApexPortableRunner:
+    """Manages connection, health checks, and inference with Apex Portable Binary Runtimes."""
 
     DEFAULT_HOST = "http://127.0.0.1:8080"
-    DEFAULT_MODEL = "llamafile"
+    DEFAULT_MODEL = "apex-runner"
 
     def __init__(self, host: Optional[str] = None, model: Optional[str] = None):
-        self.host = (host or os.environ.get("LLAMAFILE_HOST") or self.DEFAULT_HOST).rstrip("/")
-        self.model = model or os.environ.get("LLAMAFILE_MODEL") or self.DEFAULT_MODEL
+        self.host = (host or os.environ.get("APEX_RUNNER_HOST") or os.environ.get("LLAMAFILE_HOST") or self.DEFAULT_HOST).rstrip("/")
+        self.model = model or os.environ.get("APEX_RUNNER_MODEL") or os.environ.get("LLAMAFILE_MODEL") or self.DEFAULT_MODEL
 
     def is_running(self, timeout: float = 0.5) -> bool:
-        """Checks if a local llamafile server is active on the target port."""
+        """Checks if a local portable runner server is active on the target port."""
         try:
-            req = urllib.request.Request(f"{self.host}/v1/models", headers={"User-Agent": "Apex-Llamafile"})
+            req = urllib.request.Request(f"{self.host}/v1/models", headers={"User-Agent": "Apex-Sovereign-Runner"})
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 return resp.status == 200
         except Exception:
             # Also try /health
             try:
-                req = urllib.request.Request(f"{self.host}/health", headers={"User-Agent": "Apex-Llamafile"})
+                req = urllib.request.Request(f"{self.host}/health", headers={"User-Agent": "Apex-Sovereign-Runner"})
                 with urllib.request.urlopen(req, timeout=timeout) as resp:
                     return resp.status == 200
             except Exception:
                 return False
 
     def list_models(self, timeout: float = 1.5) -> List[Dict[str, Any]]:
-        """Returns list of models served by the llamafile server."""
+        """Returns list of models served by the portable runner."""
         try:
-            req = urllib.request.Request(f"{self.host}/v1/models", headers={"User-Agent": "Apex-Llamafile"})
+            req = urllib.request.Request(f"{self.host}/v1/models", headers={"User-Agent": "Apex-Sovereign-Runner"})
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 return data.get("data", [])
@@ -59,7 +60,7 @@ class LlamafileEngine:
             return []
 
     def generate(self, prompt: str, timeout: float = 45.0) -> str:
-        """Sends inference request to llamafile server using standard OpenAI /v1/chat/completions."""
+        """Sends inference request to the runner server using standard /v1/chat/completions."""
         # 1. Try /v1/chat/completions (OpenAI compatible)
         chat_url = f"{self.host}/v1/chat/completions"
         payload = {
@@ -67,7 +68,7 @@ class LlamafileEngine:
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are an expert AI software engineer. Provide concise, production-ready, strictly typed Python code."
+                    "content": "You are Apex-Runner, an expert AI software engineer. Provide concise, production-ready, strictly typed Python code."
                 },
                 {"role": "user", "content": prompt}
             ],
@@ -78,7 +79,7 @@ class LlamafileEngine:
         req = urllib.request.Request(
             chat_url,
             data=data,
-            headers={"Content-Type": "application/json", "User-Agent": "Apex-Llamafile"},
+            headers={"Content-Type": "application/json", "User-Agent": "Apex-Sovereign-Runner"},
             method="POST",
         )
         try:
@@ -90,7 +91,7 @@ class LlamafileEngine:
         except Exception:
             pass
 
-        # 2. Fallback to llama.cpp native /completion endpoint
+        # 2. Fallback to /completion endpoint
         comp_url = f"{self.host}/completion"
         comp_payload = {
             "prompt": f"Write clean, production-ready Python code.\n\nTask: {prompt}\n\n```python\n",
@@ -102,7 +103,7 @@ class LlamafileEngine:
         req = urllib.request.Request(
             comp_url,
             data=data,
-            headers={"Content-Type": "application/json", "User-Agent": "Apex-Llamafile"},
+            headers={"Content-Type": "application/json", "User-Agent": "Apex-Sovereign-Runner"},
             method="POST",
         )
         try:
@@ -110,44 +111,47 @@ class LlamafileEngine:
                 res_json = json.loads(resp.read().decode("utf-8"))
                 return res_json.get("content", "").strip()
         except Exception as e:
-            return f"# [Llamafile error: {e}]"
+            return f"# [Apex-Runner error: {e}]"
 
     def render_status(self) -> str:
-        """Renders rich terminal status card for Mozilla Llamafile integration."""
+        """Renders rich terminal status card for Apex Sovereign Portable Runner."""
         running = self.is_running()
         models = self.list_models() if running else []
         status_badge = "\033[38;5;114m● ONLINE\033[0m" if running else "\033[38;5;203m○ OFFLINE\033[0m"
 
         lines = [
             "\n" + "=" * 68,
-            f" [LLAMAFILE] APEX MOZILLA LLAMAFILE ENGINE STATUS: {status_badge}",
+            f" [APEX-RUNNER] APEX SOVEREIGN PORTABLE BINARY RUNNER: {status_badge}",
             "=" * 68,
             f"  Host Endpoint : {self.host}",
-            f"  Status        : {'Active & Responding' if running else 'Server not running on port 8080'}",
+            f"  Status        : {'Active & Responding' if running else 'Runner server not detected on port 8080'}",
             f"  Models Found  : {len(models)} active model(s)",
         ]
 
         if running and models:
-            lines.append("\n  \033[1mActive Llamafile Models:\033[0m")
+            lines.append("\n  \033[1mActive Apex Runner Models:\033[0m")
             for m in models:
                 name = m.get("id", "unknown")
                 created = m.get("created", "")
                 lines.append(f"    • {name:<32} (created: {created})")
         elif not running:
             lines.extend([
-                "\n  \033[38;5;220m[i] Llamafile server not detected on " + self.host + "\033[0m",
-                "  To launch a Mozilla llamafile:",
-                "    1. Download any .llamafile from: \033[4mhttps://github.com/mozilla-ai/llamafile\033[0m",
-                "    2. Run executable: \033[1m./mistral-7b-instruct.llamafile --server --port 8080\033[0m",
-                "    3. Apex will auto-detect and bind to it as a Supreme Council Justice!",
+                "\n  \033[38;5;220m[i] Apex Portable Runner not detected on " + self.host + "\033[0m",
+                "  To launch a sovereign portable binary runtime:",
+                "    1. Run your sovereign binary: \033[1m./apex-runner --server --port 8080\033[0m",
+                "    2. Apex will auto-detect and bind to it as a Supreme Council Justice!",
             ])
         lines.append("=" * 68 + "\n")
         return "\n".join(lines)
 
 
-def handle_llamafile_cli(args_list: List[str]) -> int:
-    """Dispatches CLI subcommand: apex llamafile [status|run <prompt>|info]."""
-    engine = LlamafileEngine()
+# Backwards compatibility alias
+LlamafileEngine = ApexPortableRunner
+
+
+def handle_runner_cli(args_list: List[str]) -> int:
+    """Dispatches CLI subcommand: apex runner [status|run <prompt>|info]."""
+    engine = ApexPortableRunner()
     if not args_list or args_list[0] in {"status", "info"}:
         print(engine.render_status())
         return 0
@@ -155,13 +159,13 @@ def handle_llamafile_cli(args_list: List[str]) -> int:
     sub = args_list[0].lower()
     if sub in {"run", "ask", "prompt"}:
         if len(args_list) < 2:
-            print("Usage: apex llamafile run <prompt>")
+            print("Usage: apex runner run <prompt>")
             return 1
         prompt = " ".join(args_list[1:])
         if not engine.is_running():
             print(engine.render_status())
             return 1
-        print(f"• Generating via Mozilla Llamafile ({engine.host})...")
+        print(f"• Generating via Apex Sovereign Runner ({engine.host})...")
         t0 = time.perf_counter()
         resp = engine.generate(prompt)
         dt = time.perf_counter() - t0
@@ -169,9 +173,13 @@ def handle_llamafile_cli(args_list: List[str]) -> int:
         print(f"[Completed in {dt:.2f}s]")
         return 0
 
-    print("Usage: apex llamafile [status|run <prompt>|info]")
+    print("Usage: apex runner [status|run <prompt>|info]")
     return 0
 
 
+# Backwards compatibility alias for CLI
+handle_llamafile_cli = handle_runner_cli
+
+
 if __name__ == "__main__":
-    sys.exit(handle_llamafile_cli(sys.argv[1:]))
+    sys.exit(handle_runner_cli(sys.argv[1:]))

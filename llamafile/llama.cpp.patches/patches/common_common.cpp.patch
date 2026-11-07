@@ -1,0 +1,88 @@
+diff --git a/common/common.cpp b/common/common.cpp
+--- a/llama.cpp/common/common.cpp
++++ b/llama.cpp/common/common.cpp
+@@ -39,6 +39,10 @@
+ #include <sys/sysctl.h>
+ #endif
+ 
++#if defined(COSMOCC)
++#include <cosmo.h> // for IsLinux() and sysctlbyname() declarations
++#endif
++
+ #if defined(_WIN32)
+ #define WIN32_LEAN_AND_MEAN
+ #ifndef NOMINMAX
+@@ -80,7 +84,38 @@ common_time_meas::~common_time_meas() {
+ //
+ 
+ int32_t common_cpu_get_num_physical_cores() {
+-#if defined(_AIX)
++#if defined(COSMOCC)
++    // cosmocc cross-compiles for both Linux and macOS at once, so neither
++    // __linux__ nor __APPLE__ is defined here; detect the host OS at runtime.
++    if (IsLinux()) {
++        std::unordered_set<std::string> siblings;
++        for (uint32_t cpu=0; cpu < UINT32_MAX; ++cpu) {
++            std::ifstream thread_siblings("/sys/devices/system/cpu/cpu"
++                + std::to_string(cpu) + "/topology/thread_siblings");
++            if (!thread_siblings.is_open()) {
++                break; // no more cpus
++            }
++            std::string line;
++            if (std::getline(thread_siblings, line)) {
++                siblings.insert(line);
++            }
++        }
++        if (!siblings.empty()) {
++            return static_cast<int32_t>(siblings.size());
++        }
++    } else {
++        int32_t num_physical_cores;
++        size_t len = sizeof(num_physical_cores);
++        int result = sysctlbyname("hw.perflevel0.physicalcpu", &num_physical_cores, &len, NULL, 0);
++        if (result == 0) {
++            return num_physical_cores;
++        }
++        result = sysctlbyname("hw.physicalcpu", &num_physical_cores, &len, NULL, 0);
++        if (result == 0) {
++            return num_physical_cores;
++        }
++    }
++#elif defined(_AIX)
+     int32_t logical_cpus = _system_configuration.ncpus;
+     int32_t smt_threads = _system_configuration.smt_threads;
+     if (smt_threads > 0) {
+@@ -1007,6 +1042,16 @@ std::filesystem::path fs_get_cache_directory() {
+     if (cache_directory.empty()) {
+         throw std::runtime_error("Failed to find %LOCALAPPDATA% directory");
+     }
++#elif defined(COSMOCC)
++    // We don't know what OS we are running on at compile time, just CPU
++    // architecture. Try various environment variables, fall back to ~/.cache.
++    cache_directory = common_get_path_from_env("LOCALAPPDATA");
++    if (cache_directory.empty()) {
++        cache_directory = common_get_path_from_env("XDG_CACHE_HOME");
++    }
++    if (cache_directory.empty()) {
++        cache_directory = get_home_directory() / ".cache";
++    }
+ #elif defined(__APPLE__)
+     cache_directory = get_home_directory() / "Library/Caches";
+ #else
+@@ -1025,6 +1070,16 @@ std::filesystem::path fs_get_config_directory() {
+     if (config_directory.empty()) {
+         throw std::runtime_error("Failed to find %APPDATA% directory");
+     }
++#elif defined(COSMOCC)
++    // We don't know what OS we are running on at compile time, just CPU
++    // architecture. Try various environment variables, fall back to ~/.config.
++    config_directory = common_get_path_from_env("APPDATA");
++    if (config_directory.empty()) {
++        config_directory = common_get_path_from_env("XDG_CONFIG_HOME");
++    }
++    if (config_directory.empty()) {
++        config_directory = get_home_directory() / ".config";
++    }
+ #else
+     config_directory = common_get_path_from_env("XDG_CONFIG_HOME");
+     if (config_directory.empty()) {

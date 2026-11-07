@@ -77,7 +77,7 @@ class ApexInteractiveConsole:
         hist_dir = os.path.expanduser("~/.apex")
         hist_file = os.path.join(hist_dir, "history")
         _commands = [
-            "/studio", "/ollama", "/demo", "/benchmark", "/repair", "/test", "/diff", "/review",
+            "/studio", "/models", "/ollama", "/runner", "/audit", "/demo", "/benchmark", "/repair", "/test", "/diff", "/review",
             "/instruments", "/swift-guard", "/slice", "/omo", "/wt",
             "/mascot", "/mlflow", "/eval", "/clear", "/help", "/exit", "exit", "quit"
         ]
@@ -138,10 +138,20 @@ class ApexInteractiveConsole:
                         from .studio import launch_studio_web
                         launch_studio_web(open_browser=True, blocking=False)
 
-                    elif prompt_line.startswith("/ollama") or prompt_line == "ollama":
+                    elif prompt_line.startswith("/models") or prompt_line == "models" or prompt_line.startswith("/ollama") or prompt_line == "ollama":
                         from ..providers.ollama_engine import handle_ollama_cli
                         parts = prompt_line.split()
                         handle_ollama_cli(parts[1:])
+
+                    elif prompt_line.startswith("/runner") or prompt_line == "runner" or prompt_line.startswith("/llamafile"):
+                        from ..providers.llamafile_engine import handle_runner_cli
+                        parts = prompt_line.split()
+                        handle_runner_cli(parts[1:])
+
+                    elif prompt_line.startswith("/audit") or prompt_line.startswith("/sec"):
+                        from ..security.cloudflare_auditor import handle_security_audit_cli
+                        parts = prompt_line.split()
+                        handle_security_audit_cli(parts[1:])
 
                     elif prompt_line.startswith("/repair") or prompt_line.startswith("/cegis") or prompt_line == "repair":
                         self._handle_repair_command(prompt_line)
@@ -375,7 +385,9 @@ class ApexInteractiveConsole:
         print(f"""
 {t.BOLD}Apex Autonomous AI Agent Command Palette:{t.RESET}
   /studio                              Launch Apple Pro Studio Web & Telemetry Dashboard
-  /ollama [status|list|use|run|pull]   Local Ollama GPU/CPU model manager
+  /models [status|list|use|run]        Local GPU/CPU model manager (apex-coder:latest)
+  /runner [status|run <prompt>|info]   Apex Sovereign Portable Binary Runner
+  /audit [path] [--strict]             Cloudflare-grade sovereign defensive security auditor
   /demo                                5-stage live inductive program repair walkthrough
   /benchmark                           Execute high-precision runtime micro-benchmarks
   /repair [file] [--tests tests.txt]   CEGIS automated 1-token & boundary bug repair

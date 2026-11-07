@@ -26,7 +26,7 @@ class TestApexStudio(unittest.TestCase):
         self.assertIn("APEX PRO STUDIO", output)
         self.assertIn("CEGIS Engine", output)
         self.assertIn("Instruments", output)
-        self.assertIn("Ollama Engine", output)
+        self.assertIn("Apex AI Engine", output)
 
     def test_studio_html_content(self):
         self.assertIn("APEX PRO STUDIO", STUDIO_HTML)

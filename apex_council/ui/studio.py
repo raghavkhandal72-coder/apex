@@ -81,7 +81,7 @@ def render_studio_dashboard(
         f"\033[1;36m│\033[0m  \033[1mArchitecture\033[0m   : {os_name} ({arch})",
         f"\033[1;36m│\033[0m  \033[1mHardware\033[0m       : {cpu_count} CPU Cores | Python {py_ver:<18}",
         f"\033[1;36m│\033[0m  \033[1mStandalone\033[0m     : apex.pyz ({binary_size_kb:.1f} KB) | \033[38;5;114mpip = 0 (100% Pure Stdlib)\033[0m",
-        f"\033[1;36m│\033[0m  \033[1mOllama Engine\033[0m  : {ollama_badge} | Model: \033[1m{ollama.model}\033[0m",
+        f"\033[1;36m│\033[0m  \033[1mApex AI Engine\033[0m : {ollama_badge} | Model: \033[1m{ollama.model}\033[0m",
         "\033[1;36m├─────────────────────────────────────────────────────────────────────────────┤\033[0m",
         "\033[1;36m│\033[0m  \033[1mVERIFIED TEST HEALTH & LATENCY MATRIX\033[0m                                      \033[1;36m│\033[0m",
         f"\033[1;36m│\033[0m    Pass Rate         : \033[38;5;114m{pass_rate:.1f}% [ALL GREEN]\033[0m",

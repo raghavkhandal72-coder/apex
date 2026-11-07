@@ -57,7 +57,7 @@ KNOWN_COMMANDS = {
     "rea", "reviewdog", "netdata", "lint", "fix", "hook", "challenge", "null-guard",
     "watch", "slice", "modern", "lsp", "loop",
     "patch-export", "crash-fingerprint", "flamegraph", "pr-summary", "secret-mask", "completion", "zero-div",
-    "instruments", "swift-guard", "studio", "test-all", "demo-live", "bench-live", "review", "ollama", "llamafile",
+    "instruments", "swift-guard", "studio", "test-all", "demo-live", "bench-live", "review", "ollama", "llamafile", "runner", "audit-sec", "security-audit",
     "-h", "--help"
 }
 
@@ -576,9 +576,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ollama_p = subparsers.add_parser("ollama", help="Manage and run local Ollama GPU/CPU models")
     ollama_p.add_argument("ollama_args", nargs="*", help="Ollama subcommands (status, list, use <model>, run <prompt>)")
 
-    # Command 91: Mozilla Llamafile Integration (apex llamafile)
-    llamafile_p = subparsers.add_parser("llamafile", help="Manage and run Mozilla-AI Cosmopolitan Llamafiles")
-    llamafile_p.add_argument("llamafile_args", nargs="*", help="Llamafile subcommands (status, run <prompt>, info)")
+    # Command 91: Apex Sovereign Portable Binary Runner (apex runner / apex llamafile)
+    runner_p = subparsers.add_parser("runner", help="Manage and run Apex Sovereign Portable Binary Runtimes")
+    runner_p.add_argument("runner_args", nargs="*", help="Runner subcommands (status, run <prompt>, info)")
+
+    llamafile_p = subparsers.add_parser("llamafile", help="Manage and run Apex Sovereign Portable Binary Runtimes (alias)")
+    llamafile_p.add_argument("runner_args", nargs="*", help="Runner subcommands (status, run <prompt>, info)")
+
+    # Command 92: Cloudflare Defensive Security Audit Engine (apex audit-sec / apex security-audit)
+    audit_sec_p = subparsers.add_parser("audit-sec", help="Cloudflare-grade sovereign defensive security audit engine (Zero-Pip)")
+    audit_sec_p.add_argument("audit_args", nargs="*", help="Target path and audit flags (--output-dir, --format, --strict)")
+
+    security_audit_p = subparsers.add_parser("security-audit", help="Cloudflare-grade sovereign defensive security audit engine (alias)")
+    security_audit_p.add_argument("audit_args", nargs="*", help="Target path and audit flags (--output-dir, --format, --strict)")
 
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
@@ -759,10 +769,15 @@ def main(argv: list[str] | None = None) -> int:
         from .providers.ollama_engine import handle_ollama_cli
         return handle_ollama_cli(args.ollama_args)
 
-    # Command 91: Mozilla Llamafile Integration (apex llamafile)
-    if args.command == "llamafile":
-        from .providers.llamafile_engine import handle_llamafile_cli
-        return handle_llamafile_cli(args.llamafile_args)
+    # Command 91: Apex Sovereign Portable Binary Runner (apex runner / apex llamafile)
+    if args.command in {"runner", "llamafile"}:
+        from .providers.llamafile_engine import handle_runner_cli
+        return handle_runner_cli(args.runner_args)
+
+    # Command 92: Cloudflare Defensive Security Audit Engine (apex audit-sec / apex security-audit)
+    if args.command in {"audit-sec", "security-audit"}:
+        from .security.cloudflare_auditor import handle_security_audit_cli
+        return handle_security_audit_cli(args.audit_args)
 
     # Command 21: Cryptographic Hash-Chained Audit Ledger Verifier
     if args.command == "verify-ledger":

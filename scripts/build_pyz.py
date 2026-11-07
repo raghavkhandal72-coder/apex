@@ -32,6 +32,25 @@ def build_standalone_pyz(output_path: str = "dist/apex.pyz") -> Path:
             ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", ".git*", "*.html", "*.md"),
         )
 
+        # Lightly optimize staging files to preserve strict < 450 KB binary budget
+        for py_file in target_pkg.rglob("*.py"):
+            try:
+                raw = py_file.read_text(encoding="utf-8", errors="replace")
+                lines = raw.splitlines(keepends=True)
+                filtered = []
+                in_doc = False
+                for line in lines:
+                    s = line.strip()
+                    if s.startswith('"""') or s.startswith("'''"):
+                        if s.count('"""') == 1 or s.count("'''") == 1:
+                            in_doc = not in_doc
+                    if not in_doc and s.startswith("#") and not s.startswith("#!") and "coding" not in s:
+                        continue
+                    filtered.append(line)
+                py_file.write_text("".join(filtered), encoding="utf-8")
+            except Exception:
+                pass
+
         # Create __main__.py inside staging root
         main_py = staging_path / "__main__.py"
         main_py.write_text(

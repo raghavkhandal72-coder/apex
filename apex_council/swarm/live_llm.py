@@ -57,7 +57,7 @@ class LiveLLMClient:
         self,
         prompt: str,
         system_prompt: str = "",
-        model: str = "llama3.2",
+        model: str = "apex-coder",
         host: str = "http://localhost:11434",
     ) -> LiveLLMResponse:
         url = f"{host}/api/generate"

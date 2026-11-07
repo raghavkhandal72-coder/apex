@@ -58,7 +58,7 @@ class OllamaEngine:
         if not models:
             return self.DEFAULT_MODEL
         names = [m.get("name", "") for m in models]
-        for pref in ["apex-coder:latest", "apex-coder", "qwen2.5-coder:0.5b", "codegemma:2b", "codegemma:7b", "codegemma", "qwen2.5-coder:1.5b", "llama3.2"]:
+        for pref in ["apex-coder:latest", "apex-coder", "qwen2.5-coder:0.5b", "codegemma:2b", "codegemma:7b", "codegemma", "qwen2.5-coder:1.5b"]:
             for name in names:
                 if name == pref or name.startswith(pref.split(":")[0]):
                     return name
@@ -220,7 +220,7 @@ class OllamaEngine:
                 "\n  \033[38;5;220m[!] Ollama daemon not detected on " + self.host + "\033[0m",
                 "  To start using local models:",
                 "    1. Install Ollama: \033[4mhttps://ollama.com/download\033[0m",
-                "    2. In PowerShell run: \033[1mollama run qwen2.5-coder\033[0m (or llama3.2)",
+                "    2. In terminal run: \033[1mapex-coder\033[0m (or \033[1mollama run qwen2.5-coder\033[0m)",
                 "    3. Apex will auto-bind to your local GPU/CPU model instantly!",
             ])
         lines.append("=" * 68 + "\n")

@@ -5,7 +5,7 @@ from typing import Dict
 
 from ..models import ModelProvider
 from .base import BaseLLMProvider
-from .live_http import LiveClaudeProvider, LiveGeminiProvider, LiveLlamafileProvider, LiveOllamaProvider, LiveOpenAIProvider
+from .live_http import LiveApexRunnerProvider, LiveClaudeProvider, LiveGeminiProvider, LiveLlamafileProvider, LiveOllamaProvider, LiveOpenAIProvider
 from .simulator import SimulatedProvider
 
 
@@ -41,23 +41,23 @@ def get_providers(force_offline: bool = False, strict: bool = False) -> Dict[Mod
         except Exception:
             pass
 
-    # Check if Mozilla llamafile server is active on port 8080
-    llamafile_running = False
+    # Check if Apex Sovereign Runner server is active on port 8080
+    runner_running = False
     if not force_offline:
         try:
-            from .llamafile_engine import LlamafileEngine
-            llamafile_running = LlamafileEngine().is_running(timeout=0.2)
+            from .llamafile_engine import ApexPortableRunner
+            runner_running = ApexPortableRunner().is_running(timeout=0.2)
         except Exception:
             pass
 
-    # 1. Google Gemini (or local Mozilla Llamafile)
+    # 1. Google Gemini (or local Apex Sovereign Runner)
     gemini_key = os.getenv("GEMINI_API_KEY")
     if _is_valid_key(gemini_key) and not force_offline:
         providers[ModelProvider.GEMINI] = LiveGeminiProvider(gemini_key.strip(), strict=strict)
-    elif not force_offline and llamafile_running:
-        providers[ModelProvider.GEMINI] = LiveLlamafileProvider(
+    elif not force_offline and runner_running:
+        providers[ModelProvider.GEMINI] = LiveApexRunnerProvider(
             provider=ModelProvider.GEMINI,
-            display_name="Mozilla Llamafile (Port 8080)",
+            display_name="Apex Sovereign Runner (Port 8080)",
             strict=strict,
         )
     else:
