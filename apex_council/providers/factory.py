@@ -5,7 +5,7 @@ from typing import Dict
 
 from ..models import ModelProvider
 from .base import BaseLLMProvider
-from .live_http import LiveClaudeProvider, LiveGeminiProvider, LiveOllamaProvider, LiveOpenAIProvider
+from .live_http import LiveClaudeProvider, LiveGeminiProvider, LiveLlamafileProvider, LiveOllamaProvider, LiveOpenAIProvider
 from .simulator import SimulatedProvider
 
 
@@ -41,10 +41,25 @@ def get_providers(force_offline: bool = False, strict: bool = False) -> Dict[Mod
         except Exception:
             pass
 
-    # 1. Google Gemini
+    # Check if Mozilla llamafile server is active on port 8080
+    llamafile_running = False
+    if not force_offline:
+        try:
+            from .llamafile_engine import LlamafileEngine
+            llamafile_running = LlamafileEngine().is_running(timeout=0.2)
+        except Exception:
+            pass
+
+    # 1. Google Gemini (or local Mozilla Llamafile)
     gemini_key = os.getenv("GEMINI_API_KEY")
     if _is_valid_key(gemini_key) and not force_offline:
         providers[ModelProvider.GEMINI] = LiveGeminiProvider(gemini_key.strip(), strict=strict)
+    elif not force_offline and llamafile_running:
+        providers[ModelProvider.GEMINI] = LiveLlamafileProvider(
+            provider=ModelProvider.GEMINI,
+            display_name="Mozilla Llamafile (Port 8080)",
+            strict=strict,
+        )
     else:
         providers[ModelProvider.GEMINI] = SimulatedProvider(ModelProvider.GEMINI, "Gemini 2.5 Pro (Simulated)")
 

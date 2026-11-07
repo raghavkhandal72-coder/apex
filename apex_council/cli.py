@@ -57,7 +57,7 @@ KNOWN_COMMANDS = {
     "rea", "reviewdog", "netdata", "lint", "fix", "hook", "challenge", "null-guard",
     "watch", "slice", "modern", "lsp", "loop",
     "patch-export", "crash-fingerprint", "flamegraph", "pr-summary", "secret-mask", "completion", "zero-div",
-    "instruments", "swift-guard", "studio", "test-all", "demo-live", "bench-live", "review", "ollama",
+    "instruments", "swift-guard", "studio", "test-all", "demo-live", "bench-live", "review", "ollama", "llamafile",
     "-h", "--help"
 }
 
@@ -576,6 +576,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ollama_p = subparsers.add_parser("ollama", help="Manage and run local Ollama GPU/CPU models")
     ollama_p.add_argument("ollama_args", nargs="*", help="Ollama subcommands (status, list, use <model>, run <prompt>)")
 
+    # Command 91: Mozilla Llamafile Integration (apex llamafile)
+    llamafile_p = subparsers.add_parser("llamafile", help="Manage and run Mozilla-AI Cosmopolitan Llamafiles")
+    llamafile_p.add_argument("llamafile_args", nargs="*", help="Llamafile subcommands (status, run <prompt>, info)")
+
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
     parser.add_argument("--format", choices=["table", "markdown", "json"], default="table")
@@ -754,6 +758,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "ollama":
         from .providers.ollama_engine import handle_ollama_cli
         return handle_ollama_cli(args.ollama_args)
+
+    # Command 91: Mozilla Llamafile Integration (apex llamafile)
+    if args.command == "llamafile":
+        from .providers.llamafile_engine import handle_llamafile_cli
+        return handle_llamafile_cli(args.llamafile_args)
 
     # Command 21: Cryptographic Hash-Chained Audit Ledger Verifier
     if args.command == "verify-ledger":
