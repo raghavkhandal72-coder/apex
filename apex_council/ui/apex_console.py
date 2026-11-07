@@ -22,6 +22,12 @@ if hasattr(sys.stderr, "reconfigure"):
     except Exception:
         pass
 
+if sys.platform == "win32":
+    try:
+        os.system("")
+    except Exception:
+        pass
+
 from .mascot import MascotRenderer, MascotTheme
 from ..git_engine.worktrunk_advanced import WorktrunkAdvancedEngine
 from ..mlflow_engine.tracer import AgentTracer
@@ -51,10 +57,10 @@ class ApexInteractiveConsole:
         t = MascotTheme
         # Print Mascot & Header (Matching Claude Code aesthetic)
         print("\n" + MascotRenderer.render_header(
-            version="v0.1.0",
+            version="v0.1.1",
             model="Claude 3.7 Sonnet · Gemini 2.5 Pro · GPT-4o",
             workspace_path=self.workspace_dir,
-            tip="Apex v0.1: Autonomous Program Repair & Synthesis Engine (pip = 0). Type /help for commands.",
+            tip="Apex v0.1.1: Autonomous Program Repair & Synthesis Engine (pip = 0). Type /help for commands.",
             style=self.mascot_style,
             theme_name=self.mascot_theme,
         ))
@@ -67,92 +73,121 @@ class ApexInteractiveConsole:
             print(f"{t.DIM}Non-interactive terminal detected. Run 'python main.py --help' for CLI flags.{t.RESET}\n")
             return
 
-        # Setup tab completion where supported (Unix/macOS/pyreadline)
+        # Setup history persistence & tab completion where supported
+        hist_dir = os.path.expanduser("~/.apex")
+        hist_file = os.path.join(hist_dir, "history")
+        _commands = [
+            "/demo", "/benchmark", "/repair", "/test", "/diff", "/review",
+            "/instruments", "/swift-guard", "/slice", "/omo", "/wt",
+            "/mascot", "/mlflow", "/eval", "/clear", "/help", "/exit", "exit", "quit"
+        ]
         try:
             import readline
-            _commands = [
-                "/demo", "/benchmark", "/repair", "/test", "/diff", "/review",
-                "/instruments", "/swift-guard", "/slice", "/omo", "/wt",
-                "/mascot", "/mlflow", "/eval", "/help", "/exit", "exit", "quit"
-            ]
             def _completer(text: str, state: int):
                 matches = [cmd for cmd in _commands if cmd.startswith(text)]
                 return matches[state] if state < len(matches) else None
             readline.set_completer(_completer)
             readline.parse_and_bind("tab: complete")
+            os.makedirs(hist_dir, exist_ok=True)
+            if os.path.exists(hist_file):
+                readline.read_history_file(hist_file)
         except Exception:
             pass
 
         # Interactive loop
-        while True:
-            try:
-                prompt_line = input(f"{t.APEX_GOLD}apex ({curr_branch}) > {t.RESET}").strip()
-                if not prompt_line:
-                    continue
+        try:
+            while True:
+                try:
+                    prompt_line = input(f"{t.APEX_GOLD}apex ({curr_branch}) > {t.RESET}").strip()
+                    if not prompt_line:
+                        continue
 
-                if prompt_line.lower() in {"/exit", "/quit", "exit", "quit", ":q"}:
-                    print(f"{t.GRAY}Exiting Apex Console. Session closed.{t.RESET}")
+                    if prompt_line.lower() in {"/exit", "/quit", "exit", "quit", ":q"}:
+                        print(f"{t.GRAY}Exiting Apex Console. Session closed.{t.RESET}")
+                        break
+
+                    elif prompt_line.lower() in {"/clear", "clear", "cls"}:
+                        os.system("cls" if os.name == "nt" else "clear")
+                        print("\n" + MascotRenderer.render_header(
+                            version="v0.1.1",
+                            workspace_path=self.workspace_dir,
+                            style=self.mascot_style,
+                            theme_name=self.mascot_theme,
+                        ))
+                        continue
+
+                    elif prompt_line in {"/demo", "demo"}:
+                        from .demo_engine import run_live_demo
+                        run_live_demo()
+
+                    elif prompt_line in {"/benchmark", "/bench", "benchmark", "bench"}:
+                        from .benchmark_engine import run_benchmark_suite
+                        run_benchmark_suite()
+
+                    elif prompt_line in {"/diff", "diff"}:
+                        from .review_engine import render_colorized_diff
+                        print("\n" + render_colorized_diff(self.workspace_dir) + "\n")
+
+                    elif prompt_line.startswith("/review") or prompt_line.startswith("review"):
+                        from .review_engine import run_code_review
+                        parts = prompt_line.split()
+                        target = parts[1] if len(parts) > 1 else self.workspace_dir
+                        run_code_review(target)
+
+                    elif prompt_line.startswith("/repair") or prompt_line.startswith("/cegis") or prompt_line == "repair":
+                        self._handle_repair_command(prompt_line)
+
+                    elif prompt_line in {"/test", "/test-all", "test", "test-all"}:
+                        from ..test_all_runner import run_all_systems_test
+                        run_all_systems_test()
+
+                    elif prompt_line.startswith("/instruments") or prompt_line.startswith("/profile"):
+                        self._handle_instruments_command(prompt_line)
+
+                    elif prompt_line.startswith("/swift-guard") or prompt_line.startswith("/guard"):
+                        self._handle_swift_command(prompt_line)
+
+                    elif prompt_line.startswith("/slice"):
+                        self._handle_slice_command(prompt_line)
+
+                    elif prompt_line.startswith("/wt") or prompt_line == "wt":
+                        self._handle_wt_command(prompt_line)
+
+                    elif prompt_line.startswith("/omo") or prompt_line.startswith("/ulw"):
+                        self._handle_omo_command(prompt_line)
+
+                    elif prompt_line.startswith("/mascot"):
+                        self._handle_mascot_command(prompt_line)
+
+                    elif prompt_line.startswith("/mlflow") or prompt_line == "mlflow":
+                        self._handle_mlflow_command(prompt_line)
+
+                    elif prompt_line.startswith("/eval"):
+                        self._handle_eval_command(prompt_line)
+
+                    elif prompt_line in {"/help", "help", "?"}:
+                        self._print_help()
+
+                    elif prompt_line.startswith("/"):
+                        import difflib
+                        cmd_name = prompt_line.split()[0]
+                        closest = difflib.get_close_matches(cmd_name, _commands, n=1, cutoff=0.5)
+                        hint = f" Did you mean '{closest[0]}'?" if closest else ""
+                        print(f"  {t.RED}Unknown command '{cmd_name}'.{hint} Type /help for available commands.{t.RESET}\n")
+
+                    else:
+                        # Natural language agent task execution
+                        self._execute_agent_task(prompt_line)
+
+                except (KeyboardInterrupt, EOFError):
+                    print(f"\n{t.GRAY}Session closed.{t.RESET}")
                     break
-
-                elif prompt_line in {"/demo", "demo"}:
-                    from .demo_engine import run_live_demo
-                    run_live_demo()
-
-                elif prompt_line in {"/benchmark", "/bench", "benchmark", "bench"}:
-                    from .benchmark_engine import run_benchmark_suite
-                    run_benchmark_suite()
-
-                elif prompt_line in {"/diff", "diff"}:
-                    from .review_engine import render_colorized_diff
-                    print("\n" + render_colorized_diff(self.workspace_dir) + "\n")
-
-                elif prompt_line.startswith("/review") or prompt_line.startswith("review"):
-                    from .review_engine import run_code_review
-                    parts = prompt_line.split()
-                    target = parts[1] if len(parts) > 1 else self.workspace_dir
-                    run_code_review(target)
-
-                elif prompt_line.startswith("/repair") or prompt_line.startswith("/cegis") or prompt_line == "repair":
-                    self._handle_repair_command(prompt_line)
-
-                elif prompt_line in {"/test", "/test-all", "test", "test-all"}:
-                    from ..test_all_runner import run_all_systems_test
-                    run_all_systems_test()
-
-                elif prompt_line.startswith("/instruments") or prompt_line.startswith("/profile"):
-                    self._handle_instruments_command(prompt_line)
-
-                elif prompt_line.startswith("/swift-guard") or prompt_line.startswith("/guard"):
-                    self._handle_swift_command(prompt_line)
-
-                elif prompt_line.startswith("/slice"):
-                    self._handle_slice_command(prompt_line)
-
-                elif prompt_line.startswith("/wt") or prompt_line == "wt":
-                    self._handle_wt_command(prompt_line)
-
-                elif prompt_line.startswith("/omo") or prompt_line.startswith("/ulw"):
-                    self._handle_omo_command(prompt_line)
-
-                elif prompt_line.startswith("/mascot"):
-                    self._handle_mascot_command(prompt_line)
-
-                elif prompt_line.startswith("/mlflow") or prompt_line == "mlflow":
-                    self._handle_mlflow_command(prompt_line)
-
-                elif prompt_line.startswith("/eval"):
-                    self._handle_eval_command(prompt_line)
-
-                elif prompt_line in {"/help", "help", "?"}:
-                    self._print_help()
-
-                else:
-                    # Natural language agent task execution
-                    self._execute_agent_task(prompt_line)
-
-            except (KeyboardInterrupt, EOFError):
-                print(f"\n{t.GRAY}Session closed.{t.RESET}")
-                break
+        finally:
+            try:
+                import readline
+                readline.write_history_file(hist_file)
+            except Exception:
+                pass
 
     def _handle_repair_command(self, cmd: str) -> None:
         t = MascotTheme
@@ -169,8 +204,17 @@ class ApexInteractiveConsole:
                 tests_file = parts[idx + 1]
 
         if not os.path.exists(file_path):
-            print(f"  {t.RED}Error: File '{file_path}' not found.{t.RESET}")
-            return
+            if file_path == "binary_search.py":
+                print(f"  {t.DIM}• '{file_path}' not found. Generating sample bugged algorithm & test specification...{t.RESET}")
+                from .demo_engine import BUGGY_BINARY_SEARCH, TEST_SPEC
+                with open("binary_search.py", "w", encoding="utf-8") as f:
+                    f.write(BUGGY_BINARY_SEARCH)
+                if not os.path.exists(tests_file):
+                    with open(tests_file, "w", encoding="utf-8") as f:
+                        f.write(TEST_SPEC)
+            else:
+                print(f"  {t.RED}Error: File '{file_path}' not found.{t.RESET}")
+                return
 
         print(f"  {t.AMBER}• Running CEGIS Inductive Synthesis on '{file_path}'...{t.RESET}")
         src = open(file_path, "r", encoding="utf-8", errors="replace").read()
@@ -324,7 +368,7 @@ class ApexInteractiveConsole:
   /demo                                5-stage live inductive program repair walkthrough
   /benchmark                           Execute high-precision runtime micro-benchmarks
   /repair [file] [--tests tests.txt]   CEGIS automated 1-token & boundary bug repair
-  /test                                Run unified 315-test subsystem verification
+  /test                                Run unified 320-test subsystem verification
   /diff                                Colorized git workspace diff inspector
   /review [path]                       Autonomous code defect & safety auditor
   /instruments [file]                  Line-by-line heap allocations & memory leaks
@@ -335,6 +379,7 @@ class ApexInteractiveConsole:
   /mascot [falcon|guardian] [gold|cyan] Switch mascot style & theme color
   /mlflow                              Inspect active traces and telemetry spans
   /eval <file>                         Run LLM Judge code audit
+  /clear                               Clear screen and redraw mascot header
   /help                                Show this command guide
   /exit                                Exit interactive session
 

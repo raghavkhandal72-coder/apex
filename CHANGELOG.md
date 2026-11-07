@@ -4,8 +4,15 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/) and [
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-07
+
 ### Added
-- **Unified Master Verification Pipeline (`apex test-all`) & 1-Click PowerShell Runner (`test_all.ps1`)**: Single-command executive scorecard connecting all 11 core subsystems (CEGIS, AST Slicer, Kotlin Null-Guard, Zero-Div Guard, Apple Instruments Memory Profiler, Swift-Guard Exhaustiveness, Terminal Flamegraph, Crash Fingerprinting, Secret Masking, PR Summary, and 315-test Unit Suite) with real-time Apple Pro Studio dashboard telemetry.
+- **5-Stage Live Inductive Program Repair Walkthrough (`/demo` & `apex demo-live`)**: Real-time interactive walkthrough isolating and repairing off-by-one boundary bugs in 1.3 seconds, verified against 500 hidden differential test probes.
+- **High-Precision Runtime Micro-Benchmark Suite (`/benchmark` & `apex bench-live`)**: Zero-dependency benchmark runner benchmarking AST mutations (3,700+ ops/sec), program slicing, and SwiftGuard pattern matching with P50/P99 latency analysis.
+- **Autonomous Workspace Code Reviewer (`/review` & `apex review`)**: AST-level static analyzer detecting unguarded exceptions, infinite loops, and SwiftGuard violations across changed files.
+- **Colorized Git Workspace Diff (`/diff`)**: Instant visual terminal git diff inspector with additions/deletions syntax coloring.
+- **Terminal UX & Autocomplete Polish**: Added fuzzy typo suggestions (`Did you mean '/repair'?`), terminal screen clearing (`/clear`), command history persistence across sessions (`~/.apex/history`), and automatic Windows virtual terminal ANSI activation (`ENABLE_VIRTUAL_TERMINAL_PROCESSING`).
+- **Unified Master Verification Pipeline (`apex test-all`) & 1-Click PowerShell Runner (`test_all.ps1`)**: Single-command executive scorecard connecting all 12 core subsystems (CEGIS, AST Slicer, Kotlin Null-Guard, Zero-Div Guard, Apple Instruments Memory Profiler, Swift-Guard Exhaustiveness, Terminal Flamegraph, Crash Fingerprinting, Secret Masking, PR Summary, Live Demos & Benchmarks, and 320-test Unit Suite) with real-time Apple Pro Studio dashboard telemetry.
 - **Apple Instruments Memory Profiler (`apex instruments`)**: Line-by-line heap allocation waterfall, peak footprint analysis, and circular reference leak detection via stdlib `tracemalloc` and `gc`.
 - **Apple Swift-Guard Safety Prover (`apex swift-guard`)**: Pattern match exhaustiveness verification, immutability & let-safety checking, and nil-coalescing analysis.
 - **Apple Pro Studio Telemetry Console (`apex studio`)**: Apple Pro terminal dashboard with system architecture telemetry, test latency sparklines, and unified health metrics.
