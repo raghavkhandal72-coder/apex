@@ -192,8 +192,23 @@ def run_all_systems_test(verbose: bool = True, include_unit_tests: bool = True) 
     except Exception as e:
         results.append(("14. Scala 3 Functional Engine", False, str(e)))
 
-    # 15. Full Unit Test Suite Execution
-    total_test_count = 362
+    # 15. Apache Spark Sovereign Analytics Engine
+    t0 = time.time()
+    try:
+        from apex_council.spark.engine import SparkContext, SparkSession
+        sc = SparkContext(appName="ApexTestAll")
+        rdd = sc.parallelize([1, 2, 3, 4], numSlices=2).map(lambda x: x * 2)
+        total = rdd.reduce(lambda a, b: a + b)
+        spark = SparkSession("ApexTestAllSession")
+        df = spark.createDataFrame([{"id": 1, "score": 95}, {"id": 2, "score": 80}])
+        filtered = df.filter("score >= 90")
+        ok = total == 20 and filtered.count() == 1
+        results.append(("15. Apache Spark Sovereign Engine", ok, f"RDD Lineage & Catalyst Optimizer in {time.time()-t0:.3f}s"))
+    except Exception as e:
+        results.append(("15. Apache Spark Sovereign Engine", False, str(e)))
+
+    # 16. Full Unit Test Suite Execution
+    total_test_count = 370
     if include_unit_tests:
         t0 = time.time()
         try:
@@ -217,9 +232,9 @@ def run_all_systems_test(verbose: bool = True, include_unit_tests: bool = True) 
                     total_test_count = int(m.group(1))
                 except ValueError:
                     pass
-            results.append(("15. Complete Test Suite Discovery", ok, f"Ran {num_tests} unit tests in {time.time()-t0:.2f}s"))
+            results.append(("16. Complete Test Suite Discovery", ok, f"Ran {num_tests} unit tests in {time.time()-t0:.2f}s"))
         except Exception as e:
-            results.append(("15. Complete Test Suite Discovery", False, str(e)))
+            results.append(("16. Complete Test Suite Discovery", False, str(e)))
 
     elapsed_all = time.time() - start_total
 

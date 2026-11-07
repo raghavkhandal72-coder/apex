@@ -77,7 +77,7 @@ class ApexInteractiveConsole:
         hist_dir = os.path.expanduser("~/.apex")
         hist_file = os.path.join(hist_dir, "history")
         _commands = [
-            "/studio", "/models", "/ollama", "/runner", "/audit", "/scala", "/demo", "/benchmark", "/repair", "/test", "/diff", "/review",
+            "/studio", "/models", "/ollama", "/runner", "/audit", "/scala", "/spark", "/demo", "/benchmark", "/repair", "/test", "/diff", "/review",
             "/instruments", "/swift-guard", "/slice", "/omo", "/wt",
             "/mascot", "/mlflow", "/eval", "/clear", "/help", "/exit", "exit", "quit"
         ]
@@ -157,6 +157,11 @@ class ApexInteractiveConsole:
                         from ..scala.engine import handle_scala_cli
                         parts = prompt_line.split()
                         handle_scala_cli(parts[1:])
+
+                    elif prompt_line.startswith("/spark") or prompt_line == "spark":
+                        from ..spark.engine import handle_spark_cli
+                        parts = prompt_line.split()
+                        handle_spark_cli(parts[1:])
 
                     elif prompt_line.startswith("/repair") or prompt_line.startswith("/cegis") or prompt_line == "repair":
                         self._handle_repair_command(prompt_line)
@@ -402,6 +407,7 @@ class ApexInteractiveConsole:
   /instruments [file]                  Line-by-line heap allocations & memory leaks
   /swift-guard [file]                  Rust/Swift pattern exhaustiveness & let-safety
   /scala [demo|audit <path>|guard]     Scala 3 Monadic Effect & Actor Concurrency System
+  /spark [demo|rdd|sql|audit <path>]   Apache Spark RDD Lineage DAG, Catalyst & SparkGuard
   /slice <file:line>                   Mark Weiser (1981) dynamic AST program slicing
   /omo                                 Dual-pane task DAG & workflow visualizer
   /wt [list|switch|add|remove]         Worktree parallel development matrix
