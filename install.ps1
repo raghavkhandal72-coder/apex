@@ -116,3 +116,7 @@ Write-Host "  ⚡ Run 5-Stage Live CEGIS Repair Demo :" -ForegroundColor White
 Write-Host "     apex demo-live" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "═══════════════════════════════════════════════════════════════════════════════" -ForegroundColor Green
+Write-Host ""
+Write-Host "🚀 Launching Apex Sovereign Live Walkthrough..." -ForegroundColor Cyan
+Write-Host ""
+& $pythonCmd.Source $PyzTarget demo-live
