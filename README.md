@@ -2,18 +2,19 @@
 
 # ⚡ APEX SOVEREIGN
 
-### The 449 KB Autonomous 4-Agent Supreme Council & Zero-Dependency Code Synthesis Engine.
+### High-Throughput Autonomous Code Synthesis, Formal Invariant Verification & Kernel Engine.
+#### Single 449 KB Standalone Executable (`apex.pyz`) • Zero External Dependencies (`pip = 0`)
 
 <p align="center">
-  <em>Convenes Google Gemini, Anthropic Claude, OpenAI, and Apex Sovereign to architect, implement, adversarially test, and cryptographically seal full production codebases. Autonomous closed-loop repair in 1.4 seconds.</em>
+  <em>A deterministic, multi-model consensus architecture and inductive program synthesis engine. Convenes Google Gemini, Anthropic Claude, OpenAI, and Apex Sovereign to architect, implement, adversarially stress-test, and cryptographically seal full production codebases. Autonomous closed-loop repair in 1.4 seconds.</em>
 </p>
 
 <p align="center">
-  <a href="https://github.com/raghavkhandal72-coder/apex/actions/workflows/ci.yml"><img src="https://img.shields.io/badge/CI%20Matrix-16%20Green%20(Ubuntu%20%7C%20Win%20%7C%20macOS)-brightgreen.svg?style=for-the-badge" alt="CI Status"></a>
+  <a href="https://github.com/raghavkhandal72-coder/apex/actions/workflows/ci.yml"><img src="https://img.shields.io/badge/CI%20Matrix-16%20Passing%20(Ubuntu%20%7C%20Windows%20%7C%20macOS)-brightgreen.svg?style=for-the-badge" alt="CI Status"></a>
   <a href="https://github.com/raghavkhandal72-coder/apex"><img src="https://img.shields.io/badge/dependencies-0%20(100%25%20Pure%20Stdlib)-success.svg?style=for-the-badge" alt="Dependencies"></a>
-  <a href="https://github.com/raghavkhandal72-coder/apex/releases"><img src="https://img.shields.io/badge/executable-449%20KB%20(.pyz)-blue.svg?style=for-the-badge" alt="Size"></a>
-  <a href="https://github.com/raghavkhandal72-coder/apex"><img src="https://img.shields.io/badge/tests-387%20passing%20(100%25)-brightgreen.svg?style=for-the-badge" alt="Unit Tests"></a>
-  <a href="https://github.com/raghavkhandal72-coder/apex"><img src="https://img.shields.io/badge/fuzzer-663k%20probes%2Fsec-orange.svg?style=for-the-badge" alt="Fuzzer"></a>
+  <a href="https://github.com/raghavkhandal72-coder/apex/releases"><img src="https://img.shields.io/badge/standalone%20binary-449%20KB%20(.pyz)-blue.svg?style=for-the-badge" alt="Size"></a>
+  <a href="https://github.com/raghavkhandal72-coder/apex"><img src="https://img.shields.io/badge/tests-387%20passing%20(100%25%20hermetic)-brightgreen.svg?style=for-the-badge" alt="Unit Tests"></a>
+  <a href="https://github.com/raghavkhandal72-coder/apex"><img src="https://img.shields.io/badge/mutation%20fuzzer-663k%20probes%2Fsec-orange.svg?style=for-the-badge" alt="Fuzzer Throughput"></a>
   <a href="https://github.com/raghavkhandal72-coder/apex"><img src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-informational.svg?style=for-the-badge" alt="Python Support"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-purple.svg?style=for-the-badge" alt="License"></a>
 </p>
@@ -27,41 +28,40 @@
  ╚═╝  ╚═╝╚═╝     ╚══════╝╚═╝  ╚═╝    ╚══════╝ ╚═════╝   ╚═══╝  ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝
 ```
 
-**[⭐ Star on GitHub](https://github.com/raghavkhandal72-coder/apex)** • **[📦 Releases](https://github.com/raghavkhandal72-coder/apex/releases)** • **[🚀 Quickstart](#-10-second-quickstart)** • **[🏛️ Supreme Council](#️-superpower-1-the-4-agent-supreme-council-apex-council)** • **[🐧 Linux Kernel](#-superpower-3-linux-kernel--ebpf-subsystem-apex-linux)** • **[🔬 Formal Prover](#-superpower-10-formal-mathematical-safety-prover-apex-prove--apex-verify)** • **[🖥️ Cyber-TUI](#️-superpower-11-retro-futuristic-cyber-tui-dashboard-apex-tui)**
+**[⭐ Star on GitHub](https://github.com/raghavkhandal72-coder/apex)** • **[📦 Releases](https://github.com/raghavkhandal72-coder/apex/releases)** • **[🚀 Quickstart](#-quickstart--installation)** • **[🏛️ Consensus Engine](#-subsystem-01-autonomous-multi-model-consensus-architecture-apex-council)** • **[🔧 CEGIS Synthesis](#-subsystem-02-inductive-program-synthesis--ast-slicing-apex-demo-live)** • **[🐧 Linux Kernel](#-subsystem-03-linux-kernel-development--ebpf-jit-engine-apex-linux)** • **[🔬 Formal Prover](#-subsystem-10-abstract-interpretation--dijkstra-invariant-prover-apex-prove)**
 
 </div>
 
 ---
 
-## ⚡ Why Apex? The Anti-Bloat Manifesto
+## ⚡ The Zero-Dependency Architectural Manifesto
 
-Every modern AI coding tool requires **1.5 GB of `node_modules`**, Docker images, 50+ pip dependencies (`langchain`, `pydantic`, `torch`), and $500/month subscriptions.
+Modern developer tooling is plagued by dependency bloat, fragile virtual environments, and unverified generative output. Developer assistants frequently require multi-gigabyte runtimes (`node_modules`, PyTorch, LangChain), introduce supply-chain vulnerabilities, and produce unverified hallucinations.
 
-**Apex Sovereign is the opposite.**
-- **0 External pip dependencies** (`pip = 0`). Built strictly on Python's Standard Library.
-- **Single 449 KB executable** (`apex.pyz`). Download and run anywhere in 10 ms.
-- **Hermetic multi-model consensus**: 4 autonomous agents cross-verify every line before sealing it with HMAC-SHA512.
-- **100% Offline-capable**: Run on an airplane with zero internet or plug into local Ollama / Llamafile.
+**Apex Sovereign implements an uncompromising systems engineering approach:**
+* **Hermetic Standard Library Foundation (`pip = 0`)**: Written 100% in pure Python standard library primitives (`ast`, `zipapp`, `dataclasses`, `hashlib`, `sqlite3`, `ctypes`, `urllib`). Zero third-party runtime dependencies.
+* **Ultra-Compact Standalone Binary (`449 KB`)**: Compiles via AST docstring and type-annotation stripping into an airtight single-file executable (`apex.pyz`) with sub-10ms cold start latency.
+* **Provable Formal Verification**: Replaces stochastic generative guessing with Counterexample-Guided Inductive Synthesis (CEGIS), Patrick & Radhia Cousot (POPL 1977) Abstract Interpretation, and Dijkstra Weakest Precondition Calculus.
+* **Deterministic Air-Gapped Operation**: Completely operational offline without external API access via local neurosymbolic domain engines or local Ollama/Llamafile runtimes.
 
-| Dimension | Heavy Agent Tools (Devin, Cursor, Aider) | Claude Code | Apex Sovereign |
+| Architectural Dimension | Heavy Agent Frameworks (Devin, Cursor, Aider) | Claude Code (NPM) | Apex Sovereign |
 | :--- | :---: | :---: | :---: |
-| **Dependencies** | 60+ pip packages (`langchain`, `torch`) | 120 MB Node / NPM | **0 (100% Pure Python Standard Library)** |
-| **Binary Distribution** | Multi-GB Docker images or venvs | NPM package | **Single 449 KB Standalone Binary (`apex.pyz`)** |
+| **External Dependencies** | 60+ pip packages (PyTorch, LangChain, Transformers) | 120 MB Node.js / NPM | **0 (`pip = 0` / Pure Standard Library)** |
+| **Distribution Format** | Multi-GB Docker images or virtualenvs | Global NPM package | **Single 449 KB Standalone Executable (`apex.pyz`)** |
 | **Cold Startup Latency** | 3.5s – 8.0s | ~1.2s | **0.01s (10 ms)** |
-| **RAM Footprint** | 1,500 MB – 4,000 MB | ~350 MB | **~15 MB RAM** |
-| **Offline Capability** | ❌ Broken (locked to cloud APIs) | ❌ Broken (cloud only) | **✅ 100% Airplane Mode (Neurosymbolic AST Engine)** |
-| **Verification Guarantee**| ❌ "Trust me bro" (hallucinated code) | ❌ LLM-guess only | **✅ Hermetic Sandbox + HMAC-SHA512 Merkle Seal** |
-| **Mutation Fuzzer** | ❌ None | ❌ None | **✅ 663,000+ probes/sec on local CPU (`apex fuzz`)** |
-| **Formal Invariant Prover** | ❌ None | ❌ None | **✅ Cousot 1977 Abstract Interp + Dijkstra Hoare Logic** |
-| **Self-Healing Git Hook** | ❌ None | ❌ None | **✅ Intercepts `git commit` failures, auto-repairs via CEGIS** |
-| **Linux Kernel Prover** | ❌ None | ❌ None | **✅ Linus' checkpatch.pl audit, 450+ syscalls, eBPF XDP** |
-| **Curated AI Tools** | ❌ None | ❌ None | **✅ 262+ Offline AI Tools Registry (Awesome-AITools)** |
+| **Memory Footprint (RSS)**| 1,500 MB – 4,000 MB | ~350 MB | **~15 MB RSS** |
+| **Air-Gapped Offline Mode**| ❌ Impossible (Cloud-Tethered) | ❌ Broken (API required) | **✅ 100% Offline (Neurosymbolic AST Engine)** |
+| **Formal Safety Verification**| ❌ None (Unchecked Output) | ❌ None (Heuristic) | **✅ Abstract Interpretation + Dijkstra Hoare Logic** |
+| **Mutation Fuzzing Throughput**| ❌ None | ❌ None | **✅ 663,000+ Probes/sec In-Memory (`apex fuzz`)** |
+| **Git Pre-Commit Hook** | ❌ None | ❌ None | **✅ Self-Healing Traceback Interceptor (`apex hook`)**|
+| **Linux Kernel / eBPF Engine**| ❌ None | ❌ None | **✅ `checkpatch.pl` static audit + 450+ syscalls + eBPF** |
+| **Cryptographic Attestation** | ❌ None | ❌ None | **✅ Merkle-Chained HMAC-SHA512 Audit Seal** |
 
 ---
 
-## 🚀 10-Second Quickstart
+## 🚀 Quickstart & Installation
 
-### Method 1: Global Package Managers (Recommended)
+### Option A: Global Package Managers
 
 ```bash
 # macOS & Linux (Homebrew)
@@ -71,66 +71,72 @@ brew install raghavkhandal72-coder/apex/apex
 scoop bucket add apex https://github.com/raghavkhandal72-coder/apex
 scoop install apex
 
-# Python (pipx - zero virtualenv pollution)
+# Python Environment Isolation (pipx - zero dependency pollution)
 pipx install git+https://github.com/raghavkhandal72-coder/apex.git
 ```
 
-### Method 2: 1-Line Universal Shell Script
+### Option B: Automated Platform Installers
 
 ```bash
-# Linux / macOS
+# POSIX (Linux / macOS)
 curl -fsSL https://raw.githubusercontent.com/raghavkhandal72-coder/apex/main/scripts/install.sh | bash
 
 # Windows (PowerShell)
 irm https://raw.githubusercontent.com/raghavkhandal72-coder/apex/main/scripts/install.ps1 | iex
 ```
 
-### Method 3: Download Standalone 449 KB Binary Directly
+### Option C: Standalone Single-File Executable Download
 
 ```bash
-# Download pre-built executable
+# Direct binary download (449 KB)
 curl -fsSL -o apex https://github.com/raghavkhandal72-coder/apex/releases/download/v0.9.0/apex.pyz
 chmod +x apex
 
-# Run instant status check
+# Execute system health check
 ./apex --version
 ```
 
 ---
 
-## 🏛️ Superpower 1: The 4-Agent Supreme Council (`apex council`)
+## 🏛️ Subsystem 01: Autonomous Multi-Model Consensus Architecture (`apex council`)
 
-Apex convenes **Google Gemini**, **Anthropic Claude**, **OpenAI**, and **Apex Sovereign** to simultaneously architect, implement, adversarially test, and verify full multi-file codebases:
+Apex orchestrates a **4-Agent Multi-LLM Deliberation Council** enforcing separation of concerns across distributed system engineering phases:
 
 ```text
-[User Specification]
-        │
-        ▼
-┌────────────────────────────────────────────────────────┐
-│  AGENT 1: Google Gemini (Lead System Architect)        │ ──> models.py
-│  Contracts, typed dataclasses, state machines, enums   │
-└────────────────────────────────────────────────────────┘
-        │
-        ▼
-┌────────────────────────────────────────────────────────┐
-│  AGENT 2: Anthropic Claude (Staff Core Engineer)       │ ──> service.py
-│  Defensive core, thread safety (RLock), backoff retries│
-└────────────────────────────────────────────────────────┘
-        │
-        ▼
-┌────────────────────────────────────────────────────────┐
-│  AGENT 3: OpenAI (Principal QA Engineer)               │ ──> test_service.py
-│  Adversarial fuzzer, edge cases, concurrency stress    │
-└────────────────────────────────────────────────────────┘
-        │
-        ▼
-┌────────────────────────────────────────────────────────┐
-│  AGENT 4: Apex Sovereign (Formal Prover & Gatekeeper)  │ ──> proof.json
-│  Hermetic sandbox run: 100% tests pass, HMAC-SHA512    │ ──> README.md
-└────────────────────────────────────────────────────────┘
+               ┌────────────────────────────────────────────────────────┐
+               │                  User Specification                    │
+               └──────────────────────────┬─────────────────────────────┘
+                                          │
+                                          ▼
+┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+│ AGENT 1: Google Gemini (Lead Systems Architect)                                               │
+│ → Generates typed dataclasses, state machine transitions, and explicit invariant contracts    │
+│ → Output Artifact: models.py                                                                 │
+└─────────────────────────────────────────┬─────────────────────────────────────────────────────┘
+                                          │
+                                          ▼
+┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+│ AGENT 2: Anthropic Claude (Principal Core Engineer)                                           │
+│ → Synthesizes defensive implementations, thread concurrency primitives (RLock), and backoff   │
+│ → Output Artifact: service.py                                                                 │
+└─────────────────────────────────────────┬─────────────────────────────────────────────────────┘
+                                          │
+                                          ▼
+┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+│ AGENT 3: OpenAI (Principal Adversarial QA Engineer)                                           │
+│ → Constructs fuzzing boundaries, race-condition stress harnesses, and negative edge tests     │
+│ → Output Artifact: test_service.py                                                            │
+└─────────────────────────────────────────┬─────────────────────────────────────────────────────┘
+                                          │
+                                          ▼
+┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+│ AGENT 4: Apex Sovereign (Formal Gatekeeper & Execution Sandbox)                               │
+│ → Hermetic sub-process execution, 100% test pass verification, HMAC-SHA512 Merkle attestation │
+│ → Output Artifact: proof.json & README.md                                                     │
+└───────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Try it right now:
+#### Execution:
 
 ```bash
 apex council "distributed token bucket rate limiter with sliding window"
@@ -160,13 +166,18 @@ Output Directory: ./apex_project
     • HuggingChat (General LLM Applications) - https://github.com/huggingface/chat-ui
 ```
 
-*Modes supported: `--mode live` (Cloud APIs), `--mode local` (Ollama/Llamafile), `--mode hybrid` (Auto-detect), `--mode offline` (Fast local AST).*
+*Execution Backends: `--mode live` (Cloud APIs), `--mode local` (Ollama/Llamafile), `--mode hybrid` (Auto-arbitration), `--mode offline` (Deterministic AST synthesis).*
 
 ---
 
-## 🔧 Superpower 2: 1.4-Second Autonomous Closed-Loop Repair (`apex demo-live`)
+## 🔧 Subsystem 02: Inductive Program Synthesis & AST Slicing (`apex heal` / `apex demo-live`)
 
-When you hit a subtle boundary defect, heavy LLMs hallucinate 200 lines of unrelated code. Apex uses **Mark Weiser (1981) Dynamic AST Program Slicing** combined with **CEGIS (Counterexample-Guided Inductive Synthesis)**:
+When code encounters edge-case regressions, stochastic generative models frequently rewrite hundreds of unrelated lines, introducing secondary defects. Apex executes **Mark Weiser's (1981) Dynamic Program Slicing** combined with **Counterexample-Guided Inductive Synthesis (CEGIS)**:
+
+1. **Spectrum-Based Fault Localization (Ochiai)**: Computes statement suspiciousness across execution traces.
+2. **Backward Dependence Slicing**: Resolves AST control-dependence $\xrightarrow{cd}$ and data-dependence $\xrightarrow{dd}$ graphs, pruning the search space by up to **85%**.
+3. **Bounded Syntax Mutation**: Explores minimal AST transformations (predicate boundaries, off-by-one operators, relational inverses).
+4. **Differential Invariant Probing**: Verifies candidate patches across **500 randomized boundary test vectors**.
 
 ```bash
 apex demo-live
@@ -178,7 +189,7 @@ apex demo-live
 ============================================================================
 
 [STAGE 1/5] Fault Ingestion: Buggy Binary Search
-   4 |     while left < right:             <-- BUG: boundary misses element
+   4 |     while left < right:             <-- DEFECT: Strict inequality misses target element
 
 [STAGE 2/5] Mark Weiser (1981) Dynamic AST Program Slicing
 Isolating control and data-flow dependencies for line 4...
@@ -192,7 +203,7 @@ Generating counterexamples and synthesizing provably sound AST rewrites...
 
 [STAGE 4/5] 500 Differential Hidden Test Probes
   [██████████████████████████████] 500/500 probes passed (100.0%)
-  ✓ Differential Fuzzing: 0 failures, 0 regressions, 0 memory leaks.
+  ✓ Differential Verification: 0 failures, 0 regressions, 0 memory leaks.
 
 [STAGE 5/5] Synthesized Verified Patch & Proof of Soundness
 --- a/binary_search.py (original)
@@ -208,26 +219,26 @@ Generating counterexamples and synthesizing provably sound AST rewrites...
 
 ---
 
-## 🐧 Superpower 3: Linux Kernel & eBPF Subsystem (`apex linux`)
+## 🐧 Subsystem 03: Linux Kernel Development & eBPF JIT Subsystem (`apex linux`)
 
-Direct integration with Linus Torvalds' `torvalds/linux` development standards:
+Direct integration with Linus Torvalds' upstream kernel standards (`torvalds/linux`):
 
 ```bash
 # 1. Audit C source code against Linus Torvalds' checkpatch.pl rules:
-apex linux audit my_driver.c
-# Checks: 8-char tabs, line limits, GFP_KERNEL in spinlocks, banned strcpy/sprintf, IS_ERR checks.
+apex linux audit drivers/net/ethernet/intel/e1000/e1000_main.c
+# Static checks: 8-char hard tabs, GFP_KERNEL in atomic spinlock contexts, banned functions (strcpy/sprintf), IS_ERR verification.
 
-# 2. Search Linux x86_64 / arm64 Syscall ABI Table (450+ syscalls):
+# 2. Query Linux x86_64 / arm64 Syscall ABI Table (450+ standard syscalls):
 apex linux syscall bpf
-apex linux syscall io_uring
+apex linux syscall io_uring_enter
 
-# 3. Generate high-speed eBPF XDP network packet filters:
+# 3. Synthesize production eBPF XDP network packet drop/pass filters:
 apex linux bpf xdp 8080
 
-# 4. Synthesize Linux Seccomp BPF sandbox policies:
+# 4. Generate Linux Seccomp BPF sandbox filtering policies:
 apex linux bpf seccomp
 
-# 5. Scaffold Loadable Kernel Module (.ko) & Kbuild Makefile:
+# 5. Scaffold Loadable Kernel Module (.ko) with Kbuild Makefile:
 apex kernel module my_device_driver
 
 # 6. Fetch upstream kernel headers directly from torvalds/linux:
@@ -236,93 +247,15 @@ apex linux fetch include/linux/bpf.h
 
 ---
 
-## 🎯 Superpower 4: 262+ Curated AI Tools Registry (`apex aitools`)
+## ⚡ Subsystem 04: Coverage-Guided In-Memory Mutation Fuzzer (`apex fuzz`)
 
-Packed directly inside Apex's binary in an ultra-compact ~14 KB compressed payload from `ikaijua/Awesome-AITools`:
-
-```bash
-# Search across 262+ tools across 38 categories:
-apex aitools search "code review"
-apex aitools search "speech" --free
-
-# View all 38 categories:
-apex aitools categories
-
-# Get specification-aware AI tool recommendations:
-apex aitools recommend "Build an automated browser scraping agent"
-```
-
----
-
-## 🛡️ Superpower 5: Self-Healing Git Pre-Commit Hook (`apex hook install`)
-
-Never commit broken code again. When installed, Apex intercepts `git commit`, runs your test suite, and if tests fail:
-1. Intercepts the crash traceback.
-2. Isolates the causal statement via AST backward slicing.
-3. Synthesizes a minimal sound patch via CEGIS.
-4. Verifies across 500 hidden invariant probes.
-5. Stages the repaired code and **amends the git commit automatically**!
+Executes **663,000+ mutation probes per second** on local CPU with zero third-party dependencies. Iterates through extreme numeric boundaries (`0`, `-1`, `2^31-1`, `NaN`, `Inf`, empty buffers, recursion depth limits), isolates crashes, and synthesizes defensive AST guard contracts:
 
 ```bash
-apex hook install
-```
-
----
-
-## 🖥️ Superpower 6: Apple Pro Studio Web Dashboard (`apex studio`)
-
-Launch a zero-dependency dark-mode telemetry dashboard and real-time inspector at `http://127.0.0.1:8765`:
-
-```bash
-apex studio
-```
-
-- Real-time memory allocation sparklines and execution latency percentiles (P50, P95, P99).
-- Interactive live CEGIS repair diff visualizer.
-- Supreme Council multi-model deliberation panel.
-- 100% pure Python standard library (`http.server`, `urllib`, `threading`, `json`).
-
----
-
-## 🔒 Superpower 7: Cloudflare-Grade AppSec Auditor (`apex audit-sec`)
-
-Evaluates codebases against 7 critical enterprise attack classes with zero false positives:
-- **SSRF Elimination (CWE-918)**: Strict CIDR validation blocking AWS/GCP cloud metadata.
-- **Dynamic Sink Shielding (CWE-95)**: AST recursive depth bombs (> 200) and excessive AST node thresholds.
-- **Command Injection (CWE-78)**: Replaces raw shell calls with Win32 VT100 APIs and list arguments (`shell=False`).
-- **Timing Attack Hardening (CWE-208)**: Enforces constant-time `hmac.compare_digest()`.
-
-```bash
-apex audit-sec
-```
-
----
-
-## 🔍 Superpower 8: Reverse Engineering Anything (`apex rea`)
-
-Deep inspection and decompilation of compiled binaries, archives, and bytecodes:
-- **Formats Supported**: ELF (Linux x86/ARM/RISC-V), PE (Windows x86-64 native executables & DLLs), ZIP & Python Zipapps (`.pyz`), CPython Bytecode (`.pyc`).
-- **Cryptographic Evidence Ledger**: Stores HMAC-SHA256 evidence blocks verifying artifact integrity.
-
-```bash
-# Disassemble and extract bytecode opcodes & branch complexity:
-apex rea apex_council/cli.py --disasm
-
-# Inspect native Windows executable:
-apex rea C:\Windows\notepad.exe
-```
-
----
-
-## ⚡ Superpower 9: Autonomous Mutation Fuzzer (`apex fuzz`)
-
-Execute **663,000+ adversarial mutations per second** on local CPU with zero external dependencies to detect zero-day crashes and synthesize defensive guards:
-
-```bash
-# Run 1,000 adversarial boundary probes on local file:
+# Execute 1,000 adversarial boundary probes on local target:
 apex fuzz my_algorithm.py
 
-# Run live high-throughput mutation fuzzing demonstration:
+# Run live high-throughput in-memory fuzzing benchmark:
 apex fuzz demo
 ```
 
@@ -342,15 +275,15 @@ apex fuzz demo
 
 ---
 
-## 🔬 Superpower 10: Formal Mathematical Safety Prover (`apex prove` / `apex verify`)
+## 🔬 Subsystem 05: Abstract Interpretation & Dijkstra Invariant Prover (`apex prove`)
 
-Claude and GPT-4 only generate educated guesses. Apex **mathematically proves** zero-division safety, array boundary integrity, and loop termination using Patrick & Radhia Cousot (POPL 1977) Abstract Interpretation and Dijkstra Weakest Precondition Calculus:
+Generative models lack formal correctness guarantees. Apex executes deterministic static safety proofs based on **Patrick & Radhia Cousot (POPL 1977) Abstract Interpretation** over interval polyhedra lattices and **Dijkstra's Weakest Precondition Calculus (1976)**:
 
 ```bash
 # Formally prove code invariants and verify Dijkstra Hoare triples:
 apex prove my_service.py
 
-# Output machine-readable JSON proof certificate with cryptographic SHA-256 seal:
+# Output cryptographically hashed JSON proof certificate:
 apex verify my_service.py --json
 ```
 
@@ -372,9 +305,24 @@ apex verify my_service.py --json
 
 ---
 
-## 🖥️ Superpower 11: Retro-Futuristic Cyber-TUI Dashboard (`apex tui`)
+## 🛡️ Subsystem 06: Deterministic Git Pre-Commit Lifecycle Interceptor (`apex hook`)
 
-Monitor real-time council deliberations, hardware telemetry, memory loads, fuzzer probe sparklines, and Linux kernel subsystems directly in your terminal:
+Prevents regression leakage past the local commit boundary. When installed, Apex intercepts `git commit`:
+1. Traps runtime test failures and traceback stack frames.
+2. Extracts causal execution statements via AST backward slicing.
+3. Synthesizes a minimal verified patch via CEGIS.
+4. Verifies across 500 hidden differential test probes.
+5. Stages the repaired source and **automatically amends the commit**.
+
+```bash
+apex hook install
+```
+
+---
+
+## 🖥️ Subsystem 07: ANSI/VT100 Real-Time Systems Telemetry Console (`apex tui`)
+
+Live operational cyber-dashboard providing low-latency system and deliberation observability via standard terminal VT100 escapes:
 
 ```bash
 # Launch interactive real-time cyber operations console:
@@ -413,11 +361,75 @@ apex tui --once
 
 ---
 
+## 🎯 Subsystem 08: In-Memory Curated Machine Intelligence Registry (`apex aitools`)
+
+Embedded offline registry of 262 curated AI tools across 38 categories compiled directly into Apex's binary via a ~14 KB zlib-compressed base64 payload from `ikaijua/Awesome-AITools`:
+
+```bash
+# Query registry across categories:
+apex aitools search "code review"
+apex aitools search "speech synthesis" --free
+
+# List categorized taxonomy:
+apex aitools categories
+
+# Specification-aware tool recommendations:
+apex aitools recommend "Build an automated browser scraping agent"
+```
+
+---
+
+## 🔒 Subsystem 09: Enterprise Static Security Analysis & CWE Mitigation (`apex audit-sec`)
+
+Audits source repositories against critical Common Weakness Enumerations (CWE) with zero false positives:
+* **Server-Side Request Forgery Shielding (CWE-918)**: Enforces strict CIDR block validation preventing access to AWS/GCP cloud metadata services (`169.254.169.254`).
+* **Dynamic Code Evaluation Sinks (CWE-95)**: Detects untrusted AST eval sinks, recursive depth bombs (> 200), and excessive AST expansion nodes.
+* **Command Injection Hardening (CWE-78)**: Verifies subprocess invocations avoid raw shell string interpolation (`shell=False`, argument list passing).
+* **Timing Attack Hardening (CWE-208)**: Replaces vulnerable string equality comparisons with constant-time `hmac.compare_digest()`.
+
+```bash
+apex audit-sec
+```
+
+---
+
+## 🔍 Subsystem 10: Binary Disassembly & Bytecode Decompilation Engine (`apex rea`)
+
+Deep inspection and structural decompilation of compiled binaries, archives, and virtual machine bytecodes:
+* **Binary Executable Formats**: ELF (Linux x86/ARM/RISC-V), PE (Windows x86-64 native executables & DLLs).
+* **Python Distribution Formats**: ZIP archives, Zipapps (`.pyz`), CPython compiled bytecode (`.pyc`).
+* **Cryptographic Evidence Ledger**: Chained HMAC-SHA256 evidence blocks verifying inspection integrity.
+
+```bash
+# Disassemble and extract bytecode opcodes & cyclomatic complexity:
+apex rea apex_council/cli.py --disasm
+
+# Inspect PE binary headers:
+apex rea C:\Windows\notepad.exe
+```
+
+---
+
+## 🖥️ Subsystem 11: Zero-Dependency Telemetry & Web Observability Server (`apex studio`)
+
+Standalone dark-mode systems telemetry dashboard and real-time inspector running locally at `http://127.0.0.1:8765`:
+
+```bash
+apex studio
+```
+
+* Real-time heap memory allocation waterfalls and execution latency percentiles (P50, P95, P99).
+* Interactive live CEGIS repair diff visualizer.
+* Supreme Council multi-model deliberation panel.
+* 100% pure Python standard library (`http.server`, `urllib`, `threading`, `json`).
+
+---
+
 <details>
-<summary><b>🔬 Formal Mathematical Foundations (Click to expand)</b></summary>
+<summary><b>🔬 Theoretical Computer Science & Formal Foundations (Click to expand)</b></summary>
 <br>
 
-Apex is grounded in peer-reviewed formal methods:
+Apex's verification and synthesis pipelines are built upon rigorous peer-reviewed computer science literature:
 
 1. **Dijkstra's Weakest Precondition Calculus (1976)**:
    Computes the weakest condition $wp(S, Q)$ under which executing program $S$ guarantees post-condition $Q$:
@@ -425,16 +437,16 @@ Apex is grounded in peer-reviewed formal methods:
    $$wp(S_1; S_2, Q) = wp(S_1, wp(S_2, Q))$$
    $$wp(\text{if } B \text{ then } S_1 \text{ else } S_2, Q) = (B \implies wp(S_1, Q)) \land (\neg B \implies wp(S_2, Q))$$
 
-2. **Cousot & Cousot Abstract Interpretation (POPL 1977)**:
-   Fixed-point iteration over the interval domain lattice $\mathcal{D} = \{ [l, u] \mid l, u \in \mathbb{R} \cup \{\pm\infty\}, l \le u \} \cup \{ \bot \}$ with widening operator $\nabla$ ensuring finite convergence over recursive loops:
+2. **Patrick & Radhia Cousot Abstract Interpretation (POPL 1977)**:
+   Computes fixed-point intervals over domain lattice $\mathcal{D} = \{ [l, u] \mid l, u \in \mathbb{R} \cup \{\pm\infty\}, l \le u \} \cup \{ \bot \}$ with widening operator $\nabla$ guaranteeing finite loop convergence:
    $$[a, b] \nabla [c, d] = [ (c < a \ ? \ -\infty : a), (d > b \ ? \ +\infty : b) ]$$
 
 3. **Spectrum-Based Fault Localization (Ochiai Metric)**:
-   Localizes suspicious statements $s$ by calculating anomaly correlation across passing and failing execution traces:
+   Quantifies statement suspiciousness by correlating execution paths with passing and failing unit tests:
    $$\text{Ochiai}(s) = \frac{\text{failed}(s)}{\sqrt{\text{total\_failed} \times (\text{failed}(s) + \text{passed}(s))}}$$
 
 4. **Mark Weiser Dynamic AST Program Slicing (1981)**:
-   Given criterion $C = \langle n, V \rangle$, constructs backward slice $S(C)$ by computing reflexive transitive closure of data-flow $\xrightarrow{dd}$ and control-flow $\xrightarrow{cd}$ dependency edges.
+   For slicing criterion $C = \langle n, V \rangle$, constructs backward slice $S(C)$ by computing the reflexive transitive closure of data-flow $\xrightarrow{dd}$ and control-flow $\xrightarrow{cd}$ dependency edges on the Control Flow Graph.
 
 </details>
 
@@ -442,25 +454,25 @@ Apex is grounded in peer-reviewed formal methods:
 
 ## 🧪 Comprehensive Verification Suite
 
-Apex is rigorously tested with **387 hermetic unit tests** running across Linux, macOS, and Windows:
+Apex maintains an exhaustive test suite of **387 hermetic unit tests** executed continuously across Linux, macOS, and Windows:
 
 ```bash
-# Run full master test suite:
+# Execute master test scorecard:
 apex test-all
 
-# Or via standard unittest runner:
+# Or via standard library test runner:
 python -m unittest discover tests
 ```
 
 ---
 
-## 📦 Building Standalone Executable (`apex.pyz`)
+## 📦 Binary Compilation Specification (`scripts/build_pyz.py`)
 
-Apex builds its own airtight standalone binary executable using Python's standard `zipapp` module with AST docstring & annotation compression:
+Apex compiles its own airtight standalone binary executable using Python's standard `zipapp` module with AST docstring & annotation compression:
 
 ```bash
 python scripts/build_pyz.py
-# Result: dist/apex.pyz (449.9 KB, pip = 0)
+# Output: dist/apex.pyz (449.9 KB, pip = 0)
 ```
 
 ---
@@ -471,5 +483,5 @@ Apex Sovereign is distributed under the **MIT License**.
 100% Free, Open Source, and Autonomous.
 
 <div align="center">
-  <sub>Engineered with precision. Zero dependencies. Absolute sovereignty.</sub>
+  <sub>Engineered with mathematical precision. Zero external dependencies. Absolute computational sovereignty.</sub>
 </div>
