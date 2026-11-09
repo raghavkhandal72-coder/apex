@@ -40,7 +40,7 @@ if ($LocalPyz -and (Test-Path $LocalPyz)) {
     Write-Host "Copying local build to $PyzTarget..." -ForegroundColor Gray
     Copy-Item -Path $LocalPyz -Destination $PyzTarget -Force
 } else {
-    $LatestUrl = "https://github.com/$Repo/releases/latest/download/apex.pyz"
+    $LatestUrl = "https://github.com/$Repo/releases/download/v0.9.0/apex.pyz"
     Write-Host "Downloading latest release from $LatestUrl..." -ForegroundColor Gray
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
