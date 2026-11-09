@@ -38,13 +38,14 @@ def synthesize_consensus(
     clean_task_summary = task_prompt.strip().splitlines()[0] if task_prompt else "General Code Task"
     clean_task_summary = clean_task_summary.replace('"""', "'''")[:120]
 
-    header = f'''"""Apex Consensus Implementation
-Task: {clean_task_summary}
-Primary Foundation: {winner.value}
-Peer Consensus: Tri-Model Verification & Red-Team Passed
-Security Standard: Hermetic Sandbox Verified, Hardened Zero-Trust Baseline
-"""
-'''
+    header = (
+        '"""Apex Consensus Implementation\n'
+        f'Task: {clean_task_summary}\n'
+        f'Primary Foundation: {winner.value}\n'
+        'Peer Consensus: Tri-Model Verification & Red-Team Passed\n'
+        'Security Standard: Hermetic Sandbox Verified, Hardened Zero-Trust Baseline\n'
+        '"""'
+    )
 
     raw_code = f"{header}\n{patched_code.strip()}\n"
 

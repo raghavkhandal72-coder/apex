@@ -32,30 +32,37 @@ def build_standalone_pyz(output_path: str = "dist/apex.pyz") -> Path:
             ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", ".git*", "*.html", "*.md"),
         )
 
-        # Lightly optimize staging files to preserve strict < 450 KB binary budget
+        # Optimize staging files using safe Python AST compilation to preserve strict < 450 KB budget
+        import ast
+
+        class DocstringStripper(ast.NodeTransformer):
+            def _strip_doc(self, node):
+                if node.body and isinstance(node.body[0], ast.Expr) and isinstance(node.body[0].value, ast.Constant) and isinstance(node.body[0].value.value, str):
+                    node.body = node.body[1:]
+                    if not node.body:
+                        node.body = [ast.Pass()]
+                return node
+            def visit_FunctionDef(self, node):
+                self.generic_visit(node)
+                return self._strip_doc(node)
+            def visit_AsyncFunctionDef(self, node):
+                self.generic_visit(node)
+                return self._strip_doc(node)
+            def visit_ClassDef(self, node):
+                self.generic_visit(node)
+                return self._strip_doc(node)
+            def visit_Module(self, node):
+                self.generic_visit(node)
+                return self._strip_doc(node)
+
         for py_file in target_pkg.rglob("*.py"):
             try:
                 raw = py_file.read_text(encoding="utf-8", errors="replace")
-                lines = raw.splitlines(keepends=True)
-                filtered = []
-                in_doc = False
-                for line in lines:
-                    s = line.strip()
-                    # Skip single-line docstrings
-                    if (s.startswith('"""') and s.endswith('"""') and len(s) >= 6) or (s.startswith("'''") and s.endswith("'''") and len(s) >= 6):
-                        continue
-                    # Toggle multi-line docstrings
-                    if s.startswith('"""') or s.startswith("'''"):
-                        in_doc = not in_doc
-                        continue
-                    if in_doc:
-                        continue
-                    if s.startswith("#") and not s.startswith("#!") and "coding" not in s:
-                        continue
-                    if not s:
-                        continue
-                    filtered.append(line)
-                py_file.write_text("".join(filtered), encoding="utf-8")
+                tree = ast.parse(raw)
+                tree = DocstringStripper().visit(tree)
+                ast.fix_missing_locations(tree)
+                optimized = ast.unparse(tree)
+                py_file.write_text(optimized, encoding="utf-8")
             except Exception:
                 pass
 

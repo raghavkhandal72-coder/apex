@@ -289,7 +289,11 @@ class CEGISEngine:
         try:
             tree = ast.parse(test_suite_code)
             for node in tree.body:
-                if isinstance(node, (ast.Assert, ast.Expr, ast.FunctionDef)):
+                if isinstance(node, (ast.Assert, ast.Expr)):
+                    test_units.append(ast.unparse(node))
+                elif isinstance(node, ast.FunctionDef) and node.name.startswith("test") and len(node.args.args) == 0:
+                    test_units.append(f"{ast.unparse(node)}\n{node.name}()")
+                elif isinstance(node, ast.FunctionDef):
                     test_units.append(ast.unparse(node))
         except Exception:
             test_units = [line.strip() for line in test_suite_code.splitlines() if line.strip() and not line.strip().startswith("#")]
