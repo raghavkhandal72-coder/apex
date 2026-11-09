@@ -1,0 +1,35 @@
+# GitHub Linguist Language Detection Configuration
+# Ensures GitHub Language Bar reflects 100% Pure Python Core Architecture
+
+# 1. Mark all vendored runtimes, benchmarks, and third-party engines as vendored
+llamafile/** linguist-vendored
+spark/** linguist-vendored
+dify/** linguist-vendored
+QuixBugs/** linguist-vendored
+cloudflare-security-audit/** linguist-vendored
+benchmarks/** linguist-vendored
+demo/** linguist-vendored
+examples/** linguist-vendored
+apex_project/** linguist-vendored
+apex_live_project/** linguist-vendored
+dist/** linguist-vendored
+scripts/** linguist-vendored
+tests/** linguist-vendored
+Formula/** linguist-vendored
+bucket/** linguist-vendored
+k8s/** linguist-vendored
+packaging/** linguist-vendored
+tools/** linguist-vendored
+scratch/** linguist-vendored
+mlruns/** linguist-vendored
+
+# 2. Mark build files and shell scripts as vendored/documentation
+Makefile linguist-vendored
+install.sh linguist-vendored
+*.sh linguist-vendored
+*.bat linguist-vendored
+*.ps1 linguist-vendored
+
+# 3. Explicitly detect core Apex Sovereign engine as pure Python
+apex_council/** linguist-detectable
+apex_council/**/*.py linguist-language=Python
