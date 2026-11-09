@@ -1,16 +1,37 @@
 version: '3.8'
 
 services:
+  # Official Ollama Local Open-Source LLM Service Container
+  ollama:
+    image: ollama/ollama:latest
+    container_name: apex-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    restart: unless-stopped
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+
+  # Apex Sovereign Autonomous Code Engine Container
   apex-council:
     build: .
     container_name: apex-council
     ports:
       - "8080:8080"
     environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=deepseek-coder:1.3b
+      - APEX_USE_OLLAMA=1
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GITHUB_TOKEN=${GITHUB_TOKEN}
+    depends_on:
+      - ollama
     volumes:
       - .:/app
     restart: unless-stopped
+
+volumes:
+  ollama_models:
