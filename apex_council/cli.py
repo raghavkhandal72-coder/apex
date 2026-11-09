@@ -419,7 +419,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     # Command 60: Garden Skills Registry & Execution (google/skills & ConardLi/garden-skills)
     skills_p = subparsers.add_parser("skills", help="Garden Skills agent skills registry & executor (ConardLi/garden-skills)")
-    skills_p.add_argument("action", choices=["list", "run"], help="Skills action")
+    skills_p.add_argument("action", choices=["list", "run", "search", "read", "stats"], help="Skills action")
     skills_p.add_argument("name", nargs="?", help="Skill name to run")
     skills_p.add_argument("--tag", help="Filter skills by tag")
 
@@ -2390,6 +2390,40 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 print(f"Error: {res.get('error')}")
             return 0 if res.get("success") else 1
+
+        elif action == "search":
+            query = args.name or "orchestration"
+            results = reg.search_aas(query, limit=10)
+            print(f"\n[AAS SEARCH] Found {len(results)} skills matching '{query}':")
+            print("-" * 80)
+            for s in results:
+                print(f"  • {s['id']:<32} [{s.get('category', 'unknown'):<18}]")
+                desc = s.get('description', '').replace('\n', ' ')[:72]
+                print(f"    {desc}...")
+            print("-" * 80 + "\n")
+            return 0
+
+        elif action == "read":
+            if not args.name:
+                print("Usage: apex skills read <skill-id>")
+                return 1
+            content = reg.read_aas(args.name)
+            if content:
+                print(content)
+                return 0
+            else:
+                print(f"Error: AAS skill '{args.name}' not found.")
+                return 1
+
+        elif action == "stats":
+            import json
+            from pathlib import Path
+            p = Path(r"C:\Users\dell\.gemini\antigravity\scratch\agentic-awesome-skills\skills_index.json")
+            if p.exists():
+                with open(p, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                print(f"\n[AAS] Agentic Awesome Skills Catalog: {len(data)} total skills loaded & active.\n")
+            return 0
 
     # Command 61: Agent Browser Automation (vercel-labs/agent-browser)
     if args.command == "browser":

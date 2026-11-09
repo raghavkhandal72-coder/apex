@@ -10,6 +10,7 @@ from __future__ import annotations
 import dataclasses
 import os
 import re
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 
@@ -29,6 +30,7 @@ class GardenSkillsRegistry:
     """
     Curated Agent Skills Registry & Executor.
     Parses SKILL.md specs, manages runtime execution, and exposes specialized agent capabilities.
+    Integrates all 2,926+ Agentic Awesome Skills (AAS).
     """
 
     def __init__(self, custom_skills_dir: Optional[str] = None) -> None:
@@ -142,7 +144,6 @@ class GardenSkillsRegistry:
                         tags = [t.strip() for t in v.strip("[]").split(",") if t.strip()]
 
         if not desc:
-            # First non-header line of body
             for line in body.splitlines():
                 line = line.strip()
                 if line and not line.startswith("#"):
@@ -178,6 +179,44 @@ class GardenSkillsRegistry:
                         pass
         return count
 
+    def search_aas(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
+        """Searches all 2,926 Agentic Awesome Skills (AAS) catalog."""
+        aas_index = Path(r"C:\Users\dell\.gemini\antigravity\scratch\agentic-awesome-skills\skills_index.json")
+        if not aas_index.exists():
+            return []
+        import json
+        try:
+            with open(aas_index, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            terms = [t.lower() for t in query.split() if len(t) >= 2]
+            scored = []
+            for s in data:
+                score = 0
+                sid = s.get("id", "").lower()
+                name = s.get("name", "").lower()
+                desc = s.get("description", "").lower()
+                cat = s.get("category", "").lower()
+                for t in terms:
+                    if t == sid: score += 50
+                    elif t in sid: score += 20
+                    if t in name: score += 15
+                    if t in cat: score += 10
+                    if t in desc: score += 5
+                if score > 0:
+                    scored.append((score, s))
+            scored.sort(key=lambda x: x[0], reverse=True)
+            return [s for _, s in scored[:limit]]
+        except Exception:
+            return []
+
+    def read_aas(self, skill_id: str) -> Optional[str]:
+        """Reads full SKILL.md for a given AAS skill id."""
+        aas_root = Path(r"C:\Users\dell\.gemini\antigravity\scratch\agentic-awesome-skills")
+        p = aas_root / "skills" / skill_id / "SKILL.md"
+        if p.exists():
+            return p.read_text(encoding="utf-8", errors="replace")
+        return None
+
     def execute_skill(self, name: str, **kwargs: Any) -> Dict[str, Any]:
         """Executes a registered skill with given arguments."""
         skill = self.get_skill(name)
@@ -191,7 +230,6 @@ class GardenSkillsRegistry:
             except Exception as e:
                 return {"success": False, "error": str(e), "skill": skill.name}
 
-        # Default prompt compilation execution
         compiled_prompt = f"### System Context\n{skill.system_prompt}\n\n### Inputs\n"
         for k, v in kwargs.items():
             compiled_prompt += f"- **{k}**: {v}\n"
