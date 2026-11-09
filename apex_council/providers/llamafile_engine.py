@@ -29,27 +29,40 @@ if hasattr(sys.stdout, "reconfigure"):
 class ApexPortableRunner:
     """Manages connection, health checks, and inference with Apex Portable Binary Runtimes."""
 
-    DEFAULT_HOST = "http://127.0.0.1:8080"
+    DEFAULT_HOSTS = ["http://127.0.0.1:8089", "http://127.0.0.1:8080"]
+    DEFAULT_HOST = "http://127.0.0.1:8089"
     DEFAULT_MODEL = "apex-runner"
 
     def __init__(self, host: Optional[str] = None, model: Optional[str] = None):
-        self.host = (host or os.environ.get("APEX_RUNNER_HOST") or os.environ.get("LLAMAFILE_HOST") or self.DEFAULT_HOST).rstrip("/")
+        explicit_host = host or os.environ.get("APEX_RUNNER_HOST") or os.environ.get("LLAMAFILE_HOST")
+        if explicit_host:
+            self.host = explicit_host.rstrip("/")
+        else:
+            self.host = self._auto_discover_host()
         self.model = model or os.environ.get("APEX_RUNNER_MODEL") or os.environ.get("LLAMAFILE_MODEL") or self.DEFAULT_MODEL
+
+    def _auto_discover_host(self) -> str:
+        for candidate in self.DEFAULT_HOSTS:
+            try:
+                req = safe_http_request(f"{candidate}/health", headers={"User-Agent": "Apex-Sovereign-Runner"}, allow_loopback=True)
+                with urllib.request.urlopen(req, timeout=0.2) as resp:
+                    if resp.status == 200:
+                        return candidate
+            except Exception:
+                continue
+        return self.DEFAULT_HOST
 
     def is_running(self, timeout: float = 0.5) -> bool:
         """Checks if a local portable runner server is active on the target port."""
-        try:
-            req = safe_http_request(f"{self.host}/v1/models", headers={"User-Agent": "Apex-Sovereign-Runner"}, allow_loopback=True)
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                return resp.status == 200
-        except Exception:
-            # Also try /health
+        for endpoint in [f"{self.host}/health", f"{self.host}/v1/models"]:
             try:
-                req = safe_http_request(f"{self.host}/health", headers={"User-Agent": "Apex-Sovereign-Runner"}, allow_loopback=True)
+                req = safe_http_request(endpoint, headers={"User-Agent": "Apex-Sovereign-Runner"}, allow_loopback=True)
                 with urllib.request.urlopen(req, timeout=timeout) as resp:
-                    return resp.status == 200
+                    if resp.status == 200:
+                        return True
             except Exception:
-                return False
+                pass
+        return False
 
     def list_models(self, timeout: float = 1.5) -> List[Dict[str, Any]]:
         """Returns list of models served by the portable runner."""

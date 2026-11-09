@@ -91,6 +91,16 @@ class OllamaEngine:
                 res_json = json.loads(resp.read().decode("utf-8"))
                 return res_json.get("response", "").strip()
         except Exception as e:
+            # Fall back to Apex Portable Runner on port 8089 if active
+            try:
+                from .llamafile_engine import ApexPortableRunner
+                runner = ApexPortableRunner()
+                if runner.is_running():
+                    code = runner.generate(prompt)
+                    if code and "error:" not in code.lower():
+                        return code
+            except Exception:
+                pass
             # Fall back to high-precision OfflineAISynthesizer
             try:
                 from ..synthesis.offline_ai import OfflineAISynthesizer
@@ -268,6 +278,16 @@ def handle_ollama_cli(args_list: List[str]) -> int:
             return 1
         prompt = " ".join(args_list[1:])
         if not engine.is_running():
+            from .llamafile_engine import ApexPortableRunner
+            runner = ApexPortableRunner()
+            if runner.is_running():
+                print(f"• Generating via Apex Sovereign Local Model ({runner.host})...")
+                t0 = time.perf_counter()
+                resp = runner.generate(prompt)
+                elapsed = time.perf_counter() - t0
+                print(f"\n{resp}\n")
+                print(f"[Apex Sovereign Runner completed in {elapsed:.2f}s]")
+                return 0
             print(engine.render_status())
             return 1
         print(f"• Generating via Ollama ({engine.model})...")
