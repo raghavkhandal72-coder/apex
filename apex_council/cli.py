@@ -73,7 +73,7 @@ KNOWN_COMMANDS = {
     "patch-export", "crash-fingerprint", "flamegraph", "pr-summary", "secret-mask", "completion", "zero-div",
     "instruments", "swift-guard", "studio", "test-all", "demo-live", "bench-live", "review", "ollama", "llamafile", "runner", "audit-sec", "security-audit", "scala", "scala-guard", "spark", "spark-guard", "dify", "dify-guard",
     "ocx", "opencodex", "aitools", "tools", "awesome", "linux", "kernel", "fuzz", "fuzzer",
-    "prove", "verify", "tui",
+    "prove", "verify", "tui", "race", "transpile",
     "-h", "--help"
 }
 
@@ -678,6 +678,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     tui_p = subparsers.add_parser("tui", help="Launch the Retro-Futuristic Cyber-TUI Live Dashboard")
     tui_p.add_argument("--once", action="store_true", help="Print single telemetry snapshot and exit")
 
+    # Command 102: Concurrency Lock Inversion & Deadlock Prover (apex race)
+    race_p = subparsers.add_parser("race", help="Static Concurrency Lock Inversion & Deadlock Prover")
+    race_p.add_argument("race_args", nargs="*", help="Target Python multithreaded file [--json]")
+
+    # Command 103: Python AST to ANSI C99 Systems Transpiler (apex transpile)
+    transpile_p = subparsers.add_parser("transpile", help="Python AST to ANSI C99 Systems Transpiler")
+    transpile_p.add_argument("transpile_args", nargs="*", help="Target Python file [-o output.c] [--print]")
+
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
     parser.add_argument("--format", choices=["table", "markdown", "json"], default="table")
@@ -943,6 +951,16 @@ def main(argv: list[str] | None = None) -> int:
             print(ApexLiveTUI.render_dashboard())
             return 0
         return ApexLiveTUI.run_live(iterations=1, interval=0.5)
+
+    # Command 102: Concurrency Lock Inversion & Deadlock Prover (apex race)
+    if args.command == "race":
+        from .analysis.race_detector import handle_race_cli
+        return handle_race_cli(args.race_args)
+
+    # Command 103: Python AST to ANSI C99 Systems Transpiler (apex transpile)
+    if args.command == "transpile":
+        from .transpiler.c_transpiler import handle_transpile_cli
+        return handle_transpile_cli(args.transpile_args)
 
     # Command 21: Cryptographic Hash-Chained Audit Ledger Verifier
     if args.command == "verify-ledger":
