@@ -477,6 +477,32 @@ python scripts/build_pyz.py
 
 ---
 
+## ⭐ Star History & Community Growth
+
+If you find Apex Sovereign's zero-dependency architecture or formal program synthesis valuable, consider starring the repository to support sovereign open-source engineering:
+
+<div align="center">
+  <a href="https://star-history.com/#raghavkhandal72-coder/apex&Date">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=raghavkhandal72-coder/apex&type=Date&theme=dark" />
+      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=raghavkhandal72-coder/apex&type=Date" />
+      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=raghavkhandal72-coder/apex&type=Date" width="650" />
+    </picture>
+  </a>
+</div>
+
+---
+
+## 🤝 Contributing & Pull Requests
+
+We welcome contributions from systems engineers, compiler enthusiasts, and security researchers!
+- Read our [CONTRIBUTING.md](CONTRIBUTING.md) guidelines.
+- Review our [Code of Conduct](CODE_OF_CONDUCT.md).
+- Report vulnerabilities responsibly via our [Security Policy](SECURITY.md).
+- All pull requests are automatically vetted by the Apex CI Council and must pass all 387 unit tests with zero external dependencies.
+
+---
+
 ## 📜 License
 
 Apex Sovereign is distributed under the **MIT License**.  
