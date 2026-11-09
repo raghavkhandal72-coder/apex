@@ -37,6 +37,7 @@ from ..providers.llamafile_engine import ApexPortableRunner
 from ..providers.ollama_engine import OllamaEngine
 from ..security.integrity import CodeIntegritySigner
 from ..ui.terminal import CyberpunkTUI, TerminalColors
+from .domain_synthesizer import DomainSynthesizer
 
 
 @dataclass
@@ -523,335 +524,59 @@ class SupremeCouncilEngine:
 
     def _generate_gemini_architecture(self, spec: str) -> str:
         """Agent 1: Google Gemini designs data models, enums, and state machines."""
-        return f'''"""Architecture & Data Contracts
-Engineered by: Google Gemini (Lead System Architect)
-Specification: {spec}
-Standard Library Purity: 100% (pip = 0)
-"""
-
-from __future__ import annotations
-
-from dataclasses import dataclass, field
-from enum import Enum, auto
-import time
-from typing import Any, Dict, Generic, List, Optional, TypeVar
-
-T = TypeVar("T")
-
-
-class TaskState(Enum):
-    PENDING = auto()
-    PROCESSING = auto()
-    COMPLETED = auto()
-    FAILED = auto()
-    DEAD_LETTER = auto()
-
-
-class PriorityLevel(Enum):
-    LOW = 1
-    NORMAL = 2
-    HIGH = 3
-    CRITICAL = 4
-
-
-@dataclass
-class TaskMessage(Generic[T]):
-    """Immutable, strongly-typed task contract."""
-    task_id: str
-    payload: T
-    priority: PriorityLevel = PriorityLevel.NORMAL
-    max_retries: int = 3
-    retry_count: int = 0
-    state: TaskState = TaskState.PENDING
-    created_at: float = field(default_factory=time.time)
-    updated_at: float = field(default_factory=time.time)
-    error_log: List[str] = field(default_factory=list)
-
-    def can_retry(self) -> bool:
-        """Determines whether task can be re-queued."""
-        return self.retry_count < self.max_retries
-
-    def record_failure(self, reason: str) -> None:
-        """Transitions state safely upon failure."""
-        self.retry_count += 1
-        self.updated_at = time.time()
-        self.error_log.append(reason)
-        if self.can_retry():
-            self.state = TaskState.PENDING
-        else:
-            self.state = TaskState.DEAD_LETTER
-
-
-@dataclass
-class QueueMetrics:
-    """Operational telemetry structure."""
-    total_enqueued: int = 0
-    total_processed: int = 0
-    total_failed: int = 0
-    total_dead_letter: int = 0
-    avg_latency_ms: float = 0.0
-'''
+        prompt = (
+            f"You are Google Gemini, Lead System Architect in the Apex Supreme Council.\n"
+            f"Design clean, type-safe data contracts, models, and enums in 'models.py' for:\n"
+            f"Specification: {spec}\n"
+            f"Strict requirements:\n"
+            f"1. 100% Python standard library only (pip = 0).\n"
+            f"2. Use dataclasses, Enum, typing (List, Dict, Optional, Any).\n"
+            f"3. Return ONLY valid executable Python code in ```python ``` block."
+        )
+        live = self._query_live_or_local(prompt, "gemini")
+        if live:
+            return live
+        domain = DomainSynthesizer.classify(spec)
+        return DomainSynthesizer.synthesize_models(spec, domain)
 
     def _generate_claude_implementation(self, spec: str, models_code: str) -> str:
         """Agent 2: Anthropic Claude implements defensive production logic with thread locks and invariants."""
-        return f'''"""Defensive Production Core Implementation
-Engineered by: Anthropic Claude (Staff Core Engineer)
-Specification: {spec}
-Standard Library Purity: 100% (pip = 0)
-"""
-
-from __future__ import annotations
-
-import heapq
-import threading
-import time
-from typing import Any, Callable, Dict, List, Optional, Tuple
-
-from models import PriorityLevel, QueueMetrics, TaskMessage, TaskState
-
-
-class DistributedTaskQueue:
-    """Thread-safe, high-concurrency Task Queue with worker pools, retries, and dead-letter queue.
-    Guarantees FIFO ordering within priority tiers and atomic state transitions.
-    """
-
-    def __init__(self, max_workers: int = 4, retry_backoff_sec: float = 0.05) -> None:
-        if max_workers <= 0:
-            raise ValueError(f"max_workers must be strictly positive, got {{max_workers}}")
-        self.max_workers = max_workers
-        self.retry_backoff_sec = retry_backoff_sec
-        self._lock = threading.RLock()
-        self._not_empty = threading.Condition(self._lock)
-        
-        # Priority heap entries: (-priority_value, enqueue_sequence, task)
-        self._heap: List[Tuple[int, int, TaskMessage]] = []
-        self._sequence: int = 0
-        self._dead_letter_queue: List[TaskMessage] = []
-        self._completed_tasks: Dict[str, TaskMessage] = {{}}
-        self._metrics = QueueMetrics()
-        self._is_shutdown: bool = False
-
-    def enqueue(self, task: TaskMessage) -> bool:
-        """Enqueues task atomically with strict priority scheduling."""
-        if not isinstance(task, TaskMessage):
-            raise TypeError(f"Expected TaskMessage, got {{type(task)}}")
-        
-        with self._lock:
-            if self._is_shutdown:
-                raise RuntimeError("Cannot enqueue into a shutdown queue")
-            
-            # Negate priority for max-heap behavior via min-heap
-            heapq.heappush(self._heap, (-task.priority.value, self._sequence, task))
-            self._sequence += 1
-            self._metrics.total_enqueued += 1
-            self._not_empty.notify()
-            return True
-
-    def dequeue(self, timeout_sec: Optional[float] = None) -> Optional[TaskMessage]:
-        """Dequeues highest priority task with optional timeout."""
-        with self._not_empty:
-            start_wait = time.time()
-            while not self._heap:
-                if self._is_shutdown:
-                    return None
-                if timeout_sec is not None:
-                    elapsed = time.time() - start_wait
-                    remaining = timeout_sec - elapsed
-                    if remaining <= 0:
-                        return None
-                    self._not_empty.wait(remaining)
-                else:
-                    self._not_empty.wait(1.0)
-            
-            _, _, task = heapq.heappop(self._heap)
-            task.state = TaskState.PROCESSING
-            task.updated_at = time.time()
-            return task
-
-    def execute_task(self, task: TaskMessage, handler: Callable[[Any], Any]) -> bool:
-        """Executes handler with automated exponential backoff and DLQ routing."""
-        try:
-            handler(task.payload)
-            with self._lock:
-                task.state = TaskState.COMPLETED
-                task.updated_at = time.time()
-                self._completed_tasks[task.task_id] = task
-                self._metrics.total_processed += 1
-            return True
-        except Exception as exc:
-            with self._lock:
-                task.record_failure(str(exc))
-                if task.state == TaskState.DEAD_LETTER:
-                    self._dead_letter_queue.append(task)
-                    self._metrics.total_dead_letter += 1
-                else:
-                    # Re-enqueue for retry
-                    self.enqueue(task)
-                    self._metrics.total_failed += 1
-            return False
-
-    def get_metrics(self) -> QueueMetrics:
-        """Returns snapshot of queue telemetry."""
-        with self._lock:
-            return QueueMetrics(
-                total_enqueued=self._metrics.total_enqueued,
-                total_processed=self._metrics.total_processed,
-                total_failed=self._metrics.total_failed,
-                total_dead_letter=self._metrics.total_dead_letter,
-            )
-
-    def size(self) -> int:
-        with self._lock:
-            return len(self._heap)
-
-    def dead_letter_count(self) -> int:
-        with self._lock:
-            return len(self._dead_letter_queue)
-
-    def shutdown(self) -> None:
-        with self._lock:
-            self._is_shutdown = True
-            self._not_empty.notify_all()
-'''
+        prompt = (
+            f"You are Anthropic Claude, Staff Core Engineer in the Apex Supreme Council.\n"
+            f"Implement defensive, thread-safe production business logic in 'service.py' for:\n"
+            f"Specification: {spec}\n"
+            f"Based on models.py:\n```python\n{models_code}\n```\n"
+            f"Strict requirements:\n"
+            f"1. 100% Python standard library only (pip = 0).\n"
+            f"2. Import needed symbols from 'models'.\n"
+            f"3. Defensive checks, thread safety with threading.RLock() if concurrent.\n"
+            f"4. Return ONLY valid executable Python code in ```python ``` block."
+        )
+        live = self._query_live_or_local(prompt, "claude")
+        if live:
+            return live
+        domain = DomainSynthesizer.classify(spec)
+        return DomainSynthesizer.synthesize_service(spec, domain, models_code)
 
     def _generate_openai_tests(self, spec: str, models_code: str, service_code: str) -> str:
         """Agent 3: OpenAI writes comprehensive adversarial unit tests with edge cases."""
-        return f'''"""Comprehensive Adversarial Unit Test Suite
-Engineered by: OpenAI (Principal QA & Red-Team Breaker)
-Specification: {spec}
-Standard Library Purity: 100% (pip = 0)
-"""
-
-from __future__ import annotations
-
-import sys
-import threading
-import time
-import unittest
-
-from models import PriorityLevel, TaskMessage, TaskState
-from service import DistributedTaskQueue
-
-
-class TestDistributedTaskQueue(unittest.TestCase):
-    """Adversarial stress and property verification test suite."""
-
-    def setUp(self) -> None:
-        self.queue = DistributedTaskQueue(max_workers=4)
-
-    def tearDown(self) -> None:
-        self.queue.shutdown()
-
-    def test_01_enqueue_and_dequeue_single_item(self) -> None:
-        task = TaskMessage(task_id="t1", payload={{"action": "send_email"}})
-        self.assertTrue(self.queue.enqueue(task))
-        self.assertEqual(self.queue.size(), 1)
-
-        pulled = self.queue.dequeue(timeout_sec=1.0)
-        self.assertIsNotNone(pulled)
-        self.assertEqual(pulled.task_id, "t1")
-        self.assertEqual(pulled.state, TaskState.PROCESSING)
-
-    def test_02_priority_ordering(self) -> None:
-        low = TaskMessage(task_id="low", payload="low", priority=PriorityLevel.LOW)
-        high = TaskMessage(task_id="high", payload="high", priority=PriorityLevel.HIGH)
-        crit = TaskMessage(task_id="crit", payload="crit", priority=PriorityLevel.CRITICAL)
-
-        self.queue.enqueue(low)
-        self.queue.enqueue(crit)
-        self.queue.enqueue(high)
-
-        # Dequeue must emerge in priority order: CRITICAL -> HIGH -> LOW
-        first = self.queue.dequeue()
-        second = self.queue.dequeue()
-        third = self.queue.dequeue()
-
-        self.assertEqual(first.task_id, "crit")
-        self.assertEqual(second.task_id, "high")
-        self.assertEqual(third.task_id, "low")
-
-    def test_03_execution_and_successful_completion(self) -> None:
-        task = TaskMessage(task_id="exec_1", payload=42)
-        self.queue.enqueue(task)
-        pulled = self.queue.dequeue()
-        
-        executed = []
-        success = self.queue.execute_task(pulled, lambda x: executed.append(x * 2))
-        
-        self.assertTrue(success)
-        self.assertEqual(executed, [84])
-        self.assertEqual(pulled.state, TaskState.COMPLETED)
-
-    def test_04_retry_and_dead_letter_routing(self) -> None:
-        # Max retries = 2
-        task = TaskMessage(task_id="fail_task", payload="data", max_retries=2)
-        self.queue.enqueue(task)
-
-        def failing_handler(_):
-            raise ConnectionResetError("Remote server down")
-
-        # Attempt 1 -> Fails, re-enqueued
-        t1 = self.queue.dequeue()
-        self.assertFalse(self.queue.execute_task(t1, failing_handler))
-        self.assertEqual(t1.retry_count, 1)
-        self.assertEqual(self.queue.dead_letter_count(), 0)
-
-        # Attempt 2 -> Fails, max retries reached, routes to DLQ
-        t2 = self.queue.dequeue()
-        self.assertFalse(self.queue.execute_task(t2, failing_handler))
-        self.assertEqual(t2.retry_count, 2)
-        self.assertEqual(t2.state, TaskState.DEAD_LETTER)
-        self.assertEqual(self.queue.dead_letter_count(), 1)
-
-    def test_05_concurrent_producers_and_consumers(self) -> None:
-        item_count = 50
-        produced = []
-
-        def producer():
-            for i in range(item_count):
-                task = TaskMessage(task_id=f"c_{{i}}", payload=i)
-                self.queue.enqueue(task)
-                produced.append(i)
-
-        t_prod = threading.Thread(target=producer)
-        t_prod.start()
-        t_prod.join()
-
-        self.assertEqual(self.queue.size(), item_count)
-        consumed = []
-        for _ in range(item_count):
-            item = self.queue.dequeue(timeout_sec=0.5)
-            self.assertIsNotNone(item)
-            consumed.append(item.payload)
-
-        self.assertEqual(len(consumed), item_count)
-
-    def test_06_boundary_timeout_empty_queue(self) -> None:
-        start = time.time()
-        pulled = self.queue.dequeue(timeout_sec=0.1)
-        elapsed = time.time() - start
-        self.assertIsNone(pulled)
-        self.assertGreaterEqual(elapsed, 0.08)
-
-    def test_07_invalid_input_type_safeguards(self) -> None:
-        with self.assertRaises(TypeError):
-            self.queue.enqueue("not a TaskMessage")  # type: ignore
-
-    def test_08_queue_metrics_accuracy(self) -> None:
-        task = TaskMessage(task_id="m1", payload="metric")
-        self.queue.enqueue(task)
-        item = self.queue.dequeue()
-        self.queue.execute_task(item, lambda _: None)
-        
-        metrics = self.queue.get_metrics()
-        self.assertEqual(metrics.total_enqueued, 1)
-        self.assertEqual(metrics.total_processed, 1)
-        self.assertEqual(metrics.total_failed, 0)
-
-
-if __name__ == "__main__":
-    unittest.main()
-'''
+        prompt = (
+            f"You are OpenAI, Principal QA Engineer in the Apex Supreme Council.\n"
+            f"Write a comprehensive unittest test suite in 'test_service.py' for:\n"
+            f"Specification: {spec}\n"
+            f"models.py:\n```python\n{models_code}\n```\n"
+            f"service.py:\n```python\n{service_code}\n```\n"
+            f"Strict requirements:\n"
+            f"1. 100% Python standard library only (unittest).\n"
+            f"2. Import from models and service.\n"
+            f"3. All tests must be deterministic and pass 100%.\n"
+            f"4. Return ONLY valid executable Python code in ```python ``` block."
+        )
+        live = self._query_live_or_local(prompt, "openai")
+        if live:
+            return live
+        domain = DomainSynthesizer.classify(spec)
+        return DomainSynthesizer.synthesize_tests(spec, domain, models_code, service_code)
 
     def _generate_readme(self, spec: str, test_count: int, merkle_seal: str) -> str:
         return f"""# Apex Sovereign Engineered Project

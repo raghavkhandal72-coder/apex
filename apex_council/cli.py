@@ -94,7 +94,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     # Command 0: 4-Agent Supreme Council (Gemini x Claude x OpenAI x Apex)
     council_parser = subparsers.add_parser("council", help="4-Agent Supreme Council: Gemini (Architect) + Claude (Core) + OpenAI (QA) + Apex (Gatekeeper)")
-    council_parser.add_argument("spec", nargs="?", default="Build a high-performance distributed task queue with retry logic and dead-letter queue", help="Feature specification to architect and build")
+    council_parser.add_argument("spec", nargs="*", default=[], help="Feature specification to architect and build")
     council_parser.add_argument("-o", "--output", type=Path, default=Path("./apex_project"), help="Target output directory for multi-file codebase")
 
     council_parser.add_argument("-m", "--mode", choices=["local", "live", "hybrid", "offline"], default="hybrid", help="Execution mode for the 4 agents: local (Ollama/Runner), live (Cloud APIs), hybrid (Auto-detect), offline (Fast AST)")
@@ -758,7 +758,16 @@ def main(argv: list[str] | None = None) -> int:
     # Command 0: 4-Agent Autonomous Supreme Council
     if args.command in {"council", "4agents"}:
         from .swarm.supreme_council import SupremeCouncilEngine
-        spec = getattr(args, "spec", None) or "Build a high-performance distributed task queue with retry logic and dead-letter queue"
+        raw_spec = getattr(args, "spec", None)
+        if isinstance(raw_spec, list) and raw_spec:
+            spec = " ".join(raw_spec).strip()
+        elif isinstance(raw_spec, str) and raw_spec.strip():
+            spec = raw_spec.strip()
+        else:
+            spec = "Build a high-performance distributed task queue with retry logic and dead-letter queue"
+        spec = spec.strip().strip('"').strip("'").strip('\\').strip()
+        if not spec:
+            spec = "Build a high-performance distributed task queue with retry logic and dead-letter queue"
         out_dir = getattr(args, "output", None) or Path("./apex_project")
         mode = getattr(args, "mode", "hybrid")
         show_status = getattr(args, "status", False)
