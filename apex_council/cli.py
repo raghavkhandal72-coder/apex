@@ -73,6 +73,7 @@ KNOWN_COMMANDS = {
     "patch-export", "crash-fingerprint", "flamegraph", "pr-summary", "secret-mask", "completion", "zero-div",
     "instruments", "swift-guard", "studio", "test-all", "demo-live", "bench-live", "review", "ollama", "llamafile", "runner", "audit-sec", "security-audit", "scala", "scala-guard", "spark", "spark-guard", "dify", "dify-guard",
     "ocx", "opencodex", "aitools", "tools", "awesome", "linux", "kernel", "fuzz", "fuzzer",
+    "prove", "verify", "tui",
     "-h", "--help"
 }
 
@@ -666,6 +667,17 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     fuzzer_p = subparsers.add_parser("fuzzer", help="Autonomous Mutation Fuzzer (alias)")
     fuzzer_p.add_argument("fuzz_args", nargs="*", help="Target Python file or 'demo' [max_probes=1000]")
 
+    # Command 100: Formal Mathematical Safety Prover (apex prove / apex verify)
+    prove_p = subparsers.add_parser("prove", help="Formally prove mathematical invariants, zero-division, and bounds safety")
+    prove_p.add_argument("prove_args", nargs="*", help="Target Python file [--json]")
+
+    verify_p = subparsers.add_parser("verify", help="Formally prove mathematical invariants (alias for prove)")
+    verify_p.add_argument("prove_args", nargs="*", help="Target Python file [--json]")
+
+    # Command 101: Cyberpunk TUI Dashboard (apex tui)
+    tui_p = subparsers.add_parser("tui", help="Launch the Retro-Futuristic Cyber-TUI Live Dashboard")
+    tui_p.add_argument("--once", action="store_true", help="Print single telemetry snapshot and exit")
+
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
     parser.add_argument("--format", choices=["table", "markdown", "json"], default="table")
@@ -918,6 +930,19 @@ def main(argv: list[str] | None = None) -> int:
     if args.command in {"fuzz", "fuzzer"}:
         from .analysis.fuzzer import handle_fuzz_cli
         return handle_fuzz_cli(args.fuzz_args)
+
+    # Command 100: Formal Mathematical Safety Prover (apex prove / apex verify)
+    if args.command in {"prove", "verify"}:
+        from .formal.prover import handle_prove_cli
+        return handle_prove_cli(args.prove_args)
+
+    # Command 101: Cyberpunk TUI Dashboard (apex tui)
+    if args.command == "tui":
+        from .ui.tui_dashboard import ApexLiveTUI
+        if getattr(args, "once", False):
+            print(ApexLiveTUI.render_dashboard())
+            return 0
+        return ApexLiveTUI.run_live(iterations=1, interval=0.5)
 
     # Command 21: Cryptographic Hash-Chained Audit Ledger Verifier
     if args.command == "verify-ledger":

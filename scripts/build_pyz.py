@@ -36,12 +36,11 @@ def build_standalone_pyz(output_path: str = "dist/apex.pyz") -> Path:
         import ast
 
         class DocstringStripper(ast.NodeTransformer):
-            def _strip_doc(self, node):
-                if node.body and isinstance(node.body[0], ast.Expr) and isinstance(node.body[0].value, ast.Constant) and isinstance(node.body[0].value.value, str):
-                    node.body = node.body[1:]
-                    if not node.body:
-                        node.body = [ast.Pass()]
+            def visit_Expr(self, node):
+                if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                    return None
                 return node
+
             def visit_FunctionDef(self, node):
                 self.generic_visit(node)
                 node.returns = None
@@ -51,7 +50,9 @@ def build_standalone_pyz(output_path: str = "dist/apex.pyz") -> Path:
                     node.args.vararg.annotation = None
                 if node.args.kwarg:
                     node.args.kwarg.annotation = None
-                return self._strip_doc(node)
+                if not node.body:
+                    node.body = [ast.Pass()]
+                return node
 
             def visit_AsyncFunctionDef(self, node):
                 self.generic_visit(node)
@@ -62,13 +63,20 @@ def build_standalone_pyz(output_path: str = "dist/apex.pyz") -> Path:
                     node.args.vararg.annotation = None
                 if node.args.kwarg:
                     node.args.kwarg.annotation = None
-                return self._strip_doc(node)
+                if not node.body:
+                    node.body = [ast.Pass()]
+                return node
+
             def visit_ClassDef(self, node):
                 self.generic_visit(node)
-                return self._strip_doc(node)
-            def visit_Module(self, node):
-                self.generic_visit(node)
-                return self._strip_doc(node)
+                if not node.body:
+                    node.body = [ast.Pass()]
+                return node
+
+            def visit_AnnAssign(self, node):
+                if node.value is not None:
+                    return ast.Assign(targets=[node.target], value=node.value)
+                return node
 
         for py_file in target_pkg.rglob("*.py"):
             try:
