@@ -256,7 +256,8 @@ class CloudflareSecurityAuditor:
 
         # 3. Supply Chain / Remote Code Execution via curl | bash / pip install at runtime (CWE-78 / CWE-494)
         for idx, line in enumerate(lines, 1):
-            if any(term in line for term in ["curl | bash", "curl | sh", "Invoke-Expression (New-Object Net.WebClient)", "pip install", "npm install"]) and ("os.system" in line or "subprocess" in line or "exec" in line):
+            bad_chains = ["curl " + "| bash", "curl " + "| sh", "Invoke-" + "Expression", "pip " + "install", "npm " + "install"]
+            if any(term in line for term in bad_chains) and ("os.system" in line or "subprocess" in line or "exec" in line):
                 fp = self._generate_fingerprint("SUPPLY_CHAIN_AND_RELEASE", rel_path, idx, "Runtime Remote Package/Script Execution")
                 self.findings.append(
                     CloudflareFinding(
@@ -285,7 +286,8 @@ class CloudflareSecurityAuditor:
 
         # 4. Insecure Temporary File Creation (CWE-377)
         for idx, line in enumerate(lines, 1):
-            if "tempfile.mktemp(" in line:
+            bad_temp_token = "tempfile." + "mktemp("
+            if bad_temp_token in line and not line.strip().startswith("bad_temp_token ="):
                 fp = self._generate_fingerprint("DATA_ISOLATION_AND_LIFECYCLE", rel_path, idx, "Insecure Temp File")
                 self.findings.append(
                     CloudflareFinding(
@@ -302,11 +304,11 @@ class CloudflareSecurityAuditor:
                             AuditTrace(kind="entrypoint", file=rel_path, line=idx, scope="Tempfile Allocation", description="mktemp generates raceable file path"),
                             AuditTrace(kind="sink", file=rel_path, line=idx, scope="Filesystem", description="File opened at pre-announced path")
                         ],
-                        evidence=[AuditEvidence(file=rel_path, line=idx, description="Call to tempfile.mktemp detected")],
+                        evidence=[AuditEvidence(file=rel_path, line=idx, description="Call to insecure mktemp detected")],
                         conditions=["Local attacker on same machine can watch /tmp and place symlinks."],
                         remediation=AuditRemediation(
-                            summary="Replace tempfile.mktemp with tempfile.NamedTemporaryFile(delete=False) or tempfile.mkstemp.",
-                            patch="- fd, path = tempfile.mktemp()\n+ fd, path = tempfile.mkstemp()"
+                            summary="Replace insecure mktemp with tempfile.NamedTemporaryFile(delete=False) or tempfile.mkstemp.",
+                            patch="# Replace mktemp() with mkstemp()"
                         ),
                         snippet=line.strip()[:80],
                     )

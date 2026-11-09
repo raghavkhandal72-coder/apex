@@ -22,24 +22,31 @@ def profile_function_or_file(
     """Profile script or code string and generate terminal flamegraph visualization."""
     profiler = cProfile.Profile()
 
+    from ..security.ast_shield import ASTShield
+
     if target_path:
         abs_path = os.path.abspath(target_path)
         if not os.path.exists(abs_path):
             return f"Error: Target file not found: {target_path}"
         with open(abs_path, "r", encoding="utf-8", errors="replace") as f:
             code = f.read()
+        ASTShield.inspect_ast_safety(code)
+        _trusted_bin = compile(code, abs_path, "exec")
         global_vars = {"__file__": abs_path, "__name__": "__main__"}
         profiler.enable()
         try:
-            exec(compile(code, abs_path, "exec"), global_vars)
+            exec(_trusted_bin, global_vars)
         except Exception as e:
             return f"Error executing target during profiling: {e}"
         finally:
             profiler.disable()
     elif code_string:
+        ASTShield.inspect_ast_safety(code_string)
+        _trusted_bin = compile(code_string, "<profiled_string>", "exec")
+        scope: dict = {}
         profiler.enable()
         try:
-            exec(code_string)
+            exec(_trusted_bin, scope)
         except Exception as e:
             return f"Error executing code string during profiling: {e}"
         finally:

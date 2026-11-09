@@ -6,6 +6,7 @@ Monitors Python files for modifications and triggers automated testing and CEGIS
 from __future__ import annotations
 
 import os
+import shlex
 import subprocess
 import sys
 import time
@@ -125,7 +126,8 @@ def _execute_watch_action(command: str, auto_fix: bool) -> int:
     """Execute the configured command and optionally trigger auto-repair on failure."""
     print(f"--> Running: {command}")
     start = time.time()
-    proc = subprocess.run(command, shell=True, capture_output=True, text=True)
+    cmd_args = shlex.split(command) if isinstance(command, str) else command
+    proc = subprocess.run(cmd_args, shell=False, capture_output=True, text=True)
     elapsed = time.time() - start
 
     if proc.stdout:
@@ -145,7 +147,7 @@ def _execute_watch_action(command: str, auto_fix: bool) -> int:
             ret = run_pipe_repair(trace_text=combined_output, apply_fix=True)
             if ret == 0:
                 print("[APEX WATCH] Successfully applied repair! Re-running tests...")
-                proc_retry = subprocess.run(command, shell=True, capture_output=True, text=True)
+                proc_retry = subprocess.run(cmd_args, shell=False, capture_output=True, text=True)
                 if proc_retry.returncode == 0:
                     print("[APEX WATCH] All tests pass after repair!")
                     return 0

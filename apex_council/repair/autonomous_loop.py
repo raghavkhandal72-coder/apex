@@ -8,6 +8,7 @@ Zero external dependencies (pip = 0).
 from __future__ import annotations
 
 import os
+import shlex
 import subprocess
 import sys
 import time
@@ -43,7 +44,8 @@ def run_autonomous_loop(
         print(f"--- Iteration {iteration}/{max_iterations} ---")
         print(f"[*] Running: {test_command}")
 
-        proc = subprocess.run(test_command, shell=True, capture_output=True, text=True)
+        cmd_args = shlex.split(test_command) if isinstance(test_command, str) else test_command
+        proc = subprocess.run(cmd_args, shell=False, capture_output=True, text=True)
         if proc.stdout and verbose:
             print(proc.stdout.strip())
         if proc.stderr and verbose:
@@ -103,9 +105,9 @@ def run_autonomous_loop(
 
         if auto_commit:
             try:
-                subprocess.run(f"git add {target_file}", shell=True, check=True)
+                subprocess.run(["git", "add", target_file], shell=False, check=True)
                 commit_msg = f"fix(apex): autonomous repair of {os.path.basename(target_file)}"
-                subprocess.run(f'git commit -m "{commit_msg}"', shell=True, check=True)
+                subprocess.run(["git", "commit", "-m", commit_msg], shell=False, check=True)
                 print(f"[OK] Auto-committed fix: '{commit_msg}'")
             except Exception as e:
                 print(f"[WARN] Auto-commit skipped: {e}")

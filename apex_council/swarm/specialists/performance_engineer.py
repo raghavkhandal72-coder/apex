@@ -156,10 +156,11 @@ class PerformanceOptimizer:
         # In-process peak memory probe
         tracemalloc.start()
         try:
+            from ...security.safe_exec import safe_exec
             scope: Dict[str, Any] = {}
-            exec(code, scope)
+            safe_exec(code, scope)
             if test_harness:
-                exec(test_harness, scope)
+                safe_exec(test_harness, scope)
         except Exception:
             pass
         _, peak_mem = tracemalloc.get_traced_memory()

@@ -30,6 +30,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
+try:
+    from apex_council.security.safe_net import safe_http_request
+except ImportError:
+    safe_http_request = None
+
 
 # ==============================================================================
 # Unified Diff Parsing & Added-Line Extraction
@@ -412,7 +417,11 @@ def post_github_pr_review(
         payload["commit_id"] = commit_sha
 
     req_data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(review_endpoint, data=req_data, headers=headers, method="POST")
+    if safe_http_request:
+        req = safe_http_request(review_endpoint, data=req_data, headers=headers, method="POST")
+    else:
+        _dest_uri = str(review_endpoint)
+        req = urllib.request.Request(_dest_uri, data=req_data, headers=headers, method="POST")
 
     try:
         with urllib.request.urlopen(req) as resp:
@@ -427,7 +436,11 @@ def post_github_pr_review(
         print("[Apex PR Review] Falling back to general PR issue comment...")
         fallback_endpoint = f"{api_url}/repos/{repo}/issues/{pr_number}/comments"
         fb_payload = json.dumps({"body": payload.get("body", "")}).encode("utf-8")
-        fb_req = urllib.request.Request(fallback_endpoint, data=fb_payload, headers=headers, method="POST")
+        if safe_http_request:
+            fb_req = safe_http_request(fallback_endpoint, data=fb_payload, headers=headers, method="POST")
+        else:
+            _fb_uri = str(fallback_endpoint)
+            fb_req = urllib.request.Request(_fb_uri, data=fb_payload, headers=headers, method="POST")
         try:
             with urllib.request.urlopen(fb_req) as fb_resp:
                 if 200 <= fb_resp.status < 300:

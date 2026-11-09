@@ -736,12 +736,11 @@ class ApexCouncilMCPServer:
                 test = arguments.get("test_code", "")
                 filename = arguments.get("filename", "solution.py")
                 def run_target() -> None:
+                    from .security.safe_exec import safe_exec
                     scope = {}
-                    code_obj = compile(source, filename, "exec")
-                    exec(code_obj, scope)
+                    safe_exec(source, scope, filename=filename)
                     if test:
-                        test_obj = compile(test, f"test_{filename}", "exec")
-                        exec(test_obj, scope)
+                        safe_exec(test, scope, filename=f"test_{filename}")
 
                 _, report = BytecodeInspector.execute_and_autopsy(run_target)
                 if report and report.crashed:

@@ -130,7 +130,8 @@ class ScraplingEngine:
 
         if target.startswith("http://") or target.startswith("https://"):
             try:
-                req = urllib.request.Request(
+                from ..security.safe_net import safe_http_request
+                req = safe_http_request(
                     target,
                     headers={"User-Agent": self.USER_AGENTS[0], "Accept": "text/html,application/xhtml+xml"},
                 )

@@ -409,11 +409,13 @@ class ZeroSDKOllamaEdgeClient:
             },
         }).encode("utf-8")
 
-        req = urllib.request.Request(
+        from ..security.safe_net import safe_http_request
+        req = safe_http_request(
             self.endpoint,
             data=payload,
             headers={"Content-Type": "application/json"},
             method="POST",
+            allow_loopback=True,
         )
         try:
             with urllib.request.urlopen(req, timeout=25.0) as resp:

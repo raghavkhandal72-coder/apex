@@ -24,7 +24,12 @@ if hasattr(sys.stderr, "reconfigure"):
 
 if sys.platform == "win32":
     try:
-        os.system("")
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        h_out = kernel32.GetStdHandle(-11)
+        mode = ctypes.c_ulong()
+        kernel32.GetConsoleMode(h_out, ctypes.byref(mode))
+        kernel32.SetConsoleMode(h_out, mode.value | 0x0004)
     except Exception:
         pass
 
@@ -107,7 +112,8 @@ class ApexInteractiveConsole:
                         break
 
                     elif prompt_line.lower() in {"/clear", "clear", "cls"}:
-                        os.system("cls" if os.name == "nt" else "clear")
+                        sys.stdout.write("\033[2J\033[H")
+                        sys.stdout.flush()
                         print("\n" + MascotRenderer.render_header(
                             version="v0.1.1",
                             workspace_path=self.workspace_dir,

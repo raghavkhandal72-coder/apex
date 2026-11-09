@@ -14,6 +14,8 @@ import urllib.error
 import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
 
+from ..security.safe_net import safe_http_request
+
 if hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -34,7 +36,7 @@ class OllamaEngine:
     def is_running(self, timeout: float = 0.5) -> bool:
         """Checks if the local Ollama daemon is active and responding."""
         try:
-            req = urllib.request.Request(f"{self.host}/api/tags", headers={"User-Agent": "Apex-Ollama"})
+            req = safe_http_request(f"{self.host}/api/tags", headers={"User-Agent": "Apex-Ollama"}, allow_loopback=True)
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 return resp.status == 200
         except Exception:
@@ -43,7 +45,7 @@ class OllamaEngine:
     def list_models(self, timeout: float = 2.0) -> List[Dict[str, Any]]:
         """Returns list of models installed locally in Ollama."""
         try:
-            req = urllib.request.Request(f"{self.host}/api/tags", headers={"User-Agent": "Apex-Ollama"})
+            req = safe_http_request(f"{self.host}/api/tags", headers={"User-Agent": "Apex-Ollama"}, allow_loopback=True)
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 return data.get("models", [])
@@ -77,11 +79,12 @@ class OllamaEngine:
             "stream": False,
         }
         data = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(
+        req = safe_http_request(
             url,
             data=data,
             headers={"Content-Type": "application/json", "User-Agent": "Apex-Ollama"},
             method="POST",
+            allow_loopback=True,
         )
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -183,7 +186,7 @@ class OllamaEngine:
             try:
                 url = f"{self.host}/api/pull"
                 data = json.dumps({"name": model_name, "stream": False}).encode("utf-8")
-                req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json", "User-Agent": "Apex-Ollama"}, method="POST")
+                req = safe_http_request(url, data=data, headers={"Content-Type": "application/json", "User-Agent": "Apex-Ollama"}, method="POST", allow_loopback=True)
                 with urllib.request.urlopen(req, timeout=timeout) as resp:
                     res = json.loads(resp.read().decode("utf-8"))
                     return res.get("status") == "success", str(res)

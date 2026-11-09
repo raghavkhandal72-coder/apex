@@ -16,6 +16,8 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from ..security.safe_net import safe_http_request
+
 
 if hasattr(sys.stdout, "reconfigure"):
     try:
@@ -37,13 +39,13 @@ class ApexPortableRunner:
     def is_running(self, timeout: float = 0.5) -> bool:
         """Checks if a local portable runner server is active on the target port."""
         try:
-            req = urllib.request.Request(f"{self.host}/v1/models", headers={"User-Agent": "Apex-Sovereign-Runner"})
+            req = safe_http_request(f"{self.host}/v1/models", headers={"User-Agent": "Apex-Sovereign-Runner"}, allow_loopback=True)
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 return resp.status == 200
         except Exception:
             # Also try /health
             try:
-                req = urllib.request.Request(f"{self.host}/health", headers={"User-Agent": "Apex-Sovereign-Runner"})
+                req = safe_http_request(f"{self.host}/health", headers={"User-Agent": "Apex-Sovereign-Runner"}, allow_loopback=True)
                 with urllib.request.urlopen(req, timeout=timeout) as resp:
                     return resp.status == 200
             except Exception:
@@ -52,7 +54,7 @@ class ApexPortableRunner:
     def list_models(self, timeout: float = 1.5) -> List[Dict[str, Any]]:
         """Returns list of models served by the portable runner."""
         try:
-            req = urllib.request.Request(f"{self.host}/v1/models", headers={"User-Agent": "Apex-Sovereign-Runner"})
+            req = safe_http_request(f"{self.host}/v1/models", headers={"User-Agent": "Apex-Sovereign-Runner"}, allow_loopback=True)
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 return data.get("data", [])
@@ -76,11 +78,12 @@ class ApexPortableRunner:
             "stream": False,
         }
         data = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(
+        req = safe_http_request(
             chat_url,
             data=data,
             headers={"Content-Type": "application/json", "User-Agent": "Apex-Sovereign-Runner"},
             method="POST",
+            allow_loopback=True,
         )
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -100,11 +103,12 @@ class ApexPortableRunner:
             "stream": False,
         }
         data = json.dumps(comp_payload).encode("utf-8")
-        req = urllib.request.Request(
+        req = safe_http_request(
             comp_url,
             data=data,
             headers={"Content-Type": "application/json", "User-Agent": "Apex-Sovereign-Runner"},
             method="POST",
+            allow_loopback=True,
         )
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:

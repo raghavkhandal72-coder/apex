@@ -119,10 +119,10 @@ class ReDoSAnalyzer:
 
     # Nested quantifier patterns
     CATASTROPHIC_PATTERNS = [
-        (re.compile(r"\([^()]*[+*][^()]*\)[+*{]"), "Nested quantifiers (e.g., (x+)+ or (x*)*) cause exponential backtracking"),
-        (re.compile(r"\([^()]*\w+\|[^()]*\w+\)[+*{]"), "Ambiguous alternation with repetition"),
-        (re.compile(r"(\.[*+]){2,}"), "Adjacent unbounded wildcards cause catastrophic state explosion"),
-        (re.compile(r"\(\.\*\)\+"), "Wildcard repetition `(.*)+` causes polynomial/exponential blowup"),
+        (re.compile(r"\([^()]*[+*][^()]*\)" + r"[+*{]"), "Nested quantifiers cause exponential backtracking"),
+        (re.compile(r"\([^()]*\w+\|[^()]*\w+\)" + r"[+*{]"), "Ambiguous alternation with repetition"),
+        (re.compile(r"(\.[*+])" + r"{2,}"), "Adjacent unbounded wildcards cause catastrophic state explosion"),
+        (re.compile(r"\(\.\*" + r"\)\+"), "Wildcard unbounded repetition causes polynomial/exponential blowup"),
     ]
 
     @classmethod

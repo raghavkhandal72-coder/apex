@@ -370,7 +370,7 @@ if __name__ == "__main__":
         ok, msg, verified_payload = proof_engine.verify_commit_proof(c2_sha)
         assert ok, f"Verification failed: {msg}"
         assert verified_payload is not None
-        assert verified_payload.prev_proof_hmac == p1.hmac_sha512
+        assert hmac.compare_digest(verified_payload.prev_proof_hmac, p1.hmac_sha512)
 
         print(f"\n[3] Winning Commit Promoted : {c2_sha}")
         print(f"    Git Note Reference      : {NOTES_REF}")

@@ -1088,17 +1088,16 @@ def main(argv: list[str] | None = None) -> int:
     # 16. CPython Bytecode Autopsy
     if args.command == "autopsy":
         from .autopsy.bytecode_inspector import BytecodeInspector
+        from .security.safe_exec import safe_exec
         if not args.file.exists():
             sys.stderr.write(f"Error: File not found: {args.file}\n")
             return 2
         code = args.file.read_text(encoding="utf-8")
         def run_target() -> None:
             scope = {}
-            code_obj = compile(code, str(args.file), "exec")
-            exec(code_obj, scope)
+            safe_exec(code, scope, filename=str(args.file))
             if args.tests:
-                test_obj = compile(args.tests, f"test_{args.file.name}", "exec")
-                exec(test_obj, scope)
+                safe_exec(args.tests, scope, filename=f"test_{args.file.name}")
 
         _, report = BytecodeInspector.execute_and_autopsy(run_target)
         print("==========================================================")
@@ -1539,8 +1538,9 @@ def main(argv: list[str] | None = None) -> int:
         hidden = None
         if rep.success:
             try:
+                from .security.safe_exec import safe_exec
                 scope: dict = {}
-                exec(compile(rep.synthesized_code, "<candidate>", "exec"), scope)
+                safe_exec(rep.synthesized_code, scope, filename="<candidate>")
                 cand_fn = scope.get("binary_search") or scope.get("find_in_sorted")
                 if cand_fn and callable(cand_fn):
                     from .synthesis.differential_oracle import (

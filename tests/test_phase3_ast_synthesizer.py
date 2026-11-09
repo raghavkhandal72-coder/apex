@@ -1,6 +1,7 @@
 import unittest
 
 from apex_council.autopsy.bytecode_inspector import BytecodeAutopsyReport
+from apex_council.security.safe_exec import safe_exec
 from apex_council.synthesis.ast_synthesizer import DeterministicASTSynthesizer
 
 
@@ -21,7 +22,7 @@ def append_value(val, target_list=[]):
 
         # Verify executing candidate fixes state leakage
         scope: dict = {}
-        exec(repair.candidate_code, scope)
+        safe_exec(repair.candidate_code, scope)
         fn = scope["append_value"]
         r1 = fn(1)
         r2 = fn(2)
@@ -43,7 +44,7 @@ def multiply(a, b):
         self.assertIn("return a * b", mult_cands[0].candidate_code)
 
         scope: dict = {}
-        exec(mult_cands[0].candidate_code, scope)
+        safe_exec(mult_cands[0].candidate_code, scope)
         self.assertEqual(scope["multiply"](3, 4), 12)
 
     def test_synthesizer_repairs_boundary_relational(self) -> None:

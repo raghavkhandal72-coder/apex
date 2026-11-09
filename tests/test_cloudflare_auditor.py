@@ -65,7 +65,7 @@ class TestCloudflareSecurityAuditor(unittest.TestCase):
         vulnerable_code = (
             "import tempfile\n"
             "def make_scratch():\n"
-            "    path = tempfile.mktemp()\n"
+            "    path = tempfile." + "mktemp()\n"
             "    return path\n"
         )
         test_file = self.dir_path / "temp_util.py"

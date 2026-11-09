@@ -96,6 +96,10 @@ def detect_format(data: bytes, file_path: Optional[str] = None) -> str:
 
     if len(data) >= 4 and data[:4] in (MAGIC_ZIP_LOCAL, MAGIC_ZIP_EMPTY, MAGIC_ZIP_SPANNED):
         return "ZIP"
+    if file_path and file_path.lower().endswith((".pyz", ".zip", ".whl", ".egg", ".jar", ".war", ".apk")):
+        return "ZIP"
+    if MAGIC_ZIP_LOCAL in data[:4096] or MAGIC_ZIP_EMPTY in data[-1024:]:
+        return "ZIP"
 
     # Python bytecode check
     if file_path and file_path.lower().endswith(".pyc"):
@@ -327,7 +331,9 @@ def parse_zip_metadata(data: bytes, file_path: Optional[str] = None) -> Dict[str
             meta["sample_entries"] = filenames[:25]
 
             # Specialized archive identification
-            if "META-INF/MANIFEST.MF" in filenames:
+            if "__main__.py" in filenames or (file_path and file_path.lower().endswith(".pyz")):
+                meta["archive_subtype"] = "Python Zipapp (.pyz)"
+            elif "META-INF/MANIFEST.MF" in filenames:
                 meta["archive_subtype"] = "JAR"
             elif "AndroidManifest.xml" in filenames:
                 meta["archive_subtype"] = "APK"

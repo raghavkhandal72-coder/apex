@@ -91,15 +91,14 @@ class AutonomousIssueSolver:
 
         try:
             # Execute original code against test in ephemeral namespace to capture runtime frame autopsy
+            from ..security.safe_exec import safe_exec
             test_scope: Dict[str, Any] = {}
-            code_obj = compile(original_code, target_file_rel, "exec")
-            exec(code_obj, test_scope)
+            safe_exec(original_code, test_scope, filename=target_file_rel)
             
             exc_box: List[Any] = []
             def _run_test() -> None:
                 try:
-                    test_code_obj = compile(test_harness, f"test_{target_file_rel}", "exec")
-                    exec(test_code_obj, test_scope)
+                    safe_exec(test_harness, test_scope, filename=f"test_{target_file_rel}")
                 except Exception:
                     import sys
                     exc_box.append(sys.exc_info())

@@ -31,8 +31,9 @@ class LocalLLMClient:
 
         for engine_type, base_url in cls.DEFAULT_ENDPOINTS:
             try:
+                from ..security.safe_net import safe_http_request
                 probe_url = f"{base_url}/api/tags" if engine_type == "ollama" else f"{base_url}/models"
-                req = urllib.request.Request(probe_url, headers={"User-Agent": "Apex-Local-LLM"})
+                req = safe_http_request(probe_url, headers={"User-Agent": "Apex-Local-LLM"}, allow_loopback=True)
                 with urllib.request.urlopen(req, timeout=0.35) as resp:
                     if resp.status == 200:
                         return (engine_type, base_url)
@@ -58,7 +59,7 @@ class LocalLLMClient:
                     "stream": False,
                 }
                 data = json.dumps(payload).encode("utf-8")
-                req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+                req = safe_http_request(url, data=data, headers={"Content-Type": "application/json"}, allow_loopback=True)
                 with urllib.request.urlopen(req, timeout=15.0) as resp:
                     res_json = json.loads(resp.read().decode("utf-8"))
                     return res_json.get("response", "").strip()
@@ -75,7 +76,7 @@ class LocalLLMClient:
                     "temperature": 0.2,
                 }
                 data = json.dumps(payload).encode("utf-8")
-                req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+                req = safe_http_request(url, data=data, headers={"Content-Type": "application/json"}, allow_loopback=True)
                 with urllib.request.urlopen(req, timeout=15.0) as resp:
                     res_json = json.loads(resp.read().decode("utf-8"))
                     choices = res_json.get("choices", [])

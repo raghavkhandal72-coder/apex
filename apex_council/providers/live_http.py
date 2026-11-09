@@ -10,6 +10,7 @@ import urllib.error
 from typing import Optional, Tuple
 
 from ..models import CodeSubmission, Critique, ModelProvider
+from ..security.safe_net import safe_http_request
 from .base import BaseLLMProvider
 from .simulator import SimulatedProvider
 
@@ -55,7 +56,7 @@ class LiveGeminiProvider(BaseLLMProvider):
         }
 
         try:
-            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+            req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
             with urllib.request.urlopen(req, timeout=15) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 text = data["candidates"][0]["content"]["parts"][0]["text"]
@@ -91,7 +92,7 @@ class LiveGeminiProvider(BaseLLMProvider):
         )
         payload = {"contents": [{"parts": [{"text": critique_prompt}]}]}
         try:
-            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+            req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
             with urllib.request.urlopen(req, timeout=10) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
@@ -170,7 +171,7 @@ class LiveClaudeProvider(BaseLLMProvider):
         }
 
         try:
-            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+            req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
             with urllib.request.urlopen(req, timeout=15) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 text = data["content"][0]["text"]
@@ -241,7 +242,7 @@ class LiveOpenAIProvider(BaseLLMProvider):
         }
 
         try:
-            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+            req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
             with urllib.request.urlopen(req, timeout=15) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 text = data["choices"][0]["message"]["content"]
@@ -317,7 +318,7 @@ class LiveOllamaProvider(BaseLLMProvider):
         }
         headers = {"Content-Type": "application/json"}
         try:
-            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+            req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
             with urllib.request.urlopen(req, timeout=40) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 text = data.get("response", "")
@@ -356,7 +357,7 @@ class LiveOllamaProvider(BaseLLMProvider):
         }
         headers = {"Content-Type": "application/json"}
         try:
-            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+            req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
             with urllib.request.urlopen(req, timeout=12) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 text = data.get("response", "").strip()

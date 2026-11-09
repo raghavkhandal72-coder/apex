@@ -35,7 +35,8 @@ class LiveLLMClient:
     def is_ollama_available(host: str = "http://localhost:11434") -> bool:
         """Checks if a local Ollama daemon is running."""
         try:
-            req = urllib.request.Request(f"{host}/api/tags", method="GET")
+            from ..security.safe_net import safe_http_request
+            req = safe_http_request(f"{host}/api/tags", method="GET", allow_loopback=True)
             with urllib.request.urlopen(req, timeout=1.5) as resp:
                 return resp.status == 200
         except Exception:
@@ -69,7 +70,8 @@ class LiveLLMClient:
         }
         headers = {"Content-Type": "application/json"}
         start = time.perf_counter()
-        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+        from ..security.safe_net import safe_http_request
+        req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST", allow_loopback=True)
         with urllib.request.urlopen(req, timeout=self.timeout_sec) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             content = data.get("response", "")
@@ -107,7 +109,8 @@ class LiveLLMClient:
             "Authorization": f"Bearer {api_key}",
         }
         start = time.perf_counter()
-        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+        from ..security.safe_net import safe_http_request
+        req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
         with urllib.request.urlopen(req, timeout=self.timeout_sec) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             content = data["choices"][0]["message"]["content"]

@@ -120,7 +120,8 @@ class AgentBrowserSession:
             self.raw_html = mock_html
         elif url.startswith("http://") or url.startswith("https://"):
             try:
-                req = urllib.request.Request(
+                from ..security.safe_net import safe_http_request
+                req = safe_http_request(
                     url,
                     headers={"User-Agent": "Apex-Sovereign-Agent-Browser/3.0.0"},
                 )

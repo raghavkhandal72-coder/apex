@@ -349,9 +349,10 @@ class CEGISEngine:
 
             # 3. VERIFIER ORACLE / BOUNDARY CHECK (if custom oracle provided)
             if found_ce is None and oracle_eval_fn and boundary_inputs:
+                from ..security.safe_exec import safe_exec
                 scope: Dict[str, Any] = {}
                 try:
-                    exec(compile(curr_code, "<candidate>", "exec"), scope)
+                    safe_exec(curr_code, scope, filename="<candidate>")
                     fn_name = next((k for k, v in scope.items() if callable(v)), None)
                     if fn_name:
                         for b_in in boundary_inputs:

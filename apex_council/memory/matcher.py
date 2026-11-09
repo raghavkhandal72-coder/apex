@@ -5,6 +5,7 @@ Pure Python standard library implementation with zero external dependencies.
 from __future__ import annotations
 
 import hashlib
+import hmac
 import re
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -59,7 +60,7 @@ class MemoryMatcher:
         episodes = self.vault.get_all_episodes(limit=50)
         matches: List[Episode] = []
         for ep in episodes:
-            if ep.error_signature and StacktraceClusterer.compute_signature_hash(ep.error_signature) == sig:
+            if ep.error_signature and hmac.compare_digest(StacktraceClusterer.compute_signature_hash(ep.error_signature), sig):
                 matches.append(ep)
         return matches
 

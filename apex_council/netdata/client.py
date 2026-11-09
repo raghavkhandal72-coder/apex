@@ -35,7 +35,8 @@ class NetdataClient:
     def is_alive(self) -> bool:
         """Checks if the Netdata daemon / server is reachable."""
         try:
-            req = urllib.request.Request(f"{self.base_url}/api/v1/info")
+            from ..security.safe_net import safe_http_request
+            req = safe_http_request(f"{self.base_url}/api/v1/info", allow_loopback=True)
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 return resp.status == 200
         except Exception:
@@ -45,7 +46,8 @@ class NetdataClient:
         """Queries /api/v1/info endpoint."""
         url = f"{self.base_url}/api/v1/info"
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Apex-Council-Netdata-Client"})
+            from ..security.safe_net import safe_http_request
+            req = safe_http_request(url, headers={"User-Agent": "Apex-Council-Netdata-Client"}, allow_loopback=True)
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 return json.loads(resp.read().decode("utf-8"))
         except Exception as e:
@@ -55,7 +57,8 @@ class NetdataClient:
         """Queries /api/v1/allmetrics?format=json endpoint."""
         url = f"{self.base_url}/api/v1/allmetrics?format={format_type}"
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Apex-Council-Netdata-Client"})
+            from ..security.safe_net import safe_http_request
+            req = safe_http_request(url, headers={"User-Agent": "Apex-Council-Netdata-Client"}, allow_loopback=True)
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 return json.loads(resp.read().decode("utf-8"))
         except Exception as e:
@@ -78,7 +81,8 @@ class NetdataClient:
         })
         url = f"{self.base_url}/api/v1/data?{params}"
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Apex-Council-Netdata-Client"})
+            from ..security.safe_net import safe_http_request
+            req = safe_http_request(url, headers={"User-Agent": "Apex-Council-Netdata-Client"}, allow_loopback=True)
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 return json.loads(resp.read().decode("utf-8"))
         except Exception as e:
@@ -93,7 +97,8 @@ class NetdataClient:
         payload = json.dumps({"chart": chart_id, "values": values, "timestamp": time.time()}).encode("utf-8")
         url = f"{self.base_url}/api/v1/data"
         try:
-            req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
+            from ..security.safe_net import safe_http_request
+            req = safe_http_request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST", allow_loopback=True)
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 return resp.status in (200, 204)
         except Exception:

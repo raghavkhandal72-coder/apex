@@ -44,7 +44,8 @@ def fetch_pr_diff(owner: str, repo: str, pr_number: int, token: Optional[str] = 
         headers["Authorization"] = f"token {token or os.getenv('GITHUB_TOKEN')}"
 
     try:
-        req = urllib.request.Request(diff_url, headers=headers)
+        from ..security.safe_net import safe_http_request
+        req = safe_http_request(diff_url, headers=headers)
         with urllib.request.urlopen(req, timeout=15) as resp:
             diff_text = resp.read().decode("utf-8", errors="replace")
     except Exception as e:

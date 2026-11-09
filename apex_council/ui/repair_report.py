@@ -36,7 +36,15 @@ class Style:
     def __init__(self, color: bool, uni: bool):
         self.color, self.uni = color, uni
         if color and os.name == "nt":
-            os.system("")  # enables ANSI escape processing on Windows 10+
+            try:
+                import ctypes
+                kernel32 = ctypes.windll.kernel32
+                h_out = kernel32.GetStdHandle(-11)
+                mode = ctypes.c_ulong()
+                kernel32.GetConsoleMode(h_out, ctypes.byref(mode))
+                kernel32.SetConsoleMode(h_out, mode.value | 0x0004)
+            except Exception:
+                pass
 
     def c(self, text: str, code: str) -> str:
         return f"\033[{code}m{text}\033[0m" if self.color else text

@@ -28,7 +28,7 @@ class CouncilReporter:
     @staticmethod
     def format_terminal(result: CouncilResult) -> str:
         lines = []
-        banner = f"""{BOLD}{CYAN}
+        banner = fr"""{BOLD}{CYAN}
     ___    ____  _______  __     ______ ____  __  ___   ____________  __ 
    /   |  / __ \/ ____/ |/ /    / ____// __ \/ / / / | / / ____/  _/ / / 
   / /| | / /_/ / __/  |   /    / /    / / / / / / /  |/ / /    / /  / /  

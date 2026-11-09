@@ -247,9 +247,10 @@ class StudioWebHandler(BaseHTTPRequestHandler):
             engine = OllamaEngine()
             if engine.is_running():
                 try:
+                    from ..security.safe_net import safe_http_request
                     url = f"{engine.host}/api/generate"
                     payload = json.dumps({"model": engine.get_preferred_model(), "prompt": prompt, "stream": True}).encode("utf-8")
-                    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+                    req = safe_http_request(url, data=payload, headers={"Content-Type": "application/json"}, allow_loopback=True)
                     with urllib.request.urlopen(req, timeout=60) as resp:
                         for line in resp:
                             chunk = json.loads(line.decode("utf-8"))

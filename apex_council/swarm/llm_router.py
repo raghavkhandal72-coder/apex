@@ -13,6 +13,8 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
+from ..security.safe_net import safe_http_request
+
 
 @dataclass
 class LLMResponse:
@@ -172,7 +174,7 @@ class LLMRouter:
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}",
         }
-        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+        req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
         with urllib.request.urlopen(req, timeout=self.timeout_sec) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             content = data["choices"][0]["message"]["content"]
@@ -206,7 +208,7 @@ class LLMRouter:
             "x-api-key": api_key,
             "anthropic-version": "2023-06-01",
         }
-        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+        req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
         with urllib.request.urlopen(req, timeout=self.timeout_sec) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             content = "".join([c["text"] for c in data.get("content", []) if c.get("type") == "text"])
@@ -233,7 +235,7 @@ class LLMRouter:
             "generationConfig": {"temperature": temp, "maxOutputTokens": max_tokens},
         }
         headers = {"Content-Type": "application/json"}
-        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+        req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST", allow_loopback=True)
         with urllib.request.urlopen(req, timeout=self.timeout_sec) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             candidates = data.get("candidates", [])
@@ -260,7 +262,7 @@ class LLMRouter:
             "options": {"temperature": temp},
         }
         headers = {"Content-Type": "application/json"}
-        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+        req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST", allow_loopback=True)
         with urllib.request.urlopen(req, timeout=self.timeout_sec) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             content = data.get("response", "")
