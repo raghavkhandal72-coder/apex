@@ -73,7 +73,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         prog="apex",
         description="🏛️ The Multi-LLM Code Supreme Court: Enterprise AI Engineering & Consensus Platform.",
     )
-    parser.add_argument("--version", action="version", version="Apex v0.1.1")
+    parser.add_argument("--version", action="version", version="Apex Sovereign v0.9.0")
 
     subparsers = parser.add_subparsers(dest="command", help="Sub-commands")
 
