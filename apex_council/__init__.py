@@ -1,4 +1,6 @@
 
+import sys
+
 if sys.platform == "win32":
     try:
         import ctypes

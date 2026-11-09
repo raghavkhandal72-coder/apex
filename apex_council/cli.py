@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+
 if sys.platform == "win32":
     try:
         import ctypes
@@ -54,7 +56,7 @@ from .web.server import run_server
 
 
 KNOWN_COMMANDS = {
-    "battle", "engineer", "solve", "heal", "pr", "audit", "relay",
+    "council", "4agents", "battle", "engineer", "solve", "heal", "pr", "audit", "relay",
     "serve", "mcp", "diff", "redteam", "benchmark", "audit-verify",
     "dlp-test", "policy-check", "init-ci", "repomap", "swarm", "memory",
     "demo", "verify-ledger", "localize", "build-pyz", "swe-bench",
@@ -88,6 +90,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--version", action="version", version="Apex Sovereign v0.9.0")
 
     subparsers = parser.add_subparsers(dest="command", help="Sub-commands")
+
+    # Command 0: 4-Agent Supreme Council (Gemini x Claude x OpenAI x Apex)
+    council_parser = subparsers.add_parser("council", help="4-Agent Supreme Council: Gemini (Architect) + Claude (Core) + OpenAI (QA) + Apex (Gatekeeper)")
+    council_parser.add_argument("spec", nargs="?", default="Build a high-performance distributed task queue with retry logic and dead-letter queue", help="Feature specification to architect and build")
+    council_parser.add_argument("-o", "--output", type=Path, default=Path("./apex_project"), help="Target output directory for multi-file codebase")
+
+    subparsers.add_parser("4agents", parents=[council_parser], add_help=False)
 
     # Command 1: Battle / Deliberate
     battle_parser = subparsers.add_parser("battle", help="Run head-to-head competition between Gemini, Claude, and OpenAI")
@@ -735,6 +744,15 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  • {hub['file']} [PageRank: {hub['pagerank']}]")
         print("\n" + rendered + "\n")
         return 0
+
+    # Command 0: 4-Agent Autonomous Supreme Council
+    if args.command in {"council", "4agents"}:
+        from .swarm.supreme_council import SupremeCouncilEngine
+        spec = getattr(args, "spec", None) or "Build a high-performance distributed task queue with retry logic and dead-letter queue"
+        out_dir = getattr(args, "output", None) or Path("./apex_project")
+        engine = SupremeCouncilEngine(output_dir=out_dir)
+        proj = engine.convene(spec, live_terminal=True)
+        return 0 if proj.all_tests_passed else 1
 
     # Command 18: Autonomous 5-Role SWE Swarm
     if args.command == "swarm":

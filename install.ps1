@@ -79,10 +79,14 @@ Write-Host "APEX SUCCESSFULLY INSTALLED TO: $InstallDir" -ForegroundColor Green
 Write-Host "===============================================================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "Commands available anywhere in terminal:" -ForegroundColor White
+Write-Host "  apex council       - 4-Agent Supreme Council (Gemini x Claude x OpenAI x Apex)" -ForegroundColor Cyan
 Write-Host "  apex               - Interactive Autonomous Coding Console" -ForegroundColor Cyan
 Write-Host "  apex demo-live     - 5-Stage Live CEGIS Repair Walkthrough" -ForegroundColor Cyan
 Write-Host "  apex studio        - Apple Pro Studio Web Dashboard (http://127.0.0.1:8765)" -ForegroundColor Cyan
 Write-Host "  apex hook install  - Self-Healing Git Pre-Commit Hook" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Launching 4-Agent Supreme Council Showcase..." -ForegroundColor Yellow
+& python $PyzTarget council
 Write-Host ""
 Write-Host "Type 'apex' to launch your interactive autonomous coding agent!" -ForegroundColor Yellow
 Write-Host ""
