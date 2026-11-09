@@ -44,9 +44,24 @@ def build_standalone_pyz(output_path: str = "dist/apex.pyz") -> Path:
                 return node
             def visit_FunctionDef(self, node):
                 self.generic_visit(node)
+                node.returns = None
+                for arg in node.args.args + node.args.kwonlyargs:
+                    arg.annotation = None
+                if node.args.vararg:
+                    node.args.vararg.annotation = None
+                if node.args.kwarg:
+                    node.args.kwarg.annotation = None
                 return self._strip_doc(node)
+
             def visit_AsyncFunctionDef(self, node):
                 self.generic_visit(node)
+                node.returns = None
+                for arg in node.args.args + node.args.kwonlyargs:
+                    arg.annotation = None
+                if node.args.vararg:
+                    node.args.vararg.annotation = None
+                if node.args.kwarg:
+                    node.args.kwarg.annotation = None
                 return self._strip_doc(node)
             def visit_ClassDef(self, node):
                 self.generic_visit(node)

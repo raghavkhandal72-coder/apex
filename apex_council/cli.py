@@ -72,7 +72,7 @@ KNOWN_COMMANDS = {
     "watch", "slice", "modern", "lsp", "loop",
     "patch-export", "crash-fingerprint", "flamegraph", "pr-summary", "secret-mask", "completion", "zero-div",
     "instruments", "swift-guard", "studio", "test-all", "demo-live", "bench-live", "review", "ollama", "llamafile", "runner", "audit-sec", "security-audit", "scala", "scala-guard", "spark", "spark-guard", "dify", "dify-guard",
-    "ocx", "opencodex", "aitools", "tools", "awesome",
+    "ocx", "opencodex", "aitools", "tools", "awesome", "linux", "kernel",
     "-h", "--help"
 }
 
@@ -652,6 +652,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     awesome_p = subparsers.add_parser("awesome", help="Awesome AI Tools registry (alias)")
     awesome_p.add_argument("aitools_args", nargs="*", help="Subcommands (search, categories, list, info, recommend, sync)")
 
+    # Command 98: Linux Kernel Sovereign Engine (apex linux / apex kernel)
+    linux_p = subparsers.add_parser("linux", help="Linux Kernel Engine: checkpatch audit, syscall table, eBPF, seccomp, upstream torvalds/linux")
+    linux_p.add_argument("linux_args", nargs="*", help="Subcommands (status, audit <file>, syscall <query>, bpf <xdp|trace|seccomp>, module <name>, fetch <path>, patch <sub>)")
+
+    kernel_p = subparsers.add_parser("kernel", help="Linux Kernel Engine (alias)")
+    kernel_p.add_argument("linux_args", nargs="*", help="Subcommands (status, audit, syscall, bpf, module, fetch, patch)")
+
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
     parser.add_argument("--format", choices=["table", "markdown", "json"], default="table")
@@ -894,6 +901,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.command in {"aitools", "tools", "awesome"}:
         from .aitools.engine import handle_aitools_cli
         return handle_aitools_cli(args.aitools_args)
+
+    # Command 98: Linux Kernel Sovereign Subsystem (apex linux / apex kernel)
+    if args.command in {"linux", "kernel"}:
+        from .linux.engine import handle_linux_cli
+        return handle_linux_cli(args.linux_args)
 
     # Command 21: Cryptographic Hash-Chained Audit Ledger Verifier
     if args.command == "verify-ledger":
