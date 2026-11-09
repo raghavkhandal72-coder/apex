@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://raghavkhandal72-coder.github.io/apex/sitemap.xml

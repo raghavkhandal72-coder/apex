@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex Sovereign – Autonomous 4-Agent Code Engine & Zero-Dependency Synthesis</title>
+  <meta name="description" content="Apex Sovereign: The 449 KB Autonomous 4-Agent Supreme Council & Zero-Dependency Code Engine. 663k probes/sec fuzzer, Linux kernel subsystem, and CEGIS program repair (pip = 0).">
+  <meta name="keywords" content="Apex Sovereign, Apex AI, autonomous code repair, 4-agent consensus, CEGIS program synthesis, mutation fuzzer, Linux kernel engine, eBPF generator, zero-dependencies, python standard library">
+  <meta name="author" content="Raghav Khandal">
+  <link rel="canonical" href="https://raghavkhandal72-coder.github.io/apex/">
+
+  <!-- OpenGraph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://raghavkhandal72-coder.github.io/apex/">
+  <meta property="og:title" content="Apex Sovereign – Autonomous 4-Agent Code Engine (449 KB, pip = 0)">
+  <meta property="og:description" content="The 449 KB Autonomous 4-Agent Supreme Council & Zero-Dependency Code Synthesis Engine. Convenes Gemini, Claude, OpenAI, and Apex Sovereign.">
+  <meta property="og:image" content="https://raw.githubusercontent.com/raghavkhandal72-coder/apex/main/docs/apex_banner.png">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://raghavkhandal72-coder.github.io/apex/">
+  <meta property="twitter:title" content="Apex Sovereign – Autonomous 4-Agent Code Engine">
+  <meta property="twitter:description" content="Single 449 KB binary. 0 pip dependencies. 663,000 probes/sec mutation fuzzer. Linux kernel eBPF engine.">
+
+  <!-- Schema.org JSON-LD for Google Search Engine -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Apex Sovereign",
+    "operatingSystem": "Linux, macOS, Windows",
+    "applicationCategory": "DeveloperApplication",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "description": "High-Throughput Autonomous Code Synthesis, Formal Invariant Verification & Kernel Engine in 449 KB with Zero External Dependencies (pip = 0).",
+    "url": "https://github.com/raghavkhandal72-coder/apex",
+    "author": {
+      "@type": "Person",
+      "name": "Raghav Khandal",
+      "url": "https://github.com/raghavkhandal72-coder"
+    }
+  }
+  </script>
+
+  <style>
+    :root {
+      --bg: #090a0f;
+      --card-bg: #12141c;
+      --border: #232738;
+      --cyan: #00e5ff;
+      --neon: #39ff14;
+      --purple: #b537f2;
+      --gold: #ffd600;
+      --text: #e0e6ed;
+      --text-dim: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    header {
+      padding: 80px 20px 40px;
+      text-align: center;
+      background: radial-gradient(circle at 50% 20%, rgba(0, 229, 255, 0.12) 0%, transparent 60%);
+    }
+    .badge-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--cyan);
+    }
+    h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #ffffff 40%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 16px;
+    }
+    p.lead {
+      font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+      color: var(--text-dim);
+      max-width: 780px;
+      margin: 0 auto 36px;
+    }
+    .cta-group {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-primary {
+      background: var(--cyan);
+      color: #000;
+    }
+    .btn-primary:hover {
+      box-shadow: 0 0 24px rgba(0, 229, 255, 0.45);
+      transform: translateY(-2px);
+    }
+    .btn-secondary {
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover {
+      background: #1b1e2b;
+      transform: translateY(-2px);
+    }
+    .container {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    .terminal-window {
+      background: #0d0f17;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+      margin: 40px 0;
+    }
+    .terminal-header {
+      background: #151824;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+    .dot-red { background: #ff5f56; }
+    .dot-yellow { background: #ffbd2e; }
+    .dot-green { background: #27c93f; }
+    .terminal-title { margin-left: 8px; font-size: 12px; color: var(--text-dim); font-family: monospace; }
+    pre {
+      padding: 24px;
+      font-family: "SF Mono", Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      overflow-x: auto;
+      color: #a5b4fc;
+    }
+    .cyan { color: var(--cyan); }
+    .neon { color: var(--neon); }
+    .gold { color: var(--gold); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin: 50px 0;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      transition: border-color 0.2s ease;
+    }
+    .card:hover { border-color: var(--cyan); }
+    .card h3 { font-size: 1.2rem; margin-bottom: 8px; color: #fff; }
+    .card p { font-size: 0.95rem; color: var(--text-dim); }
+    footer {
+      text-align: center;
+      padding: 50px 20px;
+      border-top: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="badge-bar">
+      <span class="badge">pip = 0</span>
+      <span class="badge">449 KB Executable</span>
+      <span class="badge">663k Probes/sec</span>
+      <span class="badge">Linux Kernel Engine</span>
+      <span class="badge">100% Pure Python</span>
+    </div>
+
+    <h1>APEX SOVEREIGN</h1>
+    <p class="lead">Autonomous 4-Agent Supreme Council, Formal Invariant Verification & Kernel Engine in 449 KB with Zero External Dependencies.</p>
+
+    <div class="cta-group">
+      <a href="https://github.com/raghavkhandal72-coder/apex" class="btn btn-primary">⭐ Star on GitHub</a>
+      <a href="https://github.com/raghavkhandal72-coder/apex#readme" class="btn btn-secondary">📖 Technical Documentation</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="terminal-window">
+      <div class="terminal-header">
+        <span class="dot dot-red"></span>
+        <span class="dot dot-yellow"></span>
+        <span class="dot dot-green"></span>
+        <span class="terminal-title">apex tui --once // Telemetry & Supreme Operations</span>
+      </div>
+      <pre>
+<span class="cyan">╔══════════════════════════════════════════════════════════════════════════════╗
+║  APEX-SOVEREIGN CYBER-TUI // SUPREME OPERATIONS CONSOLE                      ║
+║  Pure Python stdlib (pip = 0) • 4-Agent Supreme Council • Linux Kernel       ║
+╠══════════════════════════════════════════════════════════════════════════════╣</span>
+  <span class="gold">TELEMETRY & HARDWARE MATRIX</span>
+  ├─ Platform:       x86_64 / arm64 (Python 3.10 – 3.13)
+  ├─ Binary Size:    449.9 KB (.pyz standalone executable)
+  ├─ RAM Footprint:  ~15 MB RSS (Sub-10ms Cold Start)
+  └─ Dependencies:   0 (Pure Standard Library Architecture)
+
+  <span class="gold">4-AGENT SUPREME COUNCIL ROSTER</span>
+  ├─ 🏛️  Gemini 1.5 Pro   [Architect]   Contracts, Typed Dataclasses & Enums
+  ├─ ⚡ Claude 3.5 Sonnet [Core]        Defensive Implementations & Concurrency
+  ├─ 🎯 OpenAI GPT-4o     [Adversary]   Adversarial Fuzzing & Race Probes
+  └─ 🛡️  Apex Sovereign   [Gatekeeper]  Hermetic Sandbox + HMAC-SHA512 Merkle Seal
+
+  <span class="gold">ACTIVE WARFARE SUBSYSTEMS</span>
+  ├─ <span class="neon">Autonomous Fuzzer:</span>     663,400 probes/sec [In-Memory CPU Mutation Engine]
+  ├─ <span class="cyan">Linux Kernel Subsystem:</span> 450+ Syscalls Table • eBPF XDP • checkpatch.pl
+  ├─ <span class="gold">Formal Verification:</span>   Patrick & Radhia Cousot (POPL '77) Abstract Interpretation
+  └─ <span class="neon">Pre-Commit Defense:</span>    Self-Healing Git Traceback Interceptor Active
+<span class="cyan">╚══════════════════════════════════════════════════════════════════════════════╝</span>
+      </pre>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>🏛️ 4-Agent Consensus Engine</h3>
+        <p>Gemini architects contracts, Claude authors defensive core code, OpenAI writes adversarial tests, and Apex verifies in a hermetic sandbox.</p>
+      </div>
+      <div class="card">
+        <h3>⚡ 663,000+ Probes/sec Fuzzer</h3>
+        <p>In-memory coverage-guided boundary fuzzer running directly on local CPU to isolate edge-case crashes and synthesize defensive guard code.</p>
+      </div>
+      <div class="card">
+        <h3>🐧 Linux Kernel & eBPF Engine</h3>
+        <p>Offline 450+ standard syscall ABI table, static C checkpatch.pl compliance auditor, and production eBPF XDP packet drop/pass filter synthesizer.</p>
+      </div>
+      <div class="card">
+        <h3>🔬 Formal Invariant Prover</h3>
+        <p>Patrick & Radhia Cousot (POPL 1977) Abstract Interpretation and Dijkstra Weakest Precondition Calculus mathematically proving zero-division and bounds safety.</p>
+      </div>
+      <div class="card">
+        <h3>🛡️ Self-Healing Git Hook</h3>
+        <p>Intercepts broken commits, isolates regressions via AST backward slicing, synthesizes a 1-token CEGIS fix, and automatically amends the commit.</p>
+      </div>
+      <div class="card">
+        <h3>📦 Zero Dependencies (pip = 0)</h3>
+        <p>100% Python standard library architecture compiled into an airtight 449 KB standalone binary with instant 10 ms startup.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Engineered with mathematical precision by <strong>Raghav Khandal</strong>. Licensed under MIT.</p>
+    <p><a href="https://github.com/raghavkhandal72-coder/apex" style="color: var(--cyan); text-decoration: none;">GitHub Repository: raghavkhandal72-coder/apex</a></p>
+  </footer>
+
+</body>
+</html>
