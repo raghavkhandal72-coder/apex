@@ -6,6 +6,18 @@ Zero external dependencies (pip = 0). Standard library only.
 
 from __future__ import annotations
 
+if sys.platform == "win32":
+    try:
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        for std_id in (-11, -12):
+            h = kernel32.GetStdHandle(std_id)
+            mode = ctypes.c_ulong()
+            if kernel32.GetConsoleMode(h, ctypes.byref(mode)):
+                kernel32.SetConsoleMode(h, mode.value | 0x0004 | 0x0008)
+    except Exception:
+        pass
+
 import os
 import sys
 import time

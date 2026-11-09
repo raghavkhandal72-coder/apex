@@ -84,6 +84,5 @@ Write-Host "  apex demo-live     - 5-Stage Live CEGIS Repair Walkthrough" -Foreg
 Write-Host "  apex studio        - Apple Pro Studio Web Dashboard (http://127.0.0.1:8765)" -ForegroundColor Cyan
 Write-Host "  apex hook install  - Self-Healing Git Pre-Commit Hook" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Launching Apex Live Walkthrough..." -ForegroundColor Cyan
+Write-Host "Type 'apex' to launch your interactive autonomous coding agent!" -ForegroundColor Yellow
 Write-Host ""
-& $pyPath $PyzTarget demo-live
