@@ -31,6 +31,10 @@ if hasattr(sys.stderr, "reconfigure"):
 from ..evaluator.runtime_eval import evaluate_runtime
 from ..evaluator.security_eval import evaluate_security
 from ..models import ModelProvider
+from ..providers.factory import _is_valid_key
+from ..providers.live_http import LiveGeminiProvider, LiveClaudeProvider, LiveOpenAIProvider
+from ..providers.llamafile_engine import ApexPortableRunner
+from ..providers.ollama_engine import OllamaEngine
 from ..security.integrity import CodeIntegritySigner
 from ..ui.terminal import CyberpunkTUI, TerminalColors
 
@@ -67,8 +71,208 @@ class SupremeCouncilEngine:
     to collaborate simultaneously on full, real multi-file codebases.
     """
 
-    def __init__(self, output_dir: Optional[Path | str] = None) -> None:
+    def __init__(self, output_dir: Optional[Path | str] = None, mode: str = "hybrid") -> None:
         self.output_dir = Path(output_dir or "./apex_project").resolve()
+        self.mode = (mode or "hybrid").lower()
+        self._detect_agent_modes()
+
+    def _detect_agent_modes(self) -> None:
+        c = TerminalColors
+        gemini_key = os.getenv("GEMINI_API_KEY")
+        claude_key = os.getenv("ANTHROPIC_API_KEY")
+        openai_key = os.getenv("OPENAI_API_KEY")
+
+        runner = ApexPortableRunner()
+        runner_up = runner.is_running(timeout=0.2)
+        ollama = OllamaEngine()
+        ollama_up = ollama.is_running(timeout=0.2)
+
+        self.agent_configs = {
+            "gemini": {
+                "name": "Google Gemini",
+                "role": "Lead System Architect",
+                "file": "models.py",
+                "mode": "OFFLINE",
+                "model": "Gemini AST Architect",
+                "color": c.CYAN,
+            },
+            "claude": {
+                "name": "Anthropic Claude",
+                "role": "Staff Core Engineer",
+                "file": "service.py",
+                "mode": "OFFLINE",
+                "model": "Claude Defensive Synthesizer",
+                "color": c.MAGENTA,
+            },
+            "openai": {
+                "name": "OpenAI",
+                "role": "Principal QA & Red-Team Breaker",
+                "file": "test_service.py",
+                "mode": "OFFLINE",
+                "model": "OpenAI Adversarial Fuzzer",
+                "color": c.ORANGE,
+            },
+            "apex": {
+                "name": "Apex Sovereign Gatekeeper",
+                "role": "Formal Prover & Judge",
+                "file": "proof.json",
+                "mode": "SOVEREIGN",
+                "model": "Hermetic Sandbox + HMAC-SHA512",
+                "color": c.GOLD,
+            },
+        }
+
+        if self.mode == "live":
+            self.agent_configs["gemini"]["mode"] = "LIVE" if _is_valid_key(gemini_key) else "LIVE (No Key - Simulated)"
+            self.agent_configs["gemini"]["model"] = "gemini-2.5-pro (Cloud API)"
+            self.agent_configs["claude"]["mode"] = "LIVE" if _is_valid_key(claude_key) else "LIVE (No Key - Simulated)"
+            self.agent_configs["claude"]["model"] = "claude-3-7-sonnet (Cloud API)"
+            self.agent_configs["openai"]["mode"] = "LIVE" if _is_valid_key(openai_key) else "LIVE (No Key - Simulated)"
+            self.agent_configs["openai"]["model"] = "gpt-4o (Cloud API)"
+
+        elif self.mode == "local":
+            local_target = runner.host if runner_up else ("http://127.0.0.1:11434" if ollama_up else "Local Runner (Offline)")
+            self.agent_configs["gemini"]["mode"] = "LOCAL"
+            self.agent_configs["gemini"]["model"] = f"Qwen 2.5 Coder ({local_target})"
+            self.agent_configs["claude"]["mode"] = "LOCAL"
+            self.agent_configs["claude"]["model"] = f"Apex-Coder ({local_target})"
+            self.agent_configs["openai"]["mode"] = "LOCAL"
+            self.agent_configs["openai"]["model"] = f"CodeGemma / Qwen ({local_target})"
+
+        elif self.mode == "hybrid":
+            if _is_valid_key(gemini_key):
+                self.agent_configs["gemini"]["mode"] = "LIVE"
+                self.agent_configs["gemini"]["model"] = "gemini-2.5-pro (Cloud API)"
+            elif runner_up or ollama_up:
+                self.agent_configs["gemini"]["mode"] = "LOCAL"
+                self.agent_configs["gemini"]["model"] = "Qwen 2.5 Coder (Local Open-Source)"
+            else:
+                self.agent_configs["gemini"]["mode"] = "OFFLINE"
+                self.agent_configs["gemini"]["model"] = "Sovereign AST Architect"
+
+            if _is_valid_key(claude_key):
+                self.agent_configs["claude"]["mode"] = "LIVE"
+                self.agent_configs["claude"]["model"] = "claude-3-7-sonnet (Cloud API)"
+            elif runner_up or ollama_up:
+                self.agent_configs["claude"]["mode"] = "LOCAL"
+                self.agent_configs["claude"]["model"] = "Apex-Coder (Local Open-Source)"
+            else:
+                self.agent_configs["claude"]["mode"] = "OFFLINE"
+                self.agent_configs["claude"]["model"] = "Sovereign Defensive Synthesizer"
+
+            if _is_valid_key(openai_key):
+                self.agent_configs["openai"]["mode"] = "LIVE"
+                self.agent_configs["openai"]["model"] = "gpt-4o (Cloud API)"
+            elif runner_up or ollama_up:
+                self.agent_configs["openai"]["mode"] = "LOCAL"
+                self.agent_configs["openai"]["model"] = "CodeGemma / Qwen (Local Open-Source)"
+            else:
+                self.agent_configs["openai"]["mode"] = "OFFLINE"
+                self.agent_configs["openai"]["model"] = "Sovereign Adversarial Fuzzer"
+
+    def render_agents_status(self) -> str:
+        c = TerminalColors
+        lines = [
+            "\n" + c.CYAN + c.BOLD + "===============================================================================" + c.RESET,
+            c.CYAN + c.BOLD + "  🏛️  APEX SOVEREIGN: 4-AGENT SUPREME COUNCIL STATUS & ACTIVE MODES           " + c.RESET,
+            c.CYAN + c.BOLD + "===============================================================================" + c.RESET,
+            f"  {c.BOLD}Global Mode Configured :{c.RESET} {c.GOLD}{self.mode.upper()}{c.RESET}",
+            f"  {c.BOLD}Target Output Directory:{c.RESET} {c.CYAN}{self.output_dir}{c.RESET}\n",
+        ]
+
+        roles_order = ["gemini", "claude", "openai", "apex"]
+        for idx, key in enumerate(roles_order, 1):
+            cfg = self.agent_configs[key]
+            color = cfg["color"]
+            mode_badge = f"{c.NEON_GREEN}● {cfg['mode']}{c.RESET}" if any(k in cfg["mode"] for k in ("LIVE", "LOCAL", "SOVEREIGN")) else f"{c.DIM}○ {cfg['mode']}{c.RESET}"
+            lines.extend([
+                f"  {color}{c.BOLD}[AGENT {idx}/4] {cfg['name']}{c.RESET} ({cfg['role']})",
+                f"    • {c.BOLD}Active Mode :{c.RESET} {mode_badge}",
+                f"    • {c.BOLD}Assigned LLM:{c.RESET} {cfg['model']}",
+                f"    • {c.BOLD}Artifact    :{c.RESET} {c.BOLD}{cfg['file']}{c.RESET}",
+                "",
+            ])
+
+        lines.extend([
+            c.CYAN + c.BOLD + "===============================================================================" + c.RESET,
+            f"  {c.BOLD}How to Switch Modes on the 4 Agents:{c.RESET}",
+            f"    apex 4agents -m local   \"{c.DIM}Build a rate limiter{c.RESET}\"   (Runs local open-source models)",
+            f"    apex 4agents -m live    \"{c.DIM}Build a task queue{c.RESET}\"     (Runs Gemini, Claude & OpenAI cloud APIs)",
+            f"    apex 4agents -m offline \"{c.DIM}Build an LRU cache{c.RESET}\"    (Instant zero-token AST synthesis)",
+            f"    apex 4agents -m hybrid  \"{c.DIM}Build an event bus{c.RESET}\"    (Auto-detects live > local > offline)",
+            c.CYAN + c.BOLD + "===============================================================================" + c.RESET + "\n",
+        ])
+        return "\n".join(lines)
+
+    def _extract_python_code(self, text: str) -> str:
+        matches = re.findall(r"```python\s*(.*?)\s*```", text, re.DOTALL)
+        if matches:
+            return matches[0].strip()
+        matches = re.findall(r"```\s*(.*?)\s*```", text, re.DOTALL)
+        if matches:
+            return matches[0].strip()
+        return text.strip()
+
+    def _query_live_or_local(self, prompt: str, agent_key: str) -> Optional[str]:
+        cfg = self.agent_configs.get(agent_key, {})
+        mode = cfg.get("mode", "")
+
+        if "LIVE" in mode:
+            if agent_key == "gemini":
+                key = os.getenv("GEMINI_API_KEY")
+                if _is_valid_key(key):
+                    try:
+                        p = LiveGeminiProvider(key.strip())
+                        sub = p.generate(prompt)
+                        code = self._extract_python_code(sub.code)
+                        if code and len(code) > 40:
+                            return code
+                    except Exception:
+                        pass
+            elif agent_key == "claude":
+                key = os.getenv("ANTHROPIC_API_KEY")
+                if _is_valid_key(key):
+                    try:
+                        p = LiveClaudeProvider(key.strip())
+                        sub = p.generate(prompt)
+                        code = self._extract_python_code(sub.code)
+                        if code and len(code) > 40:
+                            return code
+                    except Exception:
+                        pass
+            elif agent_key == "openai":
+                key = os.getenv("OPENAI_API_KEY")
+                if _is_valid_key(key):
+                    try:
+                        p = LiveOpenAIProvider(key.strip())
+                        sub = p.generate(prompt)
+                        code = self._extract_python_code(sub.code)
+                        if code and len(code) > 40:
+                            return code
+                    except Exception:
+                        pass
+
+        if "LOCAL" in mode or "HYBRID" in self.mode:
+            try:
+                runner = ApexPortableRunner()
+                if runner.is_running(timeout=0.3):
+                    raw = runner.generate(prompt, timeout=20.0)
+                    code = self._extract_python_code(raw)
+                    if code and len(code) > 40 and "error:" not in code.lower():
+                        return code
+            except Exception:
+                pass
+            try:
+                ollama = OllamaEngine()
+                if ollama.is_running(timeout=0.3):
+                    raw = ollama.generate(prompt, timeout=20.0)
+                    code = self._extract_python_code(raw)
+                    if code and len(code) > 40 and "error:" not in code.lower():
+                        return code
+            except Exception:
+                pass
+
+        return None
 
     def convene(self, spec: str, live_terminal: bool = True) -> SupremeCouncilProject:
         c = TerminalColors
@@ -94,7 +298,8 @@ class SupremeCouncilEngine:
         # -------------------------------------------------------------
         t0 = time.perf_counter()
         if live_terminal:
-            print(f"{c.CYAN}{c.BOLD}> [AGENT 1/4 - GOOGLE GEMINI]{c.RESET} {c.BOLD}Architecting System Models, Protocols & Contracts...{c.RESET}")
+            cfg_g = self.agent_configs["gemini"]
+            print(f"{cfg_g['color']}{c.BOLD}> [AGENT 1/4 - GOOGLE GEMINI]{c.RESET} {c.DIM}[MODE: {cfg_g['mode']} | {cfg_g['model']}]{c.RESET} {c.BOLD}Architecting System Models & Contracts...{c.RESET}")
         
         models_code = self._generate_gemini_architecture(spec)
         d_gemini = (time.perf_counter() - t0) * 1000
@@ -122,7 +327,8 @@ class SupremeCouncilEngine:
         # -------------------------------------------------------------
         t0 = time.perf_counter()
         if live_terminal:
-            print(f"{c.MAGENTA}{c.BOLD}> [AGENT 2/4 - ANTHROPIC CLAUDE]{c.RESET} {c.BOLD}Authoring Defensive Core Production Implementation...{c.RESET}")
+            cfg_c = self.agent_configs["claude"]
+            print(f"{cfg_c['color']}{c.BOLD}> [AGENT 2/4 - ANTHROPIC CLAUDE]{c.RESET} {c.DIM}[MODE: {cfg_c['mode']} | {cfg_c['model']}]{c.RESET} {c.BOLD}Authoring Defensive Core Production Implementation...{c.RESET}")
 
         service_code = self._generate_claude_implementation(spec, models_code)
         d_claude = (time.perf_counter() - t0) * 1000
@@ -150,7 +356,8 @@ class SupremeCouncilEngine:
         # -------------------------------------------------------------
         t0 = time.perf_counter()
         if live_terminal:
-            print(f"{c.ORANGE}{c.BOLD}> [AGENT 3/4 - OPENAI]{c.RESET} {c.BOLD}Generating Comprehensive Adversarial Test Suite & Probes...{c.RESET}")
+            cfg_o = self.agent_configs["openai"]
+            print(f"{cfg_o['color']}{c.BOLD}> [AGENT 3/4 - OPENAI]{c.RESET} {c.DIM}[MODE: {cfg_o['mode']} | {cfg_o['model']}]{c.RESET} {c.BOLD}Generating Comprehensive Adversarial Test Suite & Probes...{c.RESET}")
 
         test_code = self._generate_openai_tests(spec, models_code, service_code)
         d_openai = (time.perf_counter() - t0) * 1000
@@ -178,7 +385,8 @@ class SupremeCouncilEngine:
         # -------------------------------------------------------------
         t0 = time.perf_counter()
         if live_terminal:
-            print(f"{c.GOLD}{c.BOLD}> [AGENT 4/4 - APEX SOVEREIGN GATEKEEPER]{c.RESET} {c.BOLD}Hermetic Sandbox Verification & Proof Attestation...{c.RESET}")
+            cfg_a = self.agent_configs["apex"]
+            print(f"{cfg_a['color']}{c.BOLD}> [AGENT 4/4 - APEX SOVEREIGN GATEKEEPER]{c.RESET} {c.DIM}[MODE: {cfg_a['mode']} | {cfg_a['model']}]{c.RESET} {c.BOLD}Hermetic Sandbox Verification & Proof Attestation...{c.RESET}")
 
         # Run tests in isolated subprocess
         test_env = os.environ.copy()
@@ -226,10 +434,10 @@ class SupremeCouncilEngine:
             "spec": spec,
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "supreme_council": {
-                "gemini": {"role": "Lead Architect", "file": "models.py", "latency_ms": round(d_gemini, 2)},
-                "claude": {"role": "Staff Engineer", "file": "service.py", "latency_ms": round(d_claude, 2)},
-                "openai": {"role": "Principal QA", "file": "test_service.py", "latency_ms": round(d_openai, 2)},
-                "apex": {"role": "Formal Gatekeeper", "file": "proof.json", "latency_ms": round(d_gatekeeper, 2)},
+                "gemini": {"role": "Lead Architect", "file": "models.py", "mode": self.agent_configs["gemini"]["mode"], "model": self.agent_configs["gemini"]["model"], "latency_ms": round(d_gemini, 2)},
+                "claude": {"role": "Staff Engineer", "file": "service.py", "mode": self.agent_configs["claude"]["mode"], "model": self.agent_configs["claude"]["model"], "latency_ms": round(d_claude, 2)},
+                "openai": {"role": "Principal QA", "file": "test_service.py", "mode": self.agent_configs["openai"]["mode"], "model": self.agent_configs["openai"]["model"], "latency_ms": round(d_openai, 2)},
+                "apex": {"role": "Formal Gatekeeper", "file": "proof.json", "mode": self.agent_configs["apex"]["mode"], "model": self.agent_configs["apex"]["model"], "latency_ms": round(d_gatekeeper, 2)},
             },
             "verification": {
                 "tests_passed": all_passed,

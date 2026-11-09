@@ -96,6 +96,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     council_parser.add_argument("spec", nargs="?", default="Build a high-performance distributed task queue with retry logic and dead-letter queue", help="Feature specification to architect and build")
     council_parser.add_argument("-o", "--output", type=Path, default=Path("./apex_project"), help="Target output directory for multi-file codebase")
 
+    council_parser.add_argument("-m", "--mode", choices=["local", "live", "hybrid", "offline"], default="hybrid", help="Execution mode for the 4 agents: local (Ollama/Runner), live (Cloud APIs), hybrid (Auto-detect), offline (Fast AST)")
+    council_parser.add_argument("--status", action="store_true", help="Display live connection status, active model, and mode for each of the 4 agents")
     subparsers.add_parser("4agents", parents=[council_parser], add_help=False)
 
     # Command 1: Battle / Deliberate
@@ -750,7 +752,12 @@ def main(argv: list[str] | None = None) -> int:
         from .swarm.supreme_council import SupremeCouncilEngine
         spec = getattr(args, "spec", None) or "Build a high-performance distributed task queue with retry logic and dead-letter queue"
         out_dir = getattr(args, "output", None) or Path("./apex_project")
-        engine = SupremeCouncilEngine(output_dir=out_dir)
+        mode = getattr(args, "mode", "hybrid")
+        show_status = getattr(args, "status", False)
+        engine = SupremeCouncilEngine(output_dir=out_dir, mode=mode)
+        if show_status:
+            print(engine.render_agents_status())
+            return 0
         proj = engine.convene(spec, live_terminal=True)
         return 0 if proj.all_tests_passed else 1
 
