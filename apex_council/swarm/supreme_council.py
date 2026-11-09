@@ -37,6 +37,7 @@ from ..providers.llamafile_engine import ApexPortableRunner
 from ..providers.ollama_engine import OllamaEngine
 from ..security.integrity import CodeIntegritySigner
 from ..ui.terminal import CyberpunkTUI, TerminalColors
+from ..aitools.engine import AwesomeAIToolsEngine
 from .domain_synthesizer import DomainSynthesizer
 
 
@@ -467,16 +468,33 @@ class SupremeCouncilEngine:
             total_tests=test_count,
         ))
 
+        # Recommend relevant ecosystem AI tools from Awesome-AITools registry
+        try:
+            tools_engine = AwesomeAIToolsEngine()
+            recommended_tools = tools_engine.recommend(spec, limit=5)
+        except Exception:
+            recommended_tools = []
+
         receipt = {
             "project_name": self.output_dir.name,
             "spec": spec,
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "supreme_council": {
                 "gemini": {"role": "Lead Architect", "file": "models.py", "mode": self.agent_configs["gemini"]["mode"], "model": self.agent_configs["gemini"]["model"], "latency_ms": round(d_gemini, 2)},
-                "claude": {"role": "Staff Engineer", "file": "service.py", "mode": self.agent_configs["claude"]["mode"], "model": self.agent_configs["claude"]["model"], "latency_ms": round(d_claude, 2)},
+                "claude": {"role": "Staff Engineer", "file": "service.py", "mode": self.agent_configs["claude"]["mode"], "model": self.agent_configs["claude"]["mode"], "latency_ms": round(d_claude, 2)},
                 "openai": {"role": "Principal QA", "file": "test_service.py", "mode": self.agent_configs["openai"]["mode"], "model": self.agent_configs["openai"]["model"], "latency_ms": round(d_openai, 2)},
                 "apex": {"role": "Formal Gatekeeper", "file": "proof.json", "mode": self.agent_configs["apex"]["mode"], "model": self.agent_configs["apex"]["model"], "latency_ms": round(d_gatekeeper, 2)},
             },
+            "recommended_ai_tools": [
+                {
+                    "name": t.name,
+                    "category": t.category,
+                    "fees": t.fees,
+                    "url": t.url,
+                    "description": t.desc,
+                }
+                for t in recommended_tools
+            ],
             "verification": {
                 "tests_passed": all_passed,
                 "test_count": test_count,
@@ -490,7 +508,7 @@ class SupremeCouncilEngine:
         receipt_path.write_text(json.dumps(receipt, indent=2), encoding="utf-8")
 
         # Generate README.md
-        readme_content = self._generate_readme(spec, test_count, merkle_seal)
+        readme_content = self._generate_readme(spec, test_count, merkle_seal, recommended_tools)
         (self.output_dir / "README.md").write_text(readme_content, encoding="utf-8")
         (self.output_dir / ".gitignore").write_text("__pycache__/\n*.pyc\n.coverage\n", encoding="utf-8")
 
@@ -510,6 +528,11 @@ class SupremeCouncilEngine:
             print(f"  - test_service.py [OpenAI: Comprehensive Adversarial Test Suite]")
             print(f"  - proof.json      [Apex Sovereign: Cryptographic Verification Seal]")
             print(f"  - README.md       [Documentation & Reproduction Guide]\n")
+            if recommended_tools:
+                print(f"  Recommended Ecosystem AI Tools (via Awesome-AITools):")
+                for t in recommended_tools[:3]:
+                    print(f"    • {c.CYAN}{t.name}{c.RESET} ({t.category}) - {t.url}")
+                print()
             print(f"  Run tests anytime: python -m unittest {self.output_dir / 'test_service.py'}\n")
 
         return SupremeCouncilProject(
@@ -578,7 +601,14 @@ class SupremeCouncilEngine:
         domain = DomainSynthesizer.classify(spec)
         return DomainSynthesizer.synthesize_tests(spec, domain, models_code, service_code)
 
-    def _generate_readme(self, spec: str, test_count: int, merkle_seal: str) -> str:
+    def _generate_readme(self, spec: str, test_count: int, merkle_seal: str, recommended_tools: Optional[List[Any]] = None) -> str:
+        tools_table = ""
+        if recommended_tools:
+            rows = []
+            for t in recommended_tools:
+                rows.append(f"| [{t.name}]({t.url}) | {t.category} | {t.fees} | {t.desc[:90]}... |")
+            tools_table = "\n---\n\n### Recommended Ecosystem AI Tools (via Awesome-AITools Registry)\n| Tool | Category | Pricing | Capabilities |\n| :--- | :--- | :--- | :--- |\n" + "\n".join(rows) + "\n"
+
         return f"""# Apex Sovereign Engineered Project
 
 > **Autonomously architected, implemented, and verified by the Apex 4-Agent Supreme Council.**
@@ -604,6 +634,7 @@ class SupremeCouncilEngine:
 - **External Dependencies:** 0 (`pip = 0`, pure Python standard library)
 - **HMAC-SHA512 Merkle Seal:** `{merkle_seal}`
 
+{tools_table}
 ### Run the Tests
 ```bash
 python -m unittest test_service.py

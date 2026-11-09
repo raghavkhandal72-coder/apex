@@ -72,7 +72,7 @@ KNOWN_COMMANDS = {
     "watch", "slice", "modern", "lsp", "loop",
     "patch-export", "crash-fingerprint", "flamegraph", "pr-summary", "secret-mask", "completion", "zero-div",
     "instruments", "swift-guard", "studio", "test-all", "demo-live", "bench-live", "review", "ollama", "llamafile", "runner", "audit-sec", "security-audit", "scala", "scala-guard", "spark", "spark-guard", "dify", "dify-guard",
-    "ocx", "opencodex",
+    "ocx", "opencodex", "aitools", "tools", "awesome",
     "-h", "--help"
 }
 
@@ -642,6 +642,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     opencodex_p = subparsers.add_parser("opencodex", help="OpenCodex: Universal LLM provider proxy & dashboard (alias)")
     opencodex_p.add_argument("ocx_args", nargs="*", help="OpenCodex subcommands (start, status, gui, doctor, models, setup, claude)")
 
+    # Command 97: Awesome AI Tools Registry & Advisor Engine (apex aitools / apex tools / apex awesome)
+    aitools_p = subparsers.add_parser("aitools", help="Awesome AI Tools: Offline search & recommendations across 260+ curated AI tools")
+    aitools_p.add_argument("aitools_args", nargs="*", help="Subcommands (search <query>, categories, list <cat>, info <tool>, recommend <spec>, sync)")
+
+    tools_p = subparsers.add_parser("tools", help="Awesome AI Tools registry (alias)")
+    tools_p.add_argument("aitools_args", nargs="*", help="Subcommands (search, categories, list, info, recommend, sync)")
+
+    awesome_p = subparsers.add_parser("awesome", help="Awesome AI Tools registry (alias)")
+    awesome_p.add_argument("aitools_args", nargs="*", help="Subcommands (search, categories, list, info, recommend, sync)")
+
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
     parser.add_argument("--format", choices=["table", "markdown", "json"], default="table")
@@ -879,6 +889,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.command in {"ocx", "opencodex"}:
         from .ocx.bridge import handle_ocx_cli
         return handle_ocx_cli(args.ocx_args)
+
+    # Command 97: Awesome AI Tools Registry (apex aitools / apex tools / apex awesome)
+    if args.command in {"aitools", "tools", "awesome"}:
+        from .aitools.engine import handle_aitools_cli
+        return handle_aitools_cli(args.aitools_args)
 
     # Command 21: Cryptographic Hash-Chained Audit Ledger Verifier
     if args.command == "verify-ledger":
