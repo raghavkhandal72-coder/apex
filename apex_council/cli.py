@@ -72,7 +72,7 @@ KNOWN_COMMANDS = {
     "watch", "slice", "modern", "lsp", "loop",
     "patch-export", "crash-fingerprint", "flamegraph", "pr-summary", "secret-mask", "completion", "zero-div",
     "instruments", "swift-guard", "studio", "test-all", "demo-live", "bench-live", "review", "ollama", "llamafile", "runner", "audit-sec", "security-audit", "scala", "scala-guard", "spark", "spark-guard", "dify", "dify-guard",
-    "ocx", "opencodex", "aitools", "tools", "awesome", "linux", "kernel",
+    "ocx", "opencodex", "aitools", "tools", "awesome", "linux", "kernel", "fuzz", "fuzzer",
     "-h", "--help"
 }
 
@@ -659,6 +659,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     kernel_p = subparsers.add_parser("kernel", help="Linux Kernel Engine (alias)")
     kernel_p.add_argument("linux_args", nargs="*", help="Subcommands (status, audit, syscall, bpf, module, fetch, patch)")
 
+    # Command 99: Autonomous Coverage-Guided Mutation Fuzzer (apex fuzz / apex fuzzer)
+    fuzz_p = subparsers.add_parser("fuzz", help="Autonomous Mutation Fuzzer: Run 1,000+ adversarial probes on local CPU to find zero-day edge-case crashes")
+    fuzz_p.add_argument("fuzz_args", nargs="*", help="Target Python file or 'demo' [max_probes=1000]")
+
+    fuzzer_p = subparsers.add_parser("fuzzer", help="Autonomous Mutation Fuzzer (alias)")
+    fuzzer_p.add_argument("fuzz_args", nargs="*", help="Target Python file or 'demo' [max_probes=1000]")
+
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
     parser.add_argument("--format", choices=["table", "markdown", "json"], default="table")
@@ -906,6 +913,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.command in {"linux", "kernel"}:
         from .linux.engine import handle_linux_cli
         return handle_linux_cli(args.linux_args)
+
+    # Command 99: Autonomous Coverage-Guided Mutation Fuzzer (apex fuzz / apex fuzzer)
+    if args.command in {"fuzz", "fuzzer"}:
+        from .analysis.fuzzer import handle_fuzz_cli
+        return handle_fuzz_cli(args.fuzz_args)
 
     # Command 21: Cryptographic Hash-Chained Audit Ledger Verifier
     if args.command == "verify-ledger":
