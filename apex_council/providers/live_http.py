@@ -56,7 +56,7 @@ class LiveGeminiProvider(BaseLLMProvider):
         }
 
         try:
-            req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+            req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST", allow_loopback=True)
             with urllib.request.urlopen(req, timeout=15) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 text = data["candidates"][0]["content"]["parts"][0]["text"]
@@ -92,7 +92,7 @@ class LiveGeminiProvider(BaseLLMProvider):
         )
         payload = {"contents": [{"parts": [{"text": critique_prompt}]}]}
         try:
-            req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+            req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST", allow_loopback=True)
             with urllib.request.urlopen(req, timeout=10) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
@@ -171,7 +171,7 @@ class LiveClaudeProvider(BaseLLMProvider):
         }
 
         try:
-            req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+            req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST", allow_loopback=True)
             with urllib.request.urlopen(req, timeout=15) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 text = data["content"][0]["text"]
@@ -242,7 +242,7 @@ class LiveOpenAIProvider(BaseLLMProvider):
         }
 
         try:
-            req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+            req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST", allow_loopback=True)
             with urllib.request.urlopen(req, timeout=15) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 text = data["choices"][0]["message"]["content"]
@@ -298,7 +298,7 @@ class LiveOllamaProvider(BaseLLMProvider):
         display_name: str | None = None,
     ):
         selected_model = model_name or os.getenv("OLLAMA_MODEL", "apex-coder:latest")
-        selected_host = host or os.getenv("OLLAMA_HOST", "http://localhost:11434")
+        selected_host = host or os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434")
         label = display_name or f"Apex/Ollama ({selected_model})"
         super().__init__(provider, label)
         self.host = selected_host.rstrip("/")
@@ -318,7 +318,7 @@ class LiveOllamaProvider(BaseLLMProvider):
         }
         headers = {"Content-Type": "application/json"}
         try:
-            req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+            req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST", allow_loopback=True)
             with urllib.request.urlopen(req, timeout=40) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 text = data.get("response", "")
@@ -357,7 +357,7 @@ class LiveOllamaProvider(BaseLLMProvider):
         }
         headers = {"Content-Type": "application/json"}
         try:
-            req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+            req = safe_http_request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST", allow_loopback=True)
             with urllib.request.urlopen(req, timeout=12) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 text = data.get("response", "").strip()
