@@ -86,6 +86,9 @@ class SupremeCouncilEngine:
         runner_up = runner.is_running(timeout=0.2)
         ollama = OllamaEngine()
         ollama_up = ollama.is_running(timeout=0.2)
+        from ..ocx.bridge import OpenCodexBridge
+        ocx = OpenCodexBridge()
+        ocx_up = ocx.is_running(timeout=0.2)
 
         self.agent_configs = {
             "gemini": {
@@ -123,26 +126,29 @@ class SupremeCouncilEngine:
         }
 
         if self.mode == "live":
-            self.agent_configs["gemini"]["mode"] = "LIVE" if _is_valid_key(gemini_key) else "LIVE (No Key - Simulated)"
-            self.agent_configs["gemini"]["model"] = "gemini-2.5-pro (Cloud API)"
-            self.agent_configs["claude"]["mode"] = "LIVE" if _is_valid_key(claude_key) else "LIVE (No Key - Simulated)"
-            self.agent_configs["claude"]["model"] = "claude-3-7-sonnet (Cloud API)"
-            self.agent_configs["openai"]["mode"] = "LIVE" if _is_valid_key(openai_key) else "LIVE (No Key - Simulated)"
-            self.agent_configs["openai"]["model"] = "gpt-4o (Cloud API)"
+            self.agent_configs["gemini"]["mode"] = "LIVE" if _is_valid_key(gemini_key) else ("OPENCODEX" if ocx_up else "LIVE (No Key - Simulated)")
+            self.agent_configs["gemini"]["model"] = "gemini-2.5-pro (Cloud API)" if _is_valid_key(gemini_key) else ("OpenCodex (Proxy :10100)" if ocx_up else "gemini-2.5-pro (Cloud API)")
+            self.agent_configs["claude"]["mode"] = "LIVE" if _is_valid_key(claude_key) else ("OPENCODEX" if ocx_up else "LIVE (No Key - Simulated)")
+            self.agent_configs["claude"]["model"] = "claude-3-7-sonnet (Cloud API)" if _is_valid_key(claude_key) else ("OpenCodex (Proxy :10100)" if ocx_up else "claude-3-7-sonnet (Cloud API)")
+            self.agent_configs["openai"]["mode"] = "LIVE" if _is_valid_key(openai_key) else ("OPENCODEX" if ocx_up else "LIVE (No Key - Simulated)")
+            self.agent_configs["openai"]["model"] = "gpt-4o (Cloud API)" if _is_valid_key(openai_key) else ("OpenCodex (Proxy :10100)" if ocx_up else "gpt-4o (Cloud API)")
 
         elif self.mode == "local":
-            local_target = runner.host if runner_up else ("http://127.0.0.1:11434" if ollama_up else "Local Runner (Offline)")
-            self.agent_configs["gemini"]["mode"] = "LOCAL"
+            local_target = runner.host if runner_up else ("http://127.0.0.1:11434" if ollama_up else ("OpenCodex :10100" if ocx_up else "Local Runner (Offline)"))
+            self.agent_configs["gemini"]["mode"] = "LOCAL" if (runner_up or ollama_up) else ("OPENCODEX" if ocx_up else "LOCAL")
             self.agent_configs["gemini"]["model"] = f"Qwen 2.5 Coder ({local_target})"
-            self.agent_configs["claude"]["mode"] = "LOCAL"
+            self.agent_configs["claude"]["mode"] = "LOCAL" if (runner_up or ollama_up) else ("OPENCODEX" if ocx_up else "LOCAL")
             self.agent_configs["claude"]["model"] = f"Apex-Coder ({local_target})"
-            self.agent_configs["openai"]["mode"] = "LOCAL"
+            self.agent_configs["openai"]["mode"] = "LOCAL" if (runner_up or ollama_up) else ("OPENCODEX" if ocx_up else "LOCAL")
             self.agent_configs["openai"]["model"] = f"CodeGemma / Qwen ({local_target})"
 
         elif self.mode == "hybrid":
             if _is_valid_key(gemini_key):
                 self.agent_configs["gemini"]["mode"] = "LIVE"
                 self.agent_configs["gemini"]["model"] = "gemini-2.5-pro (Cloud API)"
+            elif ocx_up:
+                self.agent_configs["gemini"]["mode"] = "OPENCODEX"
+                self.agent_configs["gemini"]["model"] = "OpenCodex Universal Route (:10100)"
             elif runner_up or ollama_up:
                 self.agent_configs["gemini"]["mode"] = "LOCAL"
                 self.agent_configs["gemini"]["model"] = "Qwen 2.5 Coder (Local Open-Source)"
@@ -153,6 +159,9 @@ class SupremeCouncilEngine:
             if _is_valid_key(claude_key):
                 self.agent_configs["claude"]["mode"] = "LIVE"
                 self.agent_configs["claude"]["model"] = "claude-3-7-sonnet (Cloud API)"
+            elif ocx_up:
+                self.agent_configs["claude"]["mode"] = "OPENCODEX"
+                self.agent_configs["claude"]["model"] = "OpenCodex Universal Route (:10100)"
             elif runner_up or ollama_up:
                 self.agent_configs["claude"]["mode"] = "LOCAL"
                 self.agent_configs["claude"]["model"] = "Apex-Coder (Local Open-Source)"
@@ -163,6 +172,9 @@ class SupremeCouncilEngine:
             if _is_valid_key(openai_key):
                 self.agent_configs["openai"]["mode"] = "LIVE"
                 self.agent_configs["openai"]["model"] = "gpt-4o (Cloud API)"
+            elif ocx_up:
+                self.agent_configs["openai"]["mode"] = "OPENCODEX"
+                self.agent_configs["openai"]["model"] = "OpenCodex Universal Route (:10100)"
             elif runner_up or ollama_up:
                 self.agent_configs["openai"]["mode"] = "LOCAL"
                 self.agent_configs["openai"]["model"] = "CodeGemma / Qwen (Local Open-Source)"
@@ -252,7 +264,32 @@ class SupremeCouncilEngine:
                     except Exception:
                         pass
 
-        if "LOCAL" in mode or "HYBRID" in self.mode:
+        if "LOCAL" in mode or "HYBRID" in self.mode or "OPENCODEX" in mode:
+            # Check OpenCodex proxy (port 10100)
+            try:
+                from ..ocx.bridge import OpenCodexBridge
+                ocx = OpenCodexBridge()
+                if ocx.is_running(timeout=0.3):
+                    models = [m.get("id", "") for m in ocx.list_models()]
+                    target_m = "gpt-4o"
+                    if agent_key == "gemini" and any("gemini" in m.lower() for m in models):
+                        target_m = next(m for m in models if "gemini" in m.lower())
+                    elif agent_key == "claude" and any("claude" in m.lower() for m in models):
+                        target_m = next(m for m in models if "claude" in m.lower())
+                    elif agent_key == "openai" and any("gpt" in m.lower() for m in models):
+                        target_m = next(m for m in models if "gpt" in m.lower())
+                    elif models:
+                        target_m = models[0]
+
+                    from ..providers.live_http import LiveOpenCodexProvider
+                    p = LiveOpenCodexProvider(model_name=target_m)
+                    sub = p.generate(prompt)
+                    code = self._extract_python_code(sub.code)
+                    if code and len(code) > 40 and "error:" not in code.lower():
+                        return code
+            except Exception:
+                pass
+
             try:
                 runner = ApexPortableRunner()
                 if runner.is_running(timeout=0.3):

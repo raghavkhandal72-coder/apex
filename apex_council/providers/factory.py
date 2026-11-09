@@ -5,7 +5,15 @@ from typing import Dict
 
 from ..models import ModelProvider
 from .base import BaseLLMProvider
-from .live_http import LiveApexRunnerProvider, LiveClaudeProvider, LiveGeminiProvider, LiveLlamafileProvider, LiveOllamaProvider, LiveOpenAIProvider
+from .live_http import (
+    LiveApexRunnerProvider,
+    LiveClaudeProvider,
+    LiveGeminiProvider,
+    LiveLlamafileProvider,
+    LiveOllamaProvider,
+    LiveOpenAIProvider,
+    LiveOpenCodexProvider,
+)
 from .simulator import SimulatedProvider
 
 
@@ -50,10 +58,31 @@ def get_providers(force_offline: bool = False, strict: bool = False) -> Dict[Mod
         except Exception:
             pass
 
-    # 1. Google Gemini (or local Apex Sovereign Runner)
+    # Check if OpenCodex (ocx) proxy server is active on port 10100
+    ocx_running = False
+    ocx_models = []
+    if not force_offline:
+        try:
+            from ..ocx.bridge import OpenCodexBridge
+            ocx = OpenCodexBridge()
+            if ocx.is_running(timeout=0.2):
+                ocx_running = True
+                ocx_models = [m.get("id", "") for m in ocx.list_models()]
+        except Exception:
+            pass
+
+    # 1. Google Gemini (or OpenCodex / local Apex Sovereign Runner)
     gemini_key = os.getenv("GEMINI_API_KEY")
     if _is_valid_key(gemini_key) and not force_offline:
         providers[ModelProvider.GEMINI] = LiveGeminiProvider(gemini_key.strip(), strict=strict)
+    elif not force_offline and ocx_running and any("gemini" in m.lower() for m in ocx_models):
+        target_m = next(m for m in ocx_models if "gemini" in m.lower())
+        providers[ModelProvider.GEMINI] = LiveOpenCodexProvider(
+            model_name=target_m,
+            provider=ModelProvider.GEMINI,
+            display_name=f"OpenCodex ({target_m})",
+            strict=strict,
+        )
     elif not force_offline and runner_running:
         providers[ModelProvider.GEMINI] = LiveApexRunnerProvider(
             provider=ModelProvider.GEMINI,
@@ -63,10 +92,18 @@ def get_providers(force_offline: bool = False, strict: bool = False) -> Dict[Mod
     else:
         providers[ModelProvider.GEMINI] = SimulatedProvider(ModelProvider.GEMINI, "Gemini 2.5 Pro (Simulated)")
 
-    # 2. Anthropic Claude (or local Qwen Coder)
+    # 2. Anthropic Claude (or OpenCodex / local Qwen Coder)
     claude_key = os.getenv("ANTHROPIC_API_KEY")
     if _is_valid_key(claude_key) and not force_offline:
         providers[ModelProvider.CLAUDE] = LiveClaudeProvider(claude_key.strip(), strict=strict)
+    elif not force_offline and ocx_running and any("claude" in m.lower() for m in ocx_models):
+        target_m = next(m for m in ocx_models if "claude" in m.lower())
+        providers[ModelProvider.CLAUDE] = LiveOpenCodexProvider(
+            model_name=target_m,
+            provider=ModelProvider.CLAUDE,
+            display_name=f"OpenCodex ({target_m})",
+            strict=strict,
+        )
     elif not force_offline and any("qwen" in m for m in installed_models):
         qwen_m = next((m for m in installed_models if "qwen" in m), "qwen2.5-coder:0.5b")
         providers[ModelProvider.CLAUDE] = LiveOllamaProvider(
@@ -78,10 +115,18 @@ def get_providers(force_offline: bool = False, strict: bool = False) -> Dict[Mod
     else:
         providers[ModelProvider.CLAUDE] = SimulatedProvider(ModelProvider.CLAUDE, "Claude 3.5 Sonnet (Simulated)")
 
-    # 3. OpenAI / Sovereign Apex-Coder
+    # 3. OpenAI / Sovereign Apex-Coder / OpenCodex
     openai_key = os.getenv("OPENAI_API_KEY")
     if _is_valid_key(openai_key) and not force_offline:
         providers[ModelProvider.OPENAI] = LiveOpenAIProvider(openai_key.strip(), strict=strict)
+    elif not force_offline and ocx_running and (any("gpt" in m.lower() or "o1" in m.lower() or "o3" in m.lower() for m in ocx_models) or ocx_models):
+        target_m = next((m for m in ocx_models if any(k in m.lower() for k in ("gpt-4", "o1", "o3"))), ocx_models[0] if ocx_models else "gpt-4o")
+        providers[ModelProvider.OPENAI] = LiveOpenCodexProvider(
+            model_name=target_m,
+            provider=ModelProvider.OPENAI,
+            display_name=f"OpenCodex ({target_m})",
+            strict=strict,
+        )
     elif not force_offline and (ollama_model or installed_models):
         target_m = ollama_model or next((m for m in installed_models if "apex" in m), installed_models[0])
         disp = f"Apex-Coder ({target_m})" if "apex" in target_m else f"Ollama ({target_m})"

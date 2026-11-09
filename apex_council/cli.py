@@ -72,6 +72,7 @@ KNOWN_COMMANDS = {
     "watch", "slice", "modern", "lsp", "loop",
     "patch-export", "crash-fingerprint", "flamegraph", "pr-summary", "secret-mask", "completion", "zero-div",
     "instruments", "swift-guard", "studio", "test-all", "demo-live", "bench-live", "review", "ollama", "llamafile", "runner", "audit-sec", "security-audit", "scala", "scala-guard", "spark", "spark-guard", "dify", "dify-guard",
+    "ocx", "opencodex",
     "-h", "--help"
 }
 
@@ -634,6 +635,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     dify_guard_p = subparsers.add_parser("dify-guard", help="DifyGuard static AppSec, SSRF & dead-node auditor for Dify workflows (alias)")
     dify_guard_p.add_argument("dify_args", nargs="*", help="Target Dify workflow JSON/YAML file to audit")
 
+    # Command 96: OpenCodex Universal LLM Provider Proxy & Web Dashboard (apex ocx / apex opencodex)
+    ocx_p = subparsers.add_parser("ocx", help="OpenCodex: Universal LLM provider proxy & dashboard on port 10100")
+    ocx_p.add_argument("ocx_args", nargs="*", help="OpenCodex subcommands (start, status, gui, doctor, models, setup, claude)")
+
+    opencodex_p = subparsers.add_parser("opencodex", help="OpenCodex: Universal LLM provider proxy & dashboard (alias)")
+    opencodex_p.add_argument("ocx_args", nargs="*", help="OpenCodex subcommands (start, status, gui, doctor, models, setup, claude)")
+
     # Direct prompt fallback: `apex-council "my prompt"`
     parser.add_argument("direct_prompt", nargs="?", help="Direct prompt to convene the Council")
     parser.add_argument("--format", choices=["table", "markdown", "json"], default="table")
@@ -857,6 +865,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "dify-guard":
             return handle_dify_cli(["guard"] + args.dify_args)
         return handle_dify_cli(args.dify_args)
+
+    # Command 96: OpenCodex Universal LLM Provider Proxy Gateway (apex ocx / apex opencodex)
+    if args.command in {"ocx", "opencodex"}:
+        from .ocx.bridge import handle_ocx_cli
+        return handle_ocx_cli(args.ocx_args)
 
     # Command 21: Cryptographic Hash-Chained Audit Ledger Verifier
     if args.command == "verify-ledger":
